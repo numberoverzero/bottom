@@ -5,7 +5,7 @@ from . import rfc
 
 class Client(object):
     def __init__(self, host, port):
-        self.handlers = Handlers()
+        self.handler = Handler()
         self.connection = Connection(host, port, self.handlers)
 
     def run(self):
@@ -37,17 +37,17 @@ class Client(object):
         '''
         def wrap(func):
             ''' Add the function to this client's handlers and return it '''
-            self.handlers.add(command.upper(), func)
+            self.handler.add(command.upper(), func)
             return func
         return wrap
 
 
 class Connection(object):
-    def __init__(self, host, port, events):
+    def __init__(self, host, port, handles):
         self.host, self.port = host, port
         self.reader, self.writer = None, None
 
-        self.events = events
+        self.handle = handles
         self.encoding = 'UTF-8'
         self.ssl = True
 
@@ -55,7 +55,7 @@ class Connection(object):
     def connect(self):
         self.reader, self.writer = yield from asyncio.open_connection(
             self.host, self.port, ssl=self.ssl)
-        yield from self.events('connect', self.host, self.port)
+        yield from self.handle('CONNECT', self.host, self.port)
 
     @asyncio.coroutine
     def disconnect(self):
@@ -65,7 +65,7 @@ class Connection(object):
         if self.writer:
             self.writer.close()
             self.writer = None
-        yield from self.events('disconnect', self.host, self.port)
+        yield from self.handle('DISCONNECT', self.host, self.port)
 
     @asyncio.coroutine
     def reconnect(self):
@@ -82,7 +82,7 @@ class Connection(object):
                 yield from self.reconnect()
                 # Don't process the message
                 continue
-            yield from self.events(*rfc.parse(msg))
+            yield from self.handle(*rfc.parse(msg))
 
     def send(self, msg):
         self.writer.write((msg.strip() + '\n').encode(self.encoding))
@@ -96,16 +96,17 @@ class Connection(object):
             return ''
 
 
-class Handlers(object):
+class Handler(object):
     def __init__(self):
-        self.handlers = collections.defaultdict(set)
+        self.coros = collections.defaultdict(set)
 
-    def add(self, event, handle):
+    def add(self, command, func):
         # Wrap the function in a coroutine so that we can
         # crete a task list and use asyncio.wait
-        self.handlers[event].add(asyncio.coroutine(handle))
+        self.coros[command.upper()].add(asyncio.coroutine(func))
 
     @asyncio.coroutine
-    def __call__(self, event, *args, **kwargs):
-        tasks = [handle(*args, **kwargs) for handle in self.handlers[event]]
+    def __call__(self, command, *args, **kwargs):
+        coros = self.coros[command.upper()]
+        tasks = [coro(*args, **kwargs) for coro in coros]
         asyncio.wait(tasks)
