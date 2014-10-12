@@ -35,9 +35,11 @@ class Client(object):
 
         bot.run()
         '''
+        command = rfc.unique_command(command)
+
         def wrap(func):
             ''' Add the function to this client's handlers and return it '''
-            self.handler.add(command.upper(), func)
+            self.handler.add(command, func)
             return func
         return wrap
 
@@ -104,13 +106,13 @@ class Handler(object):
 
     def add(self, command, func):
         # Wrap the function in a coroutine so that we can
-        # crete a task list and use asyncio.wait
-        command = command.upper()
+        # create a task list and use asyncio.wait
+        command = rfc.unique_command(command)
         coro = asyncio.coroutine(func)
         self.coros[command].add(coro)
 
     @asyncio.coroutine
     def __call__(self, command, *args, **kwargs):
-        coros = self.coros[command.upper()]
+        coros = self.coros[rfc.unique_command(command)]
         tasks = [coro(*args, **kwargs) for coro in coros]
         asyncio.wait(tasks)
