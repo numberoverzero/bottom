@@ -1,6 +1,9 @@
 ''' Parse messages into python args, kwargs according to rfc 2812 '''
 #  http://tools.ietf.org/html/rfc2812
 import re
+
+__all__ = ["unique_command", "wire_format", "parse"]
+
 RE_IRCLINE = re.compile(
     """
     ^

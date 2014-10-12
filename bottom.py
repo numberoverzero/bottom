@@ -6,6 +6,9 @@ import rfc
 missing = object()  # sentinel
 
 
+__all__ = ["Client"]
+
+
 class Client(object):
     def __init__(self, host, port):
         self.handler = Handler()
