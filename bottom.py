@@ -1,3 +1,4 @@
+""" asyncio-based rfc2812-compliant IRC Client """
 import collections
 import asyncio
 import inspect
@@ -70,6 +71,14 @@ class Client(object):
             prefix=prefix
         ))
 
+    @asyncio.coroutine
+    def connect(self):
+        yield from self.connection.connect()
+
+    @asyncio.coroutine
+    def disconnect(self):
+        yield from self.connection.disconnect()
+
 
 class Connection(object):
     def __init__(self, host, port, handler):
@@ -79,11 +88,13 @@ class Connection(object):
         self.handle = handler
         self.encoding = 'UTF-8'
         self.ssl = True
+        self._connected = False
 
     @asyncio.coroutine
     def connect(self):
         self.reader, self.writer = yield from asyncio.open_connection(
             self.host, self.port, ssl=self.ssl)
+        self._connected = True
         yield from self.handle("CLIENT_CONNECT",
                                {'host': self.host, 'port': self.port})
 
@@ -94,18 +105,18 @@ class Connection(object):
         if self.writer:
             self.writer.close()
             self.writer = None
+        self._connected = False
         yield from self.handle("CLIENT_DISCONNECT",
                                {'host': self.host, 'port': self.port})
 
-    @asyncio.coroutine
-    def reconnect(self):
-        yield from self.disconnect()
-        yield from self.connect()
+    @property
+    def connected(self):
+        return self._connected
 
     @asyncio.coroutine
     def loop(self):
         yield from self.connect()
-        while True:
+        while self.connected:
             msg = yield from self.read()
             if msg:
                 # (prefix, command, params, message)
@@ -119,7 +130,12 @@ class Connection(object):
                 yield from self.handle(command, kwargs)
             else:
                 # Lost connection
-                yield from self.reconnect()
+                yield from self.disconnect()
+                # Don't fire disconnect event twice
+                continue
+            # Give the connection a chance to clean up or reconnect
+            if not self.connected:
+                yield from self.disconnect()
 
     def send(self, msg):
         msg = msg.strip()
@@ -140,49 +156,37 @@ class Handler(object):
         # where command is a string, and set(func) is the set of functions
         # (wrapped and decorated) that will be invoked when the given command
         # is called on the Handler.
-        self.coros = collections.defaultdict(set)
+        self.partials = collections.defaultdict(set)
 
     def add(self, command, func):
         '''
-        After validating the function's signature, create a
-        :class:`~PartialBind` on the function to speed up argument injection.
-        Then, wrap the partial in a coroutine, so we can create a task list and
-        use asyncio.wait on the set of handlers.
-
+        Validate the func's signature, then wrap it in a :class:`~PartialBind`
+        to speed up argument injection.
         '''
         command = rfc.unique_command(command)
         route.validate(command, func)
-        partial = PartialBind(command, func)
-        coro = asyncio.coroutine(partial)
-        self.coros[command].add(coro)
+        partial = PartialBind(func)
+        self.partials[command].add(partial)
 
     @asyncio.coroutine
     def __call__(self, command, kwargs):
         ''' This is a coroutine so that we can `yield from` it's execution '''
-        coros = self.coros[rfc.unique_command(command)]
-        if not coros:
+        partials = self.partials[rfc.unique_command(command)]
+        if not partials:
             return
-        tasks = [coro(kwargs) for coro in coros]
+        tasks = [partial(kwargs) for partial in partials]
         yield from asyncio.wait(tasks)
 
 
 class PartialBind(object):
     ''' Custom partial binding for functions that map to commands '''
-    def __init__(self, command, func):
-        self.sig = inspect.signature(func)
-        self.command = command
+    def __init__(self, func):
+        # Wrap non-coroutines so we can always `yield from func(*a, **kw)`
+        if not asyncio.iscoroutinefunction(func):
+            func = asyncio.coroutine(func)
         self.func = func
 
-        self.load_defaults()
-
-    def load_defaults(self):
-        '''
-        Only set defaults for keys the function expects
-
-        Functions may not expect all available parameters for the command, so
-        we only build a mapping for the ones we care about.
-
-        '''
+        self.sig = inspect.signature(func)
         self.default = {}
         for key, param in self.sig.parameters.items():
             default = param.default
@@ -192,6 +196,7 @@ class PartialBind(object):
             else:
                 self.default[key] = default
 
+    @asyncio.coroutine
     def __call__(self, kwargs):
         unbound = self.default.copy()
         # Only map params this function expects
@@ -201,4 +206,4 @@ class PartialBind(object):
             if new_value not in [missing, None]:
                 unbound[key] = new_value
         bound = self.sig.bind(**unbound)
-        self.func(*bound.args, **bound.kwargs)
+        yield from self.func(*bound.args, **bound.kwargs)
