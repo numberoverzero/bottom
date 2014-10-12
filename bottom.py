@@ -43,6 +43,25 @@ class Client(object):
             return func
         return wrap
 
+    def send(self, command, *params, message=None, prefix=None):
+        '''
+        Send a message to the server.
+
+        :param:`prefix` and :param:`message` will be prefixed with a ':'
+
+        Examples
+        --------
+        bot.send('nick', 'weatherbot')
+        bot.send('user', 'weatherbot', 0, '*', message='Real Name')
+
+        '''
+        self.connection.send(rfc.wire_format(
+            command,
+            params=params,
+            message=message,
+            prefix=prefix
+        ))
+
 
 class Connection(object):
     def __init__(self, host, port, handler):

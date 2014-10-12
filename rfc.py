@@ -246,6 +246,20 @@ def wire_command(command):
         raise ValueError("Unknown command '{}'".format(command))
 
 
+def wire_format(command, params=None, message=None, prefix=None):
+    """ Return the correct wire format of a command """
+    s = ''
+    if prefix:
+        s += ":{} ".format(prefix)
+    s += wire_command(command)
+    if params:
+        for param in params:
+            s += " " + param
+    if message:
+        s += " :{}".format(message)
+    return s
+
+
 def normalize(match):
     prefix = match.group("prefix")
     command = match.group("command")
@@ -267,4 +281,3 @@ def parse(msg):
     if not match:
         return None
     prefix, command, params, message = normalize(match)
-
