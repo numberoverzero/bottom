@@ -68,7 +68,9 @@ parser_config = [
         "parser": quit_parser
     },
     {
-        "commands": ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD"],
+        "commands": ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
+                     "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
+                     "RPL_LUSERCLIENT", "RPL_LUSERME", "RPL_STATSDLINE"],
         "parameters": ["host", "message"],
         "parser": lambda host, _, msg: {"host": host, "message": msg}
     }
@@ -134,45 +136,6 @@ def unpack(prefix, command, params, message):
 # ===================================
 
 
-class RplWelcomeRoute(object):
-    command = 'RPL_WELCOME'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-
-
-class RplYourHostRoute(object):
-    command = 'RPL_YOURHOST'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-
-
-class RplCreatedRoute(object):
-    command = 'RPL_CREATED'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-
-
 class RplMyInfoRoute(object):
     command = 'RPL_MYINFO'
     paramters = ['host', 'message', 'nick', 'info']
@@ -198,19 +161,6 @@ class RplBounceRoute(object):
             'message': message,
             'nick': params[0],
             'config': params[1:]
-        }
-
-
-class RplLUserClientRoute(object):
-    command = 'RPL_LUSERCLIENT'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
         }
 
 
@@ -253,30 +203,4 @@ class RplLUserChannelsRoute(object):
             'message': message,
             'nick': params[0],
             'count': int(params[1])
-        }
-
-
-class RplLUserMeRoute(object):
-    command = 'RPL_LUSERME'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-
-
-class RplStatsDLineRoute(object):
-    command = 'RPL_STATSDLINE'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
         }
