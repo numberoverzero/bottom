@@ -1,5 +1,7 @@
 ''' Unpack parsed fields to amtch expected function signatures '''
 import inspect
+import logging
+logger = logging.getLogger(__name__)
 missing = object()  # sentinel
 
 
@@ -31,12 +33,14 @@ class PartialDefer(object):
 
     def __call__(self, kwargs):
         unbound = self.default.copy()
+        logger.debug('UNBOUND: {} {}'.format(self.command, unbound))
         # Only map params this function expects
         for key in unbound:
             new_value = kwargs.get(key, missing)
             # Don't overwrite defaults with nothing
             if new_value not in [missing, None]:
                 unbound[key] = new_value
+        logger.debug('UNBOUND: {} {}'.format(self.command, unbound))
         bound = self.sig.bind(**unbound)
         self.func(*bound.args, **bound.kwargs)
 
@@ -103,6 +107,7 @@ def validate(command, func):
 
 
 def unpack(prefix, command, params, message):
+    logger.debug("---UNPACK--- {} {} {} {}".format(prefix, command, params, message))
     route = get_route(command)
     return route.command.upper(), route.unpack(prefix, params, message)
 
@@ -120,6 +125,23 @@ def register(route):
     Route._routes[command] = route
 
 
+# =================================
+#
+# CUSTOM ROUTES FOR CLIENT-SIDE OPS
+#
+# =================================
+
+class ClientConnectRoute(Route):
+    command = 'CLIENT_CONNECT'
+    parameters = ['host', 'port']
+register(ClientConnectRoute)
+
+
+class ClientDisconnectRoute(Route):
+    command = 'CLIENT_DISCONNECT'
+    parameters = ['host', 'port']
+register(ClientDisconnectRoute)
+
 # ===================================
 #
 # ROUTES FOR RFC SECTIONS 3, 4 FOLLOW
@@ -136,3 +158,30 @@ class PingRoute(Route):
     def unpack(cls, prefix, params, message):
         return {'message': message}
 register(PingRoute)
+
+
+class NoticeRoute(Route):
+    command = 'NOTICE'
+    parameters = ['nick', 'user', 'host', 'target', 'message']
+    empty = {
+        'nick': None,
+        'user': None,
+        'host': None,
+        'target': None,
+        'message': None
+    }
+
+    @classmethod
+    def unpack(cls, prefix, params, message):
+        kwargs = NoticeRoute.empty.copy()
+        if '!' in prefix:
+            nick, remainder = prefix.split('!', 1)
+            kwargs['nick'] = nick
+            if '@' in remainder:
+                kwargs['user'], kwargs['host'] = remainder.split('@', 1)
+            else:
+                kwargs['user'] = remainder
+        kwargs['target'] = params[0]
+        kwargs['message'] = message
+        return kwargs
+register(NoticeRoute)
