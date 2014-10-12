@@ -43,11 +43,11 @@ class Client(object):
 
 
 class Connection(object):
-    def __init__(self, host, port, handles):
+    def __init__(self, host, port, handler):
         self.host, self.port = host, port
         self.reader, self.writer = None, None
 
-        self.handle = handles
+        self.handle = handler
         self.encoding = 'UTF-8'
         self.ssl = True
 
@@ -103,7 +103,9 @@ class Handler(object):
     def add(self, command, func):
         # Wrap the function in a coroutine so that we can
         # crete a task list and use asyncio.wait
-        self.coros[command.upper()].add(asyncio.coroutine(func))
+        command = command.upper()
+        coro = asyncio.coroutine(func)
+        self.coros[command].add(coro)
 
     @asyncio.coroutine
     def __call__(self, command, *args, **kwargs):
