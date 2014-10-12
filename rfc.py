@@ -246,6 +246,25 @@ def wire_command(command):
         raise ValueError("Unknown command '{}'".format(command))
 
 
+def normalize(match):
+    prefix = match.group("prefix")
+    command = match.group("command")
+    params = match.group('params')
+    message = match.group('message')
+
+    # Normalize
+    prefix = prefix or ''
+    command = unique_command(command)
+    params = (params or '').split()
+    message = message or ''
+
+    return prefix, command, params, message
+
+
 def parse(msg):
     ''' Parse messages into python args, kwargs according to rfc 2812 '''
-    raise NotImplementedError
+    match = RE_IRCLINE.match(msg)
+    if not match:
+        return None
+    prefix, command, params, message = normalize(match)
+

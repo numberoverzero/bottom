@@ -77,12 +77,14 @@ class Connection(object):
         self.connect()
         while True:
             msg = yield from self.read()
-            if not msg:
+            if msg:
+                # Don't propegate the message if parser doesn't understand it
+                args = rfc.parse(msg)
+                if args:
+                    yield from self.handle(*args)
+            else:
                 # Lost connection
                 yield from self.reconnect()
-                # Don't process the message
-                continue
-            yield from self.handle(*rfc.parse(msg))
 
     def send(self, msg):
         self.writer.write((msg.strip() + '\n').encode(self.encoding))
