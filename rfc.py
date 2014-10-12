@@ -1,6 +1,8 @@
 ''' Parse messages into python args, kwargs according to rfc 2812 '''
 #  http://tools.ietf.org/html/rfc2812
 import re
+import logging
+logger = logging.getLogger(__name__)
 
 RE_IRCLINE = re.compile(
     """
@@ -235,7 +237,9 @@ def unique_command(command):
     try:
         return COMMANDS[command.upper()]
     except KeyError:
-        raise ValueError("Unknown command '{}'".format(command))
+        msg = "Unknown command <<{}>>".format(command)
+        logger.debug(msg)
+        raise ValueError(msg)
 
 
 def wire_command(command):
@@ -243,7 +247,9 @@ def wire_command(command):
     try:
         return WIRE_COMMANDS[command.upper()]
     except KeyError:
-        raise ValueError("Unknown command '{}'".format(command))
+        msg = "Unknown command <<{}>>".format(command)
+        logger.debug(msg)
+        raise ValueError(msg)
 
 
 def wire_format(command, params=None, message=None, prefix=None):
@@ -279,5 +285,6 @@ def parse(msg):
     ''' Parse messages into python args, kwargs according to rfc 2812 '''
     match = RE_IRCLINE.match(msg)
     if not match:
+        logger.debug('Unexpected message format: <<{}>>'.format(msg))
         return None
     prefix, command, params, message = normalize(match)

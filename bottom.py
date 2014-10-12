@@ -1,6 +1,28 @@
 import collections
 import asyncio
+import logging
 from . import rfc
+
+logger = logging.getLogger(__name__)
+
+LOCAL_COMMANDS = set(
+    "CLIENT_CONNECT",
+    "CLIENT_DISCONNECT"
+)
+
+
+def get_command(command):
+    '''
+    Augment command lookup to include special client-side events
+
+    This allows us to hook into events like CLIENT_CONNECT,
+    which are not part of the IRC spec.
+
+    '''
+    command = command.upper()
+    if command in LOCAL_COMMANDS:
+        return command
+    return rfc.unique_command(command)
 
 
 class Client(object):
@@ -27,15 +49,17 @@ class Client(object):
 
         bot = Client('localhost', 6697)
 
-        @bot.on('connect')
+        @bot.on('client_connect')
         def autojoin(host, port):
-            bot.send('USER', ['bottom.bot']*4)
-            bot.send('NICK', 'bottom.bot')
-            bot.send('JOIN', '#test')
+            bot.send('NICK', 'weatherbot')
+            bot.send('USER', 'weatherbot', 0,
+                     '*', message="Bill's Weather Bot")
+            bot.send('JOIN', '#weather-alert')
+            bot.send('JOIN', '#weather-interest')
 
         bot.run()
         '''
-        command = rfc.unique_command(command)
+        command = get_command(command)
 
         def wrap(func):
             ''' Add the function to this client's handlers and return it '''
@@ -76,7 +100,7 @@ class Connection(object):
     def connect(self):
         self.reader, self.writer = yield from asyncio.open_connection(
             self.host, self.port, ssl=self.ssl)
-        yield from self.handle('CONNECT', self.host, self.port)
+        yield from self.handle("CLIENT_CONNECT", self.host, self.port)
 
     @asyncio.coroutine
     def disconnect(self):
@@ -86,7 +110,7 @@ class Connection(object):
         if self.writer:
             self.writer.close()
             self.writer = None
-        yield from self.handle('DISCONNECT', self.host, self.port)
+        yield from self.handle("CLIENT_DISCONNECT", self.host, self.port)
 
     @asyncio.coroutine
     def reconnect(self):
@@ -126,12 +150,14 @@ class Handler(object):
     def add(self, command, func):
         # Wrap the function in a coroutine so that we can
         # create a task list and use asyncio.wait
-        command = rfc.unique_command(command)
+        command = get_command(command)
         coro = asyncio.coroutine(func)
         self.coros[command].add(coro)
 
     @asyncio.coroutine
     def __call__(self, command, *args, **kwargs):
-        coros = self.coros[rfc.unique_command(command)]
+        logger.debug('HANDLE <{}> ARGS <{}> KWARGS <{}>'.format(
+            command, args, kwargs))
+        coros = self.coros[get_command(command)]
         tasks = [coro(*args, **kwargs) for coro in coros]
         asyncio.wait(tasks)
