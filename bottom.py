@@ -134,28 +134,28 @@ class Connection(object):
 class Handler(object):
     def __init__(self):
         # Dictionary of command : set(func)
-        # where command is a valid local or rfc command, and set(func) is the
-        # set of functions that will be invoked when the given command is
-        # called on the Handler.
+        # where command is a string, and set(func) is the set of functions
+        # (wrapped and decorated) that will be invoked when the given command
+        # is called on the Handler.
         self.coros = collections.defaultdict(set)
 
     def add(self, command, func):
-        # Wrap the function in a coroutine so that we can
-        # create a task list and use asyncio.wait
+        '''
+        After validating the function's signature, create a
+        :class:`~PartialBind` on the function to speed up argument injection.
+        Then, wrap the partial in a coroutine, so we can create a task list and
+        use asyncio.wait on the set of handlers.
+
+        '''
         command = rfc.unique_command(command)
-        # Fail fast if the function's signature doesn't match the possible
-        # fields for this command.
         route.validate(command, func)
-        # Pre-compute as much of the binding process as possible.
-        # Then, invoking the function with appropriate arguments should be
-        # a simple dict copy/update and call(signature.bind)
         partial = PartialBind(command, func)
-        # Wrap the partial as a coroutine so that we can asyncio.wait
         coro = asyncio.coroutine(partial)
         self.coros[command].add(coro)
 
     @asyncio.coroutine
     def __call__(self, command, kwargs):
+        ''' This is a coroutine so that we can `yield from` it's execution '''
         coros = self.coros[rfc.unique_command(command)]
         if not coros:
             return
