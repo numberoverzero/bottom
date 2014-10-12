@@ -165,10 +165,8 @@ class Handler(object):
         # create a task list and use asyncio.wait
         command = get_command(command)
         # Fail fast if the function's signature doesn't match the possible
-        # fields for this command.  Skip local commands, which don't need
-        # routing.
-        if command not in LOCAL_COMMANDS:
-            route.validate(command, func)
+        # fields for this command.
+        route.validate(command, func)
         # Pre-compute as much of the binding process as possible.
         # Then, invoking the function with appropriate arguments should be
         # a simple dict copy/update and call(signature.bind)
