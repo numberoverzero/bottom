@@ -1,10 +1,7 @@
 import collections
 import asyncio
-import logging
 import route
 import rfc
-
-logger = logging.getLogger(__name__)
 
 LOCAL_COMMANDS = set([
     "CLIENT_CONNECT",
@@ -140,7 +137,6 @@ class Connection(object):
 
     def send(self, msg):
         msg = msg.strip()
-        logger.debug("SEND <<{}>>".format(msg))
         self.writer.write((msg + '\n').encode(self.encoding))
 
     @asyncio.coroutine
