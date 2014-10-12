@@ -1,7 +1,4 @@
-'''
-Parse messages into logical python args, kwargs
-according to the various rfcs
-'''
+''' Parse messages into python args, kwargs according to rfc 2812 '''
 #  http://tools.ietf.org/html/rfc2812
 import re
 
@@ -250,4 +247,5 @@ def wire_command(command):
 
 
 def parse(msg):
+    ''' Parse messages into python args, kwargs according to rfc 2812 '''
     raise NotImplementedError
