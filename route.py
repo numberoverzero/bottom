@@ -75,35 +75,35 @@ def get_route(command):
 
 
 def validate(command, func):
-    route = Route.get_route(command)
+    route = get_route(command)
     sig = inspect.signature(func)
     expected = set(sig.parameters)
     available = set(route.parameters)
     unavailable = expected - available
     if unavailable:
         raise ValueError(
-            "function '{}' expects the following parameters for command {} "
-            + "that are not available: {}.  Available parameters for this "
-            + "command are: {}".format(func.__name__, command,
-                                       unavailable, available))
+            ("function '{}' expects the following parameters for command {} "
+             + "that are not available: {}.  Available parameters for this "
+             + "command are: {}").format(func.__name__, command,
+                                         unavailable, available))
     for param in sig.parameters.values():
         kind = param.kind
         if kind == inspect.Parameter.VAR_POSITIONAL:
             raise ValueError(
-                "function '{}' expects parameter {} to be VAR_POSITIONAL, "
-                + "when it will always be a single value.  This parameter "
-                + "must be either POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, or "
-                + "KEYWORD_ONLY.".format(func.__name__, param.name))
+                ("function '{}' expects parameter {} to be VAR_POSITIONAL, "
+                 + "when it will always be a single value.  This parameter "
+                 + "must be either POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, or "
+                 + "KEYWORD_ONLY.").format(func.__name__, param.name))
         if kind == inspect.Parameter.VAR_KEYWORD:
             raise ValueError(
-                "function '{}' expects parameter {} to be VAR_KEYWORD, "
-                + "when it will always be a single value.  This parameter "
-                + "must be either POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, or "
-                + "KEYWORD_ONLY.".format(func.__name__, param.name))
+                ("function '{}' expects parameter {} to be VAR_KEYWORD, "
+                 + "when it will always be a single value.  This parameter "
+                 + "must be either POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, or "
+                 + "KEYWORD_ONLY.").format(func.__name__, param.name))
 
 
 def unpack(prefix, command, params, message):
-    route = Route.get_route(command)
+    route = get_route(command)
     return route.command.upper(), route.unpack(prefix, params, message)
 
 
@@ -114,9 +114,10 @@ def register(route):
     This could be accomplished in a metaclass but that seems like overkill.
 
     '''
-    if Route.known(route):
-        raise ValueError("Route for {} already known.".format(route.command))
-    Route._routes[route.command.upper()] = route
+    command = route.command.upper()
+    if known(command):
+        raise ValueError("Route for {} already known.".format(command))
+    Route._routes[command] = route
 
 
 # ===================================
