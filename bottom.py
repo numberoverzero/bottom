@@ -4,9 +4,6 @@ import asyncio
 import inspect
 import route
 import rfc
-missing = object()  # sentinel
-
-
 __all__ = ["Client"]
 
 
@@ -33,6 +30,10 @@ class Client(object):
         -------
 
         bot = Client('localhost', 6697)
+
+        @bot.on('ping')
+        def pong(message):
+            bot.send('PONG', message=message)
 
         @bot.on('client_connect')
         def autojoin(host, port):
@@ -65,11 +66,7 @@ class Client(object):
 
         '''
         self.connection.send(rfc.wire_format(
-            command,
-            params=params,
-            message=message,
-            prefix=prefix
-        ))
+            command, params=params, message=message, prefix=prefix))
 
     @asyncio.coroutine
     def connect(self):
@@ -82,13 +79,12 @@ class Client(object):
 
 class Connection(object):
     def __init__(self, host, port, handler):
+        # TODO: extract ssl, encoding into configurable settings
+        self.handle = handler
+        self._connected = False
         self.host, self.port = host, port
         self.reader, self.writer = None, None
-
-        self.handle = handler
-        self.encoding = 'UTF-8'
-        self.ssl = True
-        self._connected = False
+        self.encoding, self.ssl = 'UTF-8', True
 
     @asyncio.coroutine
     def connect(self):
@@ -100,11 +96,8 @@ class Connection(object):
 
     @asyncio.coroutine
     def disconnect(self):
-        if self.reader:
-            self.reader = None
         if self.writer:
             self.writer.close()
-            self.writer = None
         self._connected = False
         yield from self.handle("CLIENT_DISCONNECT",
                                {'host': self.host, 'port': self.port})
@@ -138,8 +131,7 @@ class Connection(object):
                 yield from self.disconnect()
 
     def send(self, msg):
-        msg = msg.strip()
-        self.writer.write((msg + '\n').encode(self.encoding))
+        self.writer.write((msg.strip() + '\n').encode(self.encoding))
 
     @asyncio.coroutine
     def read(self):
@@ -160,12 +152,13 @@ class Handler(object):
 
     def add(self, command, func):
         '''
-        Validate the func's signature, then wrap it in a :class:`~PartialBind`
-        to speed up argument injection.
+        Validate the func's signature, then partial_bind the function to speed
+        up argument injection.
+
         '''
         command = rfc.unique_command(command)
         route.validate(command, func)
-        partial = PartialBind(func)
+        partial = partial_bind(func)
         self.partials[command].add(partial)
 
     @asyncio.coroutine
@@ -178,32 +171,30 @@ class Handler(object):
         yield from asyncio.wait(tasks)
 
 
-class PartialBind(object):
-    ''' Custom partial binding for functions that map to commands '''
-    def __init__(self, func):
-        # Wrap non-coroutines so we can always `yield from func(*a, **kw)`
-        if not asyncio.iscoroutinefunction(func):
-            func = asyncio.coroutine(func)
-        self.func = func
-
-        self.sig = inspect.signature(func)
-        self.default = {}
-        for key, param in self.sig.parameters.items():
-            default = param.default
-            #  Has no default - use equivalent of empty
-            if default is inspect.Parameter.empty:
-                self.default[key] = None
-            else:
-                self.default[key] = default
+def partial_bind(func):
+    # Wrap non-coroutines so we can always `yield from func(*a, **kw)`
+    if not asyncio.iscoroutinefunction(func):
+        func = asyncio.coroutine(func)
+    sig = inspect.signature(func)
+    base = {}
+    for key, param in sig.parameters.items():
+        default = param.default
+        #  Param has no default - use equivalent of empty
+        if base is inspect.Parameter.empty:
+            base[key] = None
+        else:
+            base[key] = default
 
     @asyncio.coroutine
-    def __call__(self, kwargs):
-        unbound = self.default.copy()
+    def wrapper(kwargs):
+        unbound = base.copy()
         # Only map params this function expects
         for key in unbound:
-            new_value = kwargs.get(key, missing)
+            new_value = kwargs.get(key, None)
             # Don't overwrite defaults with nothing
-            if new_value not in [missing, None]:
+            if new_value is not None:
                 unbound[key] = new_value
-        bound = self.sig.bind(**unbound)
-        yield from self.func(*bound.args, **bound.kwargs)
+        bound = sig.bind(**unbound)
+        yield from func(*bound.args, **bound.kwargs)
+
+    return wrapper
