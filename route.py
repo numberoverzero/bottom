@@ -78,6 +78,11 @@ parser_config = [
         "commands": ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"],
         "parameters": ["host", "message", "count"],
         "parser": lambda h, p, m: {"host": h, "message": m, "count": int(p[1])}
+    },
+    {
+        "commands": ["RPL_MYINFO", "RPL_BOUNCE"],
+        "parameters": ["host", "message", "info"],
+        "parser": lambda h, p, m: {"host": h, "message": m, "info": p[1:]}
     }
 ]
 
@@ -128,42 +133,6 @@ def unpack(prefix, command, params, message):
         _, parser = PARSERS[command]
         return command, parser(prefix, params, message)
     except KeyError:
-        logger.info(("Tried to unpack unknown command '{}' with prefix, "
-                    + "params, message :{} {} :{}")
-                    .format(command, prefix, params, message))
+        logger.info("Tried to unpack unknown command :{} {} {} :{}"
+                    .format(prefix, command, params, message))
         return command, {}
-
-# ===================================
-#
-# ROUTES FOR RFC SECTIONS 3, 4 FOLLOW
-# http://tools.ietf.org/html/rfc2812
-#
-# ===================================
-
-
-class RplMyInfoRoute(object):
-    command = 'RPL_MYINFO'
-    paramters = ['host', 'message', 'nick', 'info']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0],
-            'info': params[1:]
-        }
-
-
-class RplBounceRoute(object):
-    command = 'RPL_BOUNCE'
-    paramters = ['host', 'message', 'nick', 'config']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0],
-            'config': params[1:]
-        }
