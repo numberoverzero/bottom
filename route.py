@@ -107,9 +107,10 @@ def validate(command, func):
 def unpack(prefix, command, params, message):
     try:
         route = get_route(command)
+        return route.command.upper(), route.unpack(prefix, params, message)
     except ValueError:
-        logger.debug("---UNPACK--- {} {} {} {}".format(prefix, command, params, message))
-    return route.command.upper(), route.unpack(prefix, params, message)
+        logger.info("---UNPACK--- {} {} {} {}".format(prefix, command, params, message))
+        return command.upper(), {}
 
 
 def register(route):
