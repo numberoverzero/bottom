@@ -7,22 +7,21 @@ logger = logging.getLogger(__name__)
 RE_IRCLINE = re.compile(
     """
     ^
-    (:(?P<prefix>[^ ]+) +)?    # Optional prefix (src, nick!host, etc)
-                               # Prefix matches all non-space characters
-                               # Must start with a ':' character
+    (:(?P<prefix>[^\s]+)\s+)?    # Optional prefix (src, nick!host, etc)
+                                 # Prefix matches all non-space characters
+                                 # Must start with a ':' character
 
-    (?P<command>[^ ]+)         # Command is required (JOIN, 001, 403)
-                               # Command matches all non-space characters
+    (?P<command>[^\s]+)          # Command is required (JOIN, 001, 403)
+                                 # Command matches all non-space characters
 
-    (?P<params>( +[^:][^ ]*)*) # Optional params after command
-                               # Must have at least one leading space
-                               # Params end at first ':' which starts message
+    (?P<params>(\s+[^:][^\s]*)*) # Optional params after command
+                                 # Must have at least one leading space
+                                 # Params end at first ':' which starts message
 
-    (?: +:(?P<message>.*))?    # Optional message starts after first ':'
-                               # Must have at least one leading space
+    (?:\s+:(?P<message>.*))?     # Optional message starts after first ':'
+                                 # Must have at least one leading space
     $
     """, re.VERBOSE)
-
 
 RAW_COMMANDS = set([
     #  3.1 Connection Registration
@@ -237,9 +236,7 @@ def unique_command(command):
     try:
         return COMMANDS[command.upper()]
     except KeyError:
-        msg = "Unknown command <<{}>>".format(command)
-        logger.debug(msg)
-        raise ValueError(msg)
+        raise ValueError("Unknown command <<{}>>".format(command))
 
 
 def wire_command(command):
@@ -247,9 +244,7 @@ def wire_command(command):
     try:
         return WIRE_COMMANDS[command.upper()]
     except KeyError:
-        msg = "Unknown command <<{}>>".format(command)
-        logger.debug(msg)
-        raise ValueError(msg)
+        raise ValueError("Unknown command <<{}>>".format(command))
 
 
 def wire_format(command, params=None, message=None, prefix=None):
@@ -260,7 +255,7 @@ def wire_format(command, params=None, message=None, prefix=None):
     s += wire_command(command)
     if params:
         for param in params:
-            s += " " + param
+            s += " " + str(param)
     if message:
         s += " :{}".format(message)
     return s
@@ -287,4 +282,10 @@ def parse(msg):
     if not match:
         logger.debug('Unexpected message format: <<{}>>'.format(msg))
         return None
-    prefix, command, params, message = normalize(match)
+    try:
+        prefix, command, params, message = normalize(match)
+    except ValueError:
+        logger.debug('Unknown command in msg: <<{}>>'.format(msg))
+        return None
+    logger.debug(wire_format(
+        command, params=params, message=message, prefix=prefix))
