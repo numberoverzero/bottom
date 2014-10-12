@@ -3,50 +3,93 @@ import inspect
 import logging
 logger = logging.getLogger(__name__)
 
-
-class Route(object):
-    '''
-    Routes should only be used for parsing and dispatching inbound messages.
-    Outbound messages should still be serialized by hand.
-
-    '''
-    _routes = {}
-
-    command = ''
-    ''' The name of the command handled by this route '''
-
-    parameters = []
-    ''' The list of fields available, such as nick, channel, message '''
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        ''' Each route must implement this, returning a dict '''
-        raise NotImplementedError
+__all__ = ["unpack", "validate"]
 
 
-def known(command):
-    return command.upper() in Route._routes
+def user_prefix(prefix, kwargs):
+    if '!' in prefix:
+        nick, remainder = prefix.split('!', 1)
+        kwargs['nick'] = nick
+        if '@' in remainder:
+            kwargs['user'], kwargs['host'] = remainder.split('@', 1)
+        else:
+            kwargs['user'] = remainder
+    else:
+        kwargs['user'] = prefix
 
 
-def get_route(command):
-    try:
-        return Route._routes[command.upper()]
-    except KeyError:
-        raise ValueError("Don't know how to route '{}'".format(command))
+def msg_parser(prefix, params, message):
+    kwargs = {}
+    user_prefix(prefix, kwargs)
+    kwargs['target'] = params[0]
+    kwargs['message'] = message
+    return kwargs
+
+
+def channel_parser(prefix, params, message):
+    kwargs = {}
+    user_prefix(prefix, kwargs)
+    kwargs['channel'] = params[0]
+    kwargs['message'] = message
+    return kwargs
+
+
+def quit_parser(prefix, params, message):
+    kwargs = {}
+    user_prefix(prefix, kwargs)
+    kwargs['message'] = message
+    return kwargs
+
+
+parser_config = [
+    {
+        "commands": ["PING"],
+        "parameters": ["message"],
+        "parser": lambda _, __, message: {"message": message}
+    },
+    {
+        "commands": ["CLIENT_CONNECT", "CLIENT_DISCONNECT"],
+        "parameters": ["host", "port"]
+        # No parser - client-side event
+    },
+    {
+        "commands": ["NOTICE", "PRIVMSG"],
+        "parameters": ["nick", "user", "host", "target", "message"],
+        "parser": msg_parser
+    },
+    {
+        "commands": ["JOIN", "PART"],
+        "parameters": ["nick", "user", "host", "channel", "message"],
+        "parser": channel_parser
+    },
+    {
+        "commands": ["QUIT"],
+        "parameters": ["nick", "user", "host", "message"],
+        "parser": quit_parser
+    },
+    {
+        "commands": ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD"],
+        "parameters": ["host", "message"],
+        "parser": lambda host, _, msg: {"host": host, "message": msg}
+    }
+]
+
+PARSERS = {}
+
+for config_block in parser_config:
+    for command in config_block["commands"]:
+        parameters = config_block["parameters"]
+        parser = config_block.get("parser", None)
+        PARSERS[command] = [parameters, parser]
 
 
 def validate(command, func):
-    route = get_route(command)
+    command = command.upper()
+    try:
+        parameters, parser = PARSERS[command]
+    except KeyError:
+        raise ValueError("Unknown command '{}'".format(command))
     sig = inspect.signature(func)
-    expected = set(sig.parameters)
-    available = set(route.parameters)
-    unavailable = expected - available
-    if unavailable:
-        raise ValueError(
-            ("function '{}' expects the following parameters for command {} "
-             + "that are not available: {}.  Available parameters for this "
-             + "command are: {}").format(func.__name__, command,
-                                         unavailable, available))
     for param in sig.parameters.values():
         kind = param.kind
         if kind == inspect.Parameter.VAR_POSITIONAL:
@@ -61,46 +104,27 @@ def validate(command, func):
                  + "when it will always be a single value.  This parameter "
                  + "must be either POSITIONAL_ONLY, POSITIONAL_OR_KEYWORD, or "
                  + "KEYWORD_ONLY.").format(func.__name__, param.name))
+    expected = set(sig.parameters)
+    available = set(parameters)
+    unavailable = expected - available
+    if unavailable:
+        raise ValueError(
+            ("function '{}' expects the following parameters for command {} "
+             + "that are not available: {}.  Available parameters for this "
+             + "command are: {}").format(func.__name__, command,
+                                         unavailable, available))
 
 
 def unpack(prefix, command, params, message):
+    command = command.upper()
     try:
-        route = get_route(command)
-        return route.command.upper(), route.unpack(prefix, params, message)
-    except ValueError:
-        logger.info("---UNPACK--- :{} {} {} :{}".format(prefix, command, params, message))
-        return command.upper(), {}
-
-
-def register(route):
-    '''
-    Register a Route class with the base class
-
-    This could be accomplished in a metaclass but that seems like overkill.
-
-    '''
-    command = route.command.upper()
-    if known(command):
-        raise ValueError("Route for {} already known.".format(command))
-    Route._routes[command] = route
-
-
-# =================================
-#
-# CUSTOM ROUTES FOR CLIENT-SIDE OPS
-#
-# =================================
-
-class ClientConnectRoute(Route):
-    command = 'CLIENT_CONNECT'
-    parameters = ['host', 'port']
-register(ClientConnectRoute)
-
-
-class ClientDisconnectRoute(Route):
-    command = 'CLIENT_DISCONNECT'
-    parameters = ['host', 'port']
-register(ClientDisconnectRoute)
+        _, parser = PARSERS[command]
+        return command, parser(prefix, params, message)
+    except KeyError:
+        logger.info(("Tried to unpack unknown command '{}' with prefix, "
+                    + "params, message :{} {} :{}")
+                    .format(command, prefix, params, message))
+        return command, {}
 
 # ===================================
 #
@@ -110,150 +134,7 @@ register(ClientDisconnectRoute)
 # ===================================
 
 
-class PingRoute(Route):
-    command = 'PING'
-    parameters = ['message']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {'message': message}
-register(PingRoute)
-
-
-class NoticeRoute(Route):
-    command = 'NOTICE'
-    parameters = ['nick', 'user', 'host', 'target', 'message']
-    empty = {
-        'nick': None,
-        'user': None,
-        'host': None,
-        'target': None,
-        'message': None
-    }
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        kwargs = NoticeRoute.empty.copy()
-        if '!' in prefix:
-            nick, remainder = prefix.split('!', 1)
-            kwargs['nick'] = nick
-            if '@' in remainder:
-                kwargs['user'], kwargs['host'] = remainder.split('@', 1)
-            else:
-                kwargs['user'] = remainder
-        kwargs['target'] = params[0]
-        kwargs['message'] = message
-        return kwargs
-register(NoticeRoute)
-
-
-class PrivMsgRoute(Route):
-    command = 'PRIVMSG'
-    parameters = ['nick', 'user', 'host', 'target', 'message']
-    empty = {
-        'nick': None,
-        'user': None,
-        'host': None,
-        'target': None,
-        'message': None
-    }
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        kwargs = PrivMsgRoute.empty.copy()
-        if '!' in prefix:
-            nick, remainder = prefix.split('!', 1)
-            kwargs['nick'] = nick
-            if '@' in remainder:
-                kwargs['user'], kwargs['host'] = remainder.split('@', 1)
-            else:
-                kwargs['user'] = remainder
-        kwargs['target'] = params[0]
-        kwargs['message'] = message
-        return kwargs
-register(PrivMsgRoute)
-
-
-class JoinRoute(Route):
-    command = 'JOIN'
-    parameters = ['nick', 'user', 'host', 'channel', 'message']
-    empty = {
-        'nick': None,
-        'user': None,
-        'host': None,
-        'channel': None,
-        'message': None
-    }
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        kwargs = PrivMsgRoute.empty.copy()
-        if '!' in prefix:
-            nick, remainder = prefix.split('!', 1)
-            kwargs['nick'] = nick
-            if '@' in remainder:
-                kwargs['user'], kwargs['host'] = remainder.split('@', 1)
-            else:
-                kwargs['user'] = remainder
-        kwargs['channel'] = params[0]
-        kwargs['message'] = message
-        return kwargs
-register(JoinRoute)
-
-
-class PartRoute(Route):
-    command = 'PART'
-    parameters = ['nick', 'user', 'host', 'channel', 'message']
-    empty = {
-        'nick': None,
-        'user': None,
-        'host': None,
-        'channel': None,
-        'message': None
-    }
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        kwargs = PrivMsgRoute.empty.copy()
-        if '!' in prefix:
-            nick, remainder = prefix.split('!', 1)
-            kwargs['nick'] = nick
-            if '@' in remainder:
-                kwargs['user'], kwargs['host'] = remainder.split('@', 1)
-            else:
-                kwargs['user'] = remainder
-        kwargs['channel'] = params[0]
-        kwargs['message'] = message
-        return kwargs
-register(PartRoute)
-
-
-class QuitRoute(Route):
-    command = 'QUIT'
-    parameters = ['nick', 'user', 'host', 'message']
-    empty = {
-        'nick': None,
-        'user': None,
-        'host': None,
-        'message': None
-    }
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        kwargs = PrivMsgRoute.empty.copy()
-        if '!' in prefix:
-            nick, remainder = prefix.split('!', 1)
-            kwargs['nick'] = nick
-            if '@' in remainder:
-                kwargs['user'], kwargs['host'] = remainder.split('@', 1)
-            else:
-                kwargs['user'] = remainder
-        kwargs['message'] = message
-        return kwargs
-register(QuitRoute)
-
-
-class RplWelcomeRoute(Route):
+class RplWelcomeRoute(object):
     command = 'RPL_WELCOME'
     paramters = ['host', 'message', 'nick']
 
@@ -264,10 +145,9 @@ class RplWelcomeRoute(Route):
             'message': message,
             'nick': params[0]
         }
-register(RplWelcomeRoute)
 
 
-class RplYourHostRoute(Route):
+class RplYourHostRoute(object):
     command = 'RPL_YOURHOST'
     paramters = ['host', 'message', 'nick']
 
@@ -278,10 +158,9 @@ class RplYourHostRoute(Route):
             'message': message,
             'nick': params[0]
         }
-register(RplYourHostRoute)
 
 
-class RplCreatedRoute(Route):
+class RplCreatedRoute(object):
     command = 'RPL_CREATED'
     paramters = ['host', 'message', 'nick']
 
@@ -292,10 +171,9 @@ class RplCreatedRoute(Route):
             'message': message,
             'nick': params[0]
         }
-register(RplCreatedRoute)
 
 
-class RplMyInfoRoute(Route):
+class RplMyInfoRoute(object):
     command = 'RPL_MYINFO'
     paramters = ['host', 'message', 'nick', 'info']
 
@@ -307,10 +185,9 @@ class RplMyInfoRoute(Route):
             'nick': params[0],
             'info': params[1:]
         }
-register(RplMyInfoRoute)
 
 
-class RplBounceRoute(Route):
+class RplBounceRoute(object):
     command = 'RPL_BOUNCE'
     paramters = ['host', 'message', 'nick', 'config']
 
@@ -322,10 +199,9 @@ class RplBounceRoute(Route):
             'nick': params[0],
             'config': params[1:]
         }
-register(RplBounceRoute)
 
 
-class RplLUserClientRoute(Route):
+class RplLUserClientRoute(object):
     command = 'RPL_LUSERCLIENT'
     paramters = ['host', 'message', 'nick']
 
@@ -336,10 +212,9 @@ class RplLUserClientRoute(Route):
             'message': message,
             'nick': params[0]
         }
-register(RplLUserClientRoute)
 
 
-class RplLUserOpRoute(Route):
+class RplLUserOpRoute(object):
     command = 'RPL_LUSEROP'
     paramters = ['host', 'message', 'nick', 'count']
 
@@ -351,10 +226,9 @@ class RplLUserOpRoute(Route):
             'nick': params[0],
             'count': int(params[1])
         }
-register(RplLUserOpRoute)
 
 
-class RplLUserUnknownRoute(Route):
+class RplLUserUnknownRoute(object):
     command = 'RPL_LUSERUNKNOWN'
     paramters = ['host', 'message', 'nick', 'count']
 
@@ -366,10 +240,9 @@ class RplLUserUnknownRoute(Route):
             'nick': params[0],
             'count': int(params[1])
         }
-register(RplLUserUnknownRoute)
 
 
-class RplLUserChannelsRoute(Route):
+class RplLUserChannelsRoute(object):
     command = 'RPL_LUSERCHANNELS'
     paramters = ['host', 'message', 'nick', 'count']
 
@@ -381,10 +254,9 @@ class RplLUserChannelsRoute(Route):
             'nick': params[0],
             'count': int(params[1])
         }
-register(RplLUserChannelsRoute)
 
 
-class RplLUserMeRoute(Route):
+class RplLUserMeRoute(object):
     command = 'RPL_LUSERME'
     paramters = ['host', 'message', 'nick']
 
@@ -395,10 +267,9 @@ class RplLUserMeRoute(Route):
             'message': message,
             'nick': params[0]
         }
-register(RplLUserMeRoute)
 
 
-class RplStatsDLineRoute(Route):
+class RplStatsDLineRoute(object):
     command = 'RPL_STATSDLINE'
     paramters = ['host', 'message', 'nick']
 
@@ -409,46 +280,3 @@ class RplStatsDLineRoute(Route):
             'message': message,
             'nick': params[0]
         }
-register(RplStatsDLineRoute)
-
-
-class RplMOTDStartRoute(Route):
-    command = 'RPL_MOTDSTART'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-register(RplMOTDStartRoute)
-
-
-class RplMOTDRoute(Route):
-    command = 'RPL_MOTD'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-register(RplMOTDRoute)
-
-
-class RplEndOfMOTDRoute(Route):
-    command = 'RPL_ENDOFMOTD'
-    paramters = ['host', 'message', 'nick']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0]
-        }
-register(RplEndOfMOTDRoute)
