@@ -33,14 +33,12 @@ class PartialDefer(object):
 
     def __call__(self, kwargs):
         unbound = self.default.copy()
-        logger.debug('UNBOUND: {} {}'.format(self.command, unbound))
         # Only map params this function expects
         for key in unbound:
             new_value = kwargs.get(key, missing)
             # Don't overwrite defaults with nothing
             if new_value not in [missing, None]:
                 unbound[key] = new_value
-        logger.debug('UNBOUND: {} {}'.format(self.command, unbound))
         bound = self.sig.bind(**unbound)
         self.func(*bound.args, **bound.kwargs)
 
@@ -107,8 +105,10 @@ def validate(command, func):
 
 
 def unpack(prefix, command, params, message):
-    logger.debug("---UNPACK--- {} {} {} {}".format(prefix, command, params, message))
-    route = get_route(command)
+    try:
+        route = get_route(command)
+    except ValueError:
+        logger.debug("---UNPACK--- {} {} {} {}".format(prefix, command, params, message))
     return route.command.upper(), route.unpack(prefix, params, message)
 
 
@@ -185,3 +185,7 @@ class NoticeRoute(Route):
         kwargs['message'] = message
         return kwargs
 register(NoticeRoute)
+
+
+class WelcomeRoute(Route):
+    command = 'RPL_WELCOME'
