@@ -73,6 +73,11 @@ parser_config = [
                      "RPL_LUSERCLIENT", "RPL_LUSERME", "RPL_STATSDLINE"],
         "parameters": ["host", "message"],
         "parser": lambda host, _, msg: {"host": host, "message": msg}
+    },
+    {
+        "commands": ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"],
+        "parameters": ["host", "message", "count"],
+        "parser": lambda h, p, m: {"host": h, "message": m, "count": int(p[1])}
     }
 ]
 
@@ -82,7 +87,7 @@ for config_block in parser_config:
     for command in config_block["commands"]:
         parameters = config_block["parameters"]
         parser = config_block.get("parser", None)
-        PARSERS[command] = [parameters, parser]
+        PARSERS[command.upper()] = [parameters, parser]
 
 
 def validate(command, func):
@@ -161,46 +166,4 @@ class RplBounceRoute(object):
             'message': message,
             'nick': params[0],
             'config': params[1:]
-        }
-
-
-class RplLUserOpRoute(object):
-    command = 'RPL_LUSEROP'
-    paramters = ['host', 'message', 'nick', 'count']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0],
-            'count': int(params[1])
-        }
-
-
-class RplLUserUnknownRoute(object):
-    command = 'RPL_LUSERUNKNOWN'
-    paramters = ['host', 'message', 'nick', 'count']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0],
-            'count': int(params[1])
-        }
-
-
-class RplLUserChannelsRoute(object):
-    command = 'RPL_LUSERCHANNELS'
-    paramters = ['host', 'message', 'nick', 'count']
-
-    @classmethod
-    def unpack(cls, prefix, params, message):
-        return {
-            'host': prefix,
-            'message': message,
-            'nick': params[0],
-            'count': int(params[1])
         }
