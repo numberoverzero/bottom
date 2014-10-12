@@ -4,24 +4,6 @@ import inspect
 import route
 import rfc
 missing = object()  # sentinel
-LOCAL_COMMANDS = set([
-    "CLIENT_CONNECT",
-    "CLIENT_DISCONNECT"
-])
-
-
-def get_command(command):
-    '''
-    Augment command lookup to include special client-side events
-
-    This allows us to hook into events like CLIENT_CONNECT,
-    which are not part of the IRC spec.
-
-    '''
-    command = command.upper()
-    if command in LOCAL_COMMANDS:
-        return command
-    return rfc.unique_command(command)
 
 
 class Client(object):
@@ -58,7 +40,7 @@ class Client(object):
 
         bot.run()
         '''
-        command = get_command(command)
+        command = rfc.unique_command(command)
 
         def wrap(func):
             ''' Add the function to this client's handlers and return it '''
@@ -160,7 +142,7 @@ class Handler(object):
     def add(self, command, func):
         # Wrap the function in a coroutine so that we can
         # create a task list and use asyncio.wait
-        command = get_command(command)
+        command = rfc.unique_command(command)
         # Fail fast if the function's signature doesn't match the possible
         # fields for this command.
         route.validate(command, func)
@@ -174,7 +156,7 @@ class Handler(object):
 
     @asyncio.coroutine
     def __call__(self, command, kwargs):
-        coros = self.coros[get_command(command)]
+        coros = self.coros[rfc.unique_command(command)]
         if not coros:
             return
         tasks = [coro(kwargs) for coro in coros]

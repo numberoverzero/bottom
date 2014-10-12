@@ -1,9 +1,6 @@
 ''' Parse messages into python args, kwargs according to rfc 2812 '''
 #  http://tools.ietf.org/html/rfc2812
 import re
-import logging
-logger = logging.getLogger(__name__)
-
 RE_IRCLINE = re.compile(
     """
     ^
@@ -242,8 +239,7 @@ def unique_command(command):
     try:
         return COMMANDS[command]
     except KeyError:
-        logger.debug("Unknown command '{}'".format(command))
-    return command
+        return command
 
 
 def wire_command(command):
@@ -256,7 +252,6 @@ def wire_command(command):
     try:
         return WIRE_COMMANDS[command]
     except KeyError:
-        logger.debug("Unknown command '{}'".format(command))
         return command
 
 
@@ -293,7 +288,6 @@ def parse(msg):
     ''' Parse message according to rfc 2812 for routing '''
     match = RE_IRCLINE.match(msg)
     if not match:
-        logger.debug("Unexpected message format: '{}'".format(msg))
         return None
     #  prefix, command, params, message
     return normalize(match)
