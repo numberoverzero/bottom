@@ -226,6 +226,7 @@ for entry in RAW_COMMANDS:
         COMMANDS[string] = string
         WIRE_COMMANDS[number] = number
         WIRE_COMMANDS[string] = number
+    # Typo in setup
     else:
         raise ValueError(
             "Unexpected entry in RAW_COMMANDS: '{}'".format(entry))
@@ -277,15 +278,14 @@ def normalize(match):
 
 
 def parse(msg):
-    ''' Parse messages into python args, kwargs according to rfc 2812 '''
+    ''' Parse message according to rfc 2812 for routing '''
     match = RE_IRCLINE.match(msg)
     if not match:
         logger.debug('Unexpected message format: <<{}>>'.format(msg))
         return None
     try:
-        prefix, command, params, message = normalize(match)
+        #  prefix, command, params, message
+        return normalize(match)
     except ValueError:
         logger.debug('Unknown command in msg: <<{}>>'.format(msg))
         return None
-    logger.debug(wire_format(
-        command, params=params, message=message, prefix=prefix))
