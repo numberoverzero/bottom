@@ -233,19 +233,31 @@ for entry in RAW_COMMANDS:
 
 
 def unique_command(command):
-    ''' Return the unique string that a command maps to '''
+    '''
+    Return the unique string that a command maps to
+
+    If input command isn't known, returns the uppercase version.
+    '''
+    command = command.upper()
     try:
-        return COMMANDS[command.upper()]
+        return COMMANDS[command]
     except KeyError:
-        raise ValueError("Unknown command <<{}>>".format(command))
+        logger.debug("Unknown command '{}'".format(command))
+    return command
 
 
 def wire_command(command):
-    ''' Return the representation a command uses on the wire '''
+    '''
+    Return the representation a command uses on the wire
+
+    If input command isn't known, returns the uppercase version.
+    '''
+    command = command.upper()
     try:
-        return WIRE_COMMANDS[command.upper()]
+        return WIRE_COMMANDS[command]
     except KeyError:
-        raise ValueError("Unknown command <<{}>>".format(command))
+        logger.debug("Unknown command '{}'".format(command))
+        return command
 
 
 def wire_format(command, params=None, message=None, prefix=None):
@@ -281,11 +293,7 @@ def parse(msg):
     ''' Parse message according to rfc 2812 for routing '''
     match = RE_IRCLINE.match(msg)
     if not match:
-        logger.debug('Unexpected message format: <<{}>>'.format(msg))
+        logger.debug("Unexpected message format: '{}'".format(msg))
         return None
-    try:
-        #  prefix, command, params, message
-        return normalize(match)
-    except ValueError:
-        logger.debug('Unknown command in msg: <<{}>>'.format(msg))
-        return None
+    #  prefix, command, params, message
+    return normalize(match)

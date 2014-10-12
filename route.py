@@ -2,47 +2,6 @@
 import inspect
 import logging
 logger = logging.getLogger(__name__)
-missing = object()  # sentinel
-
-
-class PartialDefer(object):
-    ''' Custom partial binding for functions that map to commands '''
-    def __init__(self, command, func):
-        self.sig = inspect.signature(func)
-        self.command = command
-        self.func = func
-
-        self.load_defaults()
-
-    def load_defaults(self):
-        '''
-        Only set defaults for keys the function expects
-
-        Functions may not expect all available parameters for the command, so
-        we only build a mapping for the ones we care about.
-
-        '''
-        self.default = {}
-        for key, param in self.sig.parameters.items():
-            default = param.default
-            #  Has no default - use equivalent of empty
-            if default is inspect.Parameter.empty:
-                self.default[key] = None
-            else:
-                self.default[key] = default
-
-    def __call__(self, kwargs):
-        unbound = self.default.copy()
-        # Only map params this function expects
-        for key in unbound:
-            new_value = kwargs.get(key, missing)
-            # Don't overwrite defaults with nothing
-            if new_value not in [missing, None]:
-                unbound[key] = new_value
-        bound = self.sig.bind(**unbound)
-        self.func(*bound.args, **bound.kwargs)
-
-partial_bind = PartialDefer  # alias
 
 
 class Route(object):
