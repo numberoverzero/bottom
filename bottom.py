@@ -1,14 +1,14 @@
 import collections
 import asyncio
 import logging
-from . import rfc
+import rfc
 
 logger = logging.getLogger(__name__)
 
-LOCAL_COMMANDS = set(
+LOCAL_COMMANDS = set([
     "CLIENT_CONNECT",
     "CLIENT_DISCONNECT"
-)
+])
 
 
 def get_command(command):
@@ -28,7 +28,7 @@ def get_command(command):
 class Client(object):
     def __init__(self, host, port):
         self.handler = Handler()
-        self.connection = Connection(host, port, self.handlers)
+        self.connection = Connection(host, port, self.handler)
 
     def run(self):
         ''' Run the bot forever '''
@@ -105,7 +105,6 @@ class Connection(object):
     @asyncio.coroutine
     def disconnect(self):
         if self.reader:
-            self.reader.close()
             self.reader = None
         if self.writer:
             self.writer.close()
@@ -119,7 +118,7 @@ class Connection(object):
 
     @asyncio.coroutine
     def loop(self):
-        self.connect()
+        yield from self.connect()
         while True:
             msg = yield from self.read()
             if msg:
@@ -132,12 +131,14 @@ class Connection(object):
                 yield from self.reconnect()
 
     def send(self, msg):
-        self.writer.write((msg.strip() + '\n').encode(self.encoding))
+        msg = msg.strip()
+        logger.debug("SEND <<{}>>".format(msg))
+        self.writer.write((msg + '\n').encode(self.encoding))
 
     @asyncio.coroutine
     def read(self):
         try:
-            msg = yield from self.read.readline()
+            msg = yield from self.reader.readline()
             return msg.decode(self.encoding, 'ignore').strip()
         except EOFError:
             return ''
@@ -152,6 +153,8 @@ class Handler(object):
         # create a task list and use asyncio.wait
         command = get_command(command)
         coro = asyncio.coroutine(func)
+        logger.debug("Adding handler {} for command {}".format(
+            func, command))
         self.coros[command].add(coro)
 
     @asyncio.coroutine
@@ -160,4 +163,4 @@ class Handler(object):
             command, args, kwargs))
         coros = self.coros[get_command(command)]
         tasks = [coro(*args, **kwargs) for coro in coros]
-        asyncio.wait(tasks)
+        yield from asyncio.wait(tasks)
