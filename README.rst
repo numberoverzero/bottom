@@ -19,5 +19,37 @@ Installation
 
 Getting Started
 ===============
+::
 
-There's nothing here yet!
+    from bottom import Client
+    nick = 'bottom-bot'
+    channel = '#python'
+    bot = Client('localhost', 6697)
+    bot.nick = 'bottom-bot'
+
+    @bot.on('CLIENT_CONNECT')
+    def connect():
+        bot.send('NICK', bot.nick)
+        bot.send('USER', bot.nick, 0, '*', message="Bot using bottom.py")
+        bot.send('JOIN', channel)
+
+
+    @bot.on('PING')
+    def keepalive(message):
+        bot.send('PONG', message=message)
+
+
+    @bot.on('PRIVMSG')
+    def message(nick, target, message):
+        ''' Echo messages read '''
+        # Don't echo ourselves
+        if nick == bot.nick:
+            return
+        # Direct message to bot
+        if target == bot.nick:
+            bot.send("PRIVMSG", nick, message=message)
+        # Message in channel
+        else:
+            bot.send("PRIVMSG", target, message=message)
+
+    bot.run()
