@@ -1,5 +1,6 @@
-bottom
-========
+bottom 0.9.0
+============
+
 :Build: |build|_ |coverage|_
 :Downloads: http://pypi.python.org/pypi/bottom
 :Source: https://github.com/numberoverzero/bottom
@@ -9,7 +10,7 @@ bottom
 .. |coverage| image:: https://coveralls.io/repos/numberoverzero/bottom/badge.png?branch=master
 .. _coverage: https://coveralls.io/r/numberoverzero/bottom?branch=master
 
-bottom layer of the irc protocol for python's asyncio
+asyncio-based rfc2812-compliant IRC Client
 
 Installation
 ============
@@ -18,12 +19,17 @@ Installation
 
 Getting Started
 ===============
+
+bottom isn't a kitchen-sink library.  Instead, it provides an API with a small
+surface area, tuned for performance and ease of extension.  Similar to the
+routing style of bottle.py, hooking into events is one line.
+
 ::
 
     from bottom import Client
 
     NICK = 'bottom-bot'
-    channel = '#python'
+    CHANNEL = '#python'
 
     bot = Client('localhost', 6697)
 
@@ -31,8 +37,8 @@ Getting Started
     @bot.on('CLIENT_CONNECT')
     def connect():
         bot.send('NICK', NICK)
-        bot.send('USER', NICK, 0, '*', message="Bot using bottom.py")
-        bot.send('JOIN', channel)
+        bot.send('USER', NICK, 0, '*', message='Bot using bottom.py')
+        bot.send('JOIN', CHANNEL)
 
 
     @bot.on('PING')
@@ -56,8 +62,11 @@ Getting Started
 
     bot.run()
 
-Client API
-============
+API
+===
+
+While there are other internal classes and structures, everything should be
+considered private except the `Client` class.
 
 Client.run
 ----------
@@ -73,6 +82,25 @@ Client.disconnect
 
 Client.send
 -----------
+
+Other Classes and Modules
+-------------------------
+
+The `routing` module is used to unpack an irc line into the appropriate named
+objects based on the command's grammar.
+
+The `rfc` module holds a set of command aliases and the full list of rfc2812's
+available command and response strings.  It primarily parses a single line of
+text into a (prefix, command, params, message) tuple which is (usually)
+consumed by the router.  It also handles dumping a command into the appropriate
+wire format.
+
+The `Connection` class handles the main read/write loop and socket connections,
+and is entirely asynchronous.
+
+The `Handler` class is used to distribute events and register functions
+decorated by `Client.on`.  It does some optimization using the `partial_bind`
+function to speed up the connection read -> function call time.
 
 Supported Commands
 ==================
@@ -91,14 +119,20 @@ will be available.  Currently, only the following have working parsers:
 * RPL_MOTDSTART
 * RPL_MOTD
 * RPL_ENDOFMOTD
+* RPL_WELCOME
+* RPL_YOURHOST
+* RPL_CREATED,
+* RPL_LUSERCLIENT
+* RPL_LUSERME
+* RPL_STATSDLINE
 * RPL_LUSEROP
 * RPL_LUSERUNKNOWN
 * RPL_LUSERCHANNELS
 * RPL_MYINFO
 * RPL_BOUNCE
-* RPL_WELCOME
-* RPL_YOURHOST
-* RPL_CREATED
-* RPL_LUSERCLIENT
-* RPL_LUSERME
-* RPL_STATSDLINE
+
+Command Parameters
+==================
+
+This section will eventually list the available parameters for each command or
+reply, and what type they are.

@@ -19,11 +19,11 @@ TEST_REQUIREMENTS = [
 if __name__ == "__main__":
     setup(
         name='bottom',
-        version='0.1.0',
-        description="bottom layer of the irc protocol for python's asyncio",
+        version='0.9.0',
+        description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README + '\n\n' + CHANGES,
         classifiers=[
-            'Development Status :: 2 - Pre-Alpha',
+            'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',
             'License :: OSI Approved :: MIT License',
             'Operating System :: OS Independent',
