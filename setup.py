@@ -1,13 +1,9 @@
 """ Setup file """
 import os
-import re
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(HERE, 'README.rst')).read()
-CHANGES = open(os.path.join(HERE, 'CHANGES.rst')).read()
-# Remove custom RST extensions for pypi
-CHANGES = re.sub(r'\(\s*:(issue|pr|sha):.*?\)', '', CHANGES)
 
 REQUIREMENTS = [
 ]
@@ -21,7 +17,7 @@ if __name__ == "__main__":
         name='bottom',
         version='0.9.0',
         description="asyncio-based rfc2812-compliant IRC Client",
-        long_description=README + '\n\n' + CHANGES,
+        long_description=README,
         classifiers=[
             'Development Status :: 3 - Alpha',
             'Intended Audience :: Developers',
