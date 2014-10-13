@@ -2,8 +2,9 @@
 import collections
 import asyncio
 import inspect
-import route
-import rfc
+
+from . import route
+from . import rfc
 __all__ = ["Client"]
 
 

@@ -1,8 +1,5 @@
 ''' Unpack parsed fields to amtch expected function signatures '''
 import inspect
-import logging
-logger = logging.getLogger(__name__)
-
 __all__ = ["unpack", "validate"]
 
 
@@ -133,6 +130,4 @@ def unpack(prefix, command, params, message):
         _, parser = PARSERS[command]
         return command, parser(prefix, params, message)
     except KeyError:
-        logger.info("Tried to unpack unknown command :{} {} {} :{}"
-                    .format(prefix, command, params, message))
         return command, {}
