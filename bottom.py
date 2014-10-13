@@ -7,6 +7,12 @@ import rfc
 __all__ = ["Client"]
 
 
+def sync_call(func):
+    ''' Blocking invocation of an asynchronous function '''
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(func())
+
+
 class Client(object):
     def __init__(self, host, port):
         self.handler = Handler()
@@ -14,8 +20,7 @@ class Client(object):
 
     def run(self):
         ''' Run the bot forever '''
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.connection.loop())
+        sync_call(self.connection.loop)
 
     def on(self, command):
         '''
@@ -70,10 +75,14 @@ class Client(object):
 
     @asyncio.coroutine
     def connect(self):
+        # TODO: make it possible to call Client.connect() inside one of the
+        # handlers without any coroutine syntax.  (ie. no yield from)
         yield from self.connection.connect()
 
     @asyncio.coroutine
     def disconnect(self):
+        # TODO: make it possible to call Client.disconnect() inside one of the
+        # handlers without any coroutine syntax.  (ie. no yield from)
         yield from self.connection.disconnect()
 
 
