@@ -1,7 +1,6 @@
 bottom
 ========
 :Build: |build|_ |coverage|_
-:Documentation: http://bottom.readthedocs.org/
 :Downloads: http://pypi.python.org/pypi/bottom
 :Source: https://github.com/numberoverzero/bottom
 
@@ -22,15 +21,17 @@ Getting Started
 ::
 
     from bottom import Client
-    nick = 'bottom-bot'
+
+    NICK = 'bottom-bot'
     channel = '#python'
+
     bot = Client('localhost', 6697)
-    bot.nick = 'bottom-bot'
+
 
     @bot.on('CLIENT_CONNECT')
     def connect():
-        bot.send('NICK', bot.nick)
-        bot.send('USER', bot.nick, 0, '*', message="Bot using bottom.py")
+        bot.send('NICK', NICK)
+        bot.send('USER', NICK, 0, '*', message="Bot using bottom.py")
         bot.send('JOIN', channel)
 
 
@@ -41,15 +42,63 @@ Getting Started
 
     @bot.on('PRIVMSG')
     def message(nick, target, message):
-        ''' Echo messages read '''
+        ''' Echo all messages '''
+
         # Don't echo ourselves
-        if nick == bot.nick:
+        if nick == NICK:
             return
         # Direct message to bot
-        if target == bot.nick:
+        if target == NICK:
             bot.send("PRIVMSG", nick, message=message)
         # Message in channel
         else:
             bot.send("PRIVMSG", target, message=message)
 
     bot.run()
+
+Client API
+============
+
+Client.run
+----------
+
+Client.on
+----------
+
+Client.connect
+--------------
+
+Client.disconnect
+-----------------
+
+Client.send
+-----------
+
+Supported Commands
+==================
+
+All commands and responses listed in http://tools.ietf.org/html/rfc2812
+will be available.  Currently, only the following have working parsers:
+
+* PING
+* CLIENT_CONNECT
+* CLIENT_DISCONNECT
+* NOTICE
+* PRIVMSG
+* JOIN
+* PART
+* QUIT
+* RPL_MOTDSTART
+* RPL_MOTD
+* RPL_ENDOFMOTD
+* RPL_LUSEROP
+* RPL_LUSERUNKNOWN
+* RPL_LUSERCHANNELS
+* RPL_MYINFO
+* RPL_BOUNCE
+* RPL_WELCOME
+* RPL_YOURHOST
+* RPL_CREATED
+* RPL_LUSERCLIENT
+* RPL_LUSERME
+* RPL_STATSDLINE
