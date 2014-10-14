@@ -4,15 +4,16 @@ __all__ = ["unpack", "validate"]
 
 
 def user_prefix(prefix, kwargs):
-    if '!' in prefix:
-        nick, remainder = prefix.split('!', 1)
-        kwargs['nick'] = nick
-        if '@' in remainder:
-            kwargs['user'], kwargs['host'] = remainder.split('@', 1)
-        else:
-            kwargs['user'] = remainder
+    if not prefix:
+        return
+    if '!' not in prefix:
+        kwargs['nick'] = prefix
+        return
+    kwargs['nick'], remainder = prefix.split('!', 1)
+    if '@' in remainder:
+        kwargs['user'], kwargs['host'] = remainder.split('@', 1)
     else:
-        kwargs['user'] = prefix
+        kwargs['user'] = remainder
 
 
 def msg_parser(prefix, params, message):
