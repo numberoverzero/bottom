@@ -227,7 +227,7 @@ for entry in RAW_COMMANDS:
         WIRE_COMMANDS[number] = number
         WIRE_COMMANDS[string] = number
     # Typo in setup
-    else:
+    else:  # pragma: no cover
         raise ValueError(
             "Unexpected entry in RAW_COMMANDS: '{}'".format(entry))
 

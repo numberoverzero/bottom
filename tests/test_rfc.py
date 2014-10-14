@@ -1,6 +1,36 @@
 from bottom import rfc
 
 
+def test_unique_command():
+
+    ''' handle various cases, numeric codes, unknown commands '''
+    tests = [
+        ("RPL_WELCOME", "RPL_WELCOME"),  # Defined code
+        ("Rpl_WElcOME", "RPL_WELCOME"),  # Defined code, case
+        ("001", "RPL_WELCOME"),  # Numeric code
+        ("UNKNOWN", "UNKNOWN"),  # Undefined code
+        ("unknown", "UNKNOWN"),  # Undefined code, case
+    ]
+
+    for command, expected in tests:
+        assert rfc.unique_command(command) == expected
+
+
+def test_wire_command():
+
+    ''' handle various cases, numeric codes, unknown commands '''
+    tests = [
+        ("RPL_WELCOME", "001"),  # Defined code
+        ("Rpl_WElcOME", "001"),  # Defined code, case
+        ("001", "001"),          # Numeric code
+        ("UNKNOWN", "UNKNOWN"),  # Undefined code
+        ("unknown", "UNKNOWN"),  # Undefined code, case
+    ]
+
+    for command, expected in tests:
+        assert rfc.wire_command(command) == expected
+
+
 def test_wire_format_args():
 
     ''' all arguments provided '''
