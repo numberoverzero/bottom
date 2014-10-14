@@ -174,7 +174,7 @@ Pseudocode::
 Client.connect
 --------------
 
-`This is a coroutine.`
+*This is a coroutine.*
 
 Attempt to reconnect using the client's host, port.  This is a passthrough to
 the underlying Connection.  Because it is a coroutine, you MUST invoke this
@@ -185,7 +185,7 @@ the event handler will make sure it wraps synchronous functions in a coroutine.
 Client.disconnect
 -----------------
 
-`This is a coroutine.`
+*This is a coroutine.*
 
 Disconnect from the server if connected.  This is a passthrough to the
 underlying Connection.  Because it is a coroutine, you MUST invoke this using
@@ -230,21 +230,22 @@ Or a PONG would be::
 Other Classes and Modules
 -------------------------
 
-The `routing` module is used to unpack an irc line into the appropriate named
+The ``routing`` module is used to unpack an irc line into the appropriate named
 objects based on the command's grammar.
 
-The `rfc` module holds a set of command aliases and the full list of rfc2812's
+The ``rfc`` module holds a set of command aliases and the full list of rfc2812's
 available command and response strings.  It primarily parses a single line of
 text into a (prefix, command, params, message) tuple which is (usually)
 consumed by the router.  It also handles dumping a command into the appropriate
 wire format.
 
-The `Connection` class handles the main read/write loop and socket connections,
+The ``Connection`` class handles the main read/write loop and socket connections,
 and is entirely asynchronous.
 
-The `Handler` class is used to distribute events and register functions
-decorated by `Client.on`.  It does some optimization using the `partial_bind`
-function to speed up the connection read -> function call time.
+The ``Handler`` class is used to distribute events and register functions
+decorated by ``Client.on``.  It does some optimization using the
+``partial_bind`` function to speed up the connection read -> function call
+time.
 
 Supported Commands
 ==================
