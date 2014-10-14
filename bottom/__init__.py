@@ -76,14 +76,10 @@ class Client(object):
 
     @asyncio.coroutine
     def connect(self):
-        # TODO: make it possible to call Client.connect() inside one of the
-        # handlers without any coroutine syntax.  (ie. no yield from)
         yield from self.connection.connect()
 
     @asyncio.coroutine
     def disconnect(self):
-        # TODO: make it possible to call Client.disconnect() inside one of the
-        # handlers without any coroutine syntax.  (ie. no yield from)
         yield from self.connection.disconnect()
 
 
@@ -98,6 +94,8 @@ class Connection(object):
 
     @asyncio.coroutine
     def connect(self):
+        if self.connected:
+            return
         self.reader, self.writer = yield from asyncio.open_connection(
             self.host, self.port, ssl=self.ssl)
         self._connected = True
@@ -106,6 +104,8 @@ class Connection(object):
 
     @asyncio.coroutine
     def disconnect(self):
+        if not self.connected:
+            return
         if self.writer:
             self.writer.close()
         self._connected = False
@@ -141,7 +141,10 @@ class Connection(object):
                 yield from self.disconnect()
 
     def send(self, msg):
-        self.writer.write((msg.strip() + '\n').encode(self.encoding))
+        if self.connected:
+            self.writer.write((msg.strip() + '\n').encode(self.encoding))
+        else:
+            raise ValueError("Must be connected to call send")
 
     @asyncio.coroutine
     def read(self):
