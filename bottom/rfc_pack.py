@@ -11,7 +11,7 @@ def f(field, kwargs, default=missing):
     return str(kwargs[field])
 
 
-def packed(field, kwargs, default=missing, sep=","):
+def pack(field, kwargs, default=missing, sep=","):
     ''' Util for joining multiple fields with commas '''
     if default is not missing:
         value = kwargs.get(field, default)
@@ -20,7 +20,7 @@ def packed(field, kwargs, default=missing, sep=","):
 
     if isinstance(value, str):
         return value
-    elif isinstance(value, collections.abc.iterable):
+    elif isinstance(value, collections.abc.Iterable):
         return sep.join(str(f) for f in value)
     else:
         return str(value)
@@ -61,12 +61,14 @@ def pack_command(command, **kwargs):
     #
     # ALL CMDS    RENAMED param FROM <nickname> TO <nick>
     #             RENAMED param FROM <user> TO <nick>
+    #                 EXCEPT USER, OPER
     #             RENAMED param FROM <comment> TO <message>
     # ------------------------------------------------------------
     # USER        mode defaults to 0
     # MODE        split into USERMODE and CHANNELMODE.
     #             USERMODE conforms to 3.1.5 User Mode message
     #             CHANNELMODE conforms to 3.
+    # USERMODE    (see MODE)
     # QUIT        RENAMED param FROM <Quit Message> TO <message>
     # JOIN        param <channel> can be a list of channels
     #             param <key> can be a list of keys
@@ -211,9 +213,9 @@ def pack_command(command, **kwargs):
     # JOIN #foo
     # JOIN 0
     elif command == "JOIN":
-        base = "JOIN " + packed("channel", kwargs)
+        base = "JOIN " + pack("channel", kwargs)
         if "key" in kwargs:
-            return base + " " + packed("key", kwargs)
+            return base + " " + pack("key", kwargs)
         return base
 
     # PART
@@ -223,7 +225,7 @@ def pack_command(command, **kwargs):
     # PART #foo :I lost
     # PART #foo
     elif command == "PART":
-        base = "PART " + packed("channel", kwargs)
+        base = "PART " + pack("channel", kwargs)
         if "message" in kwargs:
             return base + " :" + f("message", kwargs)
         return base
@@ -236,7 +238,7 @@ def pack_command(command, **kwargs):
     # CHANNELMODE #en-ops +v WiZ
     # CHANNELMODE #Fins -s
     elif command == "CHANNELMODE":
-        base = "MODE {} {}".format(f("channel", kwargs), f("modes"))
+        base = "MODE {} {}".format(f("channel", kwargs), f("modes", kwargs))
         if "params" in kwargs:
             return base + " " + f("params", kwargs)
         return base
@@ -262,7 +264,7 @@ def pack_command(command, **kwargs):
     # NAMES
     elif command == "NAMES":
         if "channel" in kwargs:
-            return "NAMES :" + packed("channel", kwargs)
+            return "NAMES " + pack("channel", kwargs)
         return "NAMES"
 
     # LIST
@@ -273,7 +275,7 @@ def pack_command(command, **kwargs):
     # LIST
     elif command == "LIST":
         if "channel" in kwargs:
-            return "LIST :" + packed("channel", kwargs)
+            return "LIST " + pack("channel", kwargs)
         return "LIST"
 
     # INVITE
@@ -293,9 +295,9 @@ def pack_command(command, **kwargs):
     # KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
     elif command == "KICK":
         base = "KICK {} {}".format(
-            packed("channel", kwargs), packed("nick", kwargs))
+            pack("channel", kwargs), pack("nick", kwargs))
         if "message" in kwargs:
-            return base + " :" + packed("message", kwargs)
+            return base + " :" + pack("message", kwargs)
         return base
 
     # PRIVMSG
@@ -458,7 +460,7 @@ def pack_command(command, **kwargs):
     # WHOIS jto* o
     # WHOIS *.fi
     elif command == "WHOIS":
-        return "WHOIS " + packed("mask", kwargs)
+        return "WHOIS " + pack("mask", kwargs)
 
     # WHOWAS
     # https://tools.ietf.org/html/rfc2812#section-3.6.3
@@ -467,7 +469,7 @@ def pack_command(command, **kwargs):
     # WHOWAS Wiz 9
     # WHOWAS Mermaid
     elif command == "WHOWAS":
-        base = "WHOWAS " + packed("nick", kwargs)
+        base = "WHOWAS " + pack("nick", kwargs)
         if "count" in kwargs:
             return base + " " + f("count", kwargs)
         return base
@@ -561,7 +563,7 @@ def pack_command(command, **kwargs):
     # USERHOST Wiz Michael syrk
     # USERHOST syrk
     elif command == "USERHOST":
-        return "USERHOST " + packed("nick", kwargs, sep=" ")
+        return "USERHOST " + pack("nick", kwargs, sep=" ")
 
     # ISON
     # http://tools.ietf.org/html/rfc2812#section-4.9
@@ -570,7 +572,7 @@ def pack_command(command, **kwargs):
     # ISON Wiz Michael syrk
     # ISON syrk
     elif command == "ISON":
-        return "ISON " + packed("nick", kwargs, sep=" ")
+        return "ISON " + pack("nick", kwargs, sep=" ")
 
     else:
         raise ValueError("Unknown command '{}'".format(command))
