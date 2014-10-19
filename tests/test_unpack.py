@@ -1,4 +1,4 @@
-from bottom.unpack import unpack_command, parameters
+from bottom.unpack import unpack_command, parameters, synonym
 import pytest
 
 
@@ -27,6 +27,14 @@ def test_unknown_command():
 def test_ignore_case():
     ''' input case doesn't matter '''
     assert ("PING", {"message": "m"}) == unpack_command("pInG :m")
+
+
+def test_synonym():
+    ''' numeric -> string '''
+    # Defined commands
+    assert synonym("001") == synonym("RPL_WELCOME") == "RPL_WELCOME"
+    # Unkown, even impossible commands
+    assert synonym("!@#test") == synonym("!@#TEST") == "!@#TEST"
 
 
 # =====================================
