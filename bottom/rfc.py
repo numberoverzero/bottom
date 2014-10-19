@@ -1,27 +1,47 @@
 ''' Parse messages into python args, kwargs according to rfc 2812 '''
-#  http://tools.ietf.org/html/rfc2812
 import re
+#  http://tools.ietf.org/html/rfc2812
+__all__ = ["get_event", "get_command", "get_event_parameters",
+           "EVENTS", "to_wire", "from_wire"]
 
-__all__ = ["unique_command", "wire_format", "parse"]
 
-RE_IRCLINE = re.compile(
-    """
-    ^
-    (:(?P<prefix>[^\s]+)\s+)?    # Optional prefix (src, nick!host, etc)
-                                 # Prefix matches all non-space characters
-                                 # Must start with a ':' character
+def get_event(command):
+    '''
+    Return the unique string that a command maps to
 
-    (?P<command>[^:\s]+)          # Command is required (JOIN, 001, 403)
-                                 # Command matches all non-space characters
+    If input command isn't known, returns input
+    '''
+    try:
+        return COMMANDS[command.upper()]
+    except KeyError:
+        return command
 
-    (?P<params>(\s+[^:][^\s]*)*) # Optional params after command
-                                 # Must have at least one leading space
-                                 # Params end at first ':' which starts message
 
-    (?:\s+:(?P<message>.*))?     # Optional message starts after first ':'
-                                 # Must have at least one leading space
-    $
-    """, re.VERBOSE)
+def get_command(event):
+    '''
+    Return the wire command that an event maps to
+
+    If input command isn't known, returns input
+    '''
+    try:
+        return WIRE_COMMANDS[event.upper()]
+    except KeyError:
+        return event
+
+
+def get_event_parameters(event):
+
+    event_name = get_event(event)
+    try:
+        event_block = EVENTS[event_name]
+    except KeyError:
+        raise ("Unknown event '{}'".format(event))
+    try:
+        params = event_block["parameters"]
+    except KeyError:
+        raise("Event '{}' has no parameters".format(event))
+    return params
+
 
 RAW_COMMANDS = set([
     #  3.1 Connection Registration
@@ -220,7 +240,6 @@ for entry in RAW_COMMANDS:
         WIRE_COMMANDS[entry] = entry
     # Numeric <--> str pair
     elif isinstance(entry, tuple):
-        assert len(entry) == 2
         number, string = entry
         COMMANDS[number] = string
         COMMANDS[string] = string
@@ -231,66 +250,263 @@ for entry in RAW_COMMANDS:
         raise ValueError(
             "Unexpected entry in RAW_COMMANDS: '{}'".format(entry))
 
-
-def unique_command(command):
-    '''
-    Return the unique string that a command maps to
-
-    If input command isn't known, returns the uppercase version.
-    '''
-    command = command.upper()
-    try:
-        return COMMANDS[command]
-    except KeyError:
-        return command
+# =================================================
 
 
-def wire_command(command):
-    '''
-    Return the representation a command uses on the wire
-
-    If input command isn't known, returns the uppercase version.
-    '''
-    command = command.upper()
-    try:
-        return WIRE_COMMANDS[command]
-    except KeyError:
-        return command
+def parse_nick(prefix, kwargs):
+    kwargs['nick'], remainder = prefix.split('!', 1)
+    kwargs['user'], kwargs['host'] = remainder.split('@', 1)
 
 
-def wire_format(command, params=None, message=None, prefix=None):
-    """ Return the correct wire format of a command """
-    s = ''
-    if prefix:
-        s += ":{} ".format(prefix)
-    s += wire_command(command)
-    if params:
-        for param in params:
-            s += " " + str(param)
+def pack_user(**kwargs):
+    parameters = [
+        kwargs["user"],
+        kwargs.get("mode", 0),
+        "*"  # Unused
+    ]
+    message = kwargs.get("realname", "user")
+    return ("USER", parameters, message)
+
+
+def unpack_mode(prefix, params, message):
+    pass
+
+
+def pack_mode(**kwargs):
+    channel = kwargs.get("channel", None)
+    # Channel mode
+    # MODE #Finnish +imI *!*@*.fi
+    # MODE #Fins -s
+    # MODE #42 +k oulu
+    if channel:
+        params = [channel, kwargs["modes"]]
+        modeparams = kwargs.get("modeparams", None)
+        if modeparams:
+            params.append(modeparams)
+        return ("MODE", params, "")
+    # User mode
+    # MODE WiZ -w
+    # MODE Angel +i
+    else:
+        return ("MODE", [kwargs["nick"], kwargs["modes"]], "")
+
+
+def unpack_quit(prefix, params, message):
+    kwargs = {}
+    parse_nick(prefix, kwargs)
     if message:
-        s += " :{}".format(message)
-    return s
+        kwargs['message'] = message
+    return kwargs
 
 
-def normalize(match):
-    prefix = match.group("prefix")
+def unpack_join(prefix, params, message):
+    kwargs = {}
+    parse_nick(prefix, kwargs)
+    kwargs['channel'] = params[0]
+    return kwargs
+
+
+def pack_join(**kwargs):
+    channel = kwargs["channel"]
+    # Special flag to leave all channels
+    if channel == 0:
+        params = [0]
+    # single channel
+    elif isinstance(channel, str):
+        if "key" in kwargs:
+            params = [channel, kwargs["key"]]
+        else:
+            params = [channel]
+    else:
+        raise ValueError("Unknown format for channel '{}'".format(channel))
+    return ("JOIN", params, "")
+
+
+def unpack_part(prefix, params, message):
+    kwargs = {}
+    parse_nick(prefix, kwargs)
+    kwargs['channel'] = params[0]
+    if message:
+        kwargs['message'] = message
+    return kwargs
+
+
+def unpack_privmsg(prefix, params, message):
+    kwargs = {}
+    parse_nick(prefix, kwargs)
+    kwargs['target'] = params[0]
+    kwargs['message'] = message
+    return kwargs
+
+
+RAW_EVENTS = [
+    {
+        "command": "CLIENT_CONNECT",
+        "parameters": ["host", "port"],
+        # No unpack/pack - client-side event
+    },
+    {
+        "command": "CLIENT_DISCONNECT",
+        "parameters": ["host", "port"],
+        # No unpack/pack - client-side event
+    },
+    # unpack (prefix, params, message) --> **kwargs
+    # pack **kwargs --> (prefix, command, params, message)
+    {
+        "command": "PASS",
+        # No unpack - servers don't send PASS
+        "pack": lambda **k: ("PASS", [k["password"]], "")
+    },
+    {
+        "command": "NICK",
+        # No unpack - servers don't send NICK
+        "pack": lambda **k: ("NICK", [k["nick"]], "")
+    },
+    {
+        "command": "USER",
+        # No unpack - servers don't send USER
+        "pack": pack_user
+    },
+    {
+        "command": "OPER",
+        # No unpack - servers don't send OPER
+        "pack": lambda **k: ("OPER", [k["name"], k["password"]], "")
+    },
+    {
+        "command": "MODE",
+        "parameters": ["nick", "user", "host", "modes",
+                       "channel", "modeparams"],
+        # No unpack for user MODE
+        "pack": pack_mode
+    },
+    {
+        "command": "SERVICE",
+        "pack": lambda **k: ("SERVICE",
+                             [k["nick"], "*", k["distribution"], k["type"], 0],
+                             k["info"])
+    },
+    {
+        "command": "QUIT",
+        "parameters": ["nick", "user", "host", "message"],
+        "unpack": unpack_quit,
+        "pack": lambda **k: ("QUIT", [], k.get("message", ""))
+    },
+    {
+        "command": "SQUIT",
+        "parameters": ["server", "comment", "from"],
+        "unpack": lambda prefix, param, comment: {"from": prefix,
+                                                  "server": param[0],
+                                                  "comment": comment},
+        "pack": lambda **k: ("SQUIT", [k["server"]], k["comment"])
+    },
+    {
+        "command": "JOIN",
+        "parameters": ["nick", "user", "host", "channel"],
+        "unpack": unpack_join,
+        "pack": pack_join
+    },
+    {
+        "command": "PART",
+        "parameters": ["nick", "user", "host", "channel", "message"],
+        "unpack": unpack_part,
+        "pack": lambda **k: ("PART", [k["channel"]], k.get("message", ""))
+    },
+    {
+        "command": "PING",
+        "parameters": ["message"],
+        "unpack": lambda _, __, message: {"message": message},
+        # No pack - Why is client sending ping?
+    },
+    {
+        "command": "PONG",
+        # No unpack - Why is server sending ping?
+        "pack": lambda **kwargs: ("PONG", [], kwargs["message"])
+    },
+    {
+        "command": "PRIVMSG",
+        "parameters": ["nick", "user", "host", "target", "message"],
+        "unpack": unpack_privmsg,
+        "pack": lambda **k: ("PRIVMSG", [k["target"]], k["message"])
+    }
+
+]
+
+EVENTS = {}
+
+for config_block in RAW_EVENTS:
+    event = {}
+    command = config_block["command"]
+    if "parameters" in config_block:
+        event["parameters"] = config_block["parameters"]
+    if "unpack" in config_block:
+        event["unpack"] = config_block["unpack"]
+    if "pack" in config_block:
+        event["pack"] = config_block["pack"]
+    EVENTS[get_command(command)] = event
+
+
+RE_IRCLINE = re.compile(
+    """
+    ^
+    (:(?P<prefix>[^\s]+)\s+)?    # Optional prefix (src, nick!host, etc)
+                                 # Prefix matches all non-space characters
+                                 # Must start with a ':' character
+
+    (?P<command>[^:\s]+)          # Command is required (JOIN, 001, 403)
+                                 # Command matches all non-space characters
+
+    (?P<params>(\s+[^:][^\s]*)*) # Optional params after command
+                                 # Must have at least one leading space
+                                 # Params end at first ':' which starts message
+
+    (?:\s+:(?P<message>.*))?     # Optional message starts after first ':'
+                                 # Must have at least one leading space
+    $
+    """, re.VERBOSE)
+
+
+def split_line(msg):
+    ''' Parse message according to rfc 2812 for routing '''
+    match = RE_IRCLINE.match(msg)
+    if not match:
+        raise ValueError("Invalid line")
+
+    prefix = match.group("prefix") or ''
     command = match.group("command")
-    params = match.group('params')
-    message = match.group('message')
-
-    # Normalize
-    prefix = prefix or ''
-    command = unique_command(command)
-    params = (params or '').split()
-    message = message or ''
+    params = (match.group('params') or '').split()
+    message = match.group('message') or ''
 
     return prefix, command, params, message
 
 
-def parse(msg):
-    ''' Parse message according to rfc 2812 for routing '''
-    match = RE_IRCLINE.match(msg)
-    if not match:
-        return None
-    #  prefix, command, params, message
-    return normalize(match)
+def join_line(command, params, message):
+    parts = []
+    parts.append(get_command(command))
+    if params:
+        parts.append(" ".join(str(p) for p in params))
+    if message:
+        parts.append(":" + message)
+    return " ".join(parts)
+
+
+def from_wire(msg):
+    try:
+        prefix, command, params, message = split_line(msg)
+    except ValueError:
+        return None, {}
+    event = get_event(command)
+    try:
+        unpack = EVENTS[event]['unpack']
+    except KeyError:
+        return event, {}
+    return event, unpack(prefix, params, message)
+
+
+def to_wire(command, **kwargs):
+    event = get_event(command)
+    try:
+        pack = EVENTS[event]['pack']
+    except KeyError:
+        raise ValueError("Unknown command '{}'".format(command))
+    command, params, message = pack(**kwargs)
+    return join_line(command, params, message)
