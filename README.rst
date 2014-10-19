@@ -2,7 +2,7 @@ bottom 0.9.1
 ============
 
 :Build: |build|_ |coverage|_
-:Downloads: s://pypi.python.org/pypi/bottom
+:Downloads: https://pypi.python.org/pypi/bottom
 :Source: https://github.com/numberoverzero/bottom
 
 .. |build| image:: https://travis-ci.org/numberoverzero/bottom.svg?branch=master
