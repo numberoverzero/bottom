@@ -6,11 +6,16 @@ missing = object()
 
 class EventsMixin(object):
     def __init__(self, getparams):
-        # Dictionary of event : set(func)
-        # where event is a string, and set(func) is the set of functions
+        '''
+        getparams is a function that takes a single argument (event) and
+        returns a list of parameters for the event.  It should raise on unknown
+        events.
+        '''
+        # Dictionary of event : list(func)
+        # where event is a string, and list(func) is the list of functions
         # (wrapped and decorated) that will be invoked when the given event
         # is triggered.
-        self.__partials__ = collections.defaultdict(set)
+        self.__partials__ = collections.defaultdict(list)
         self.__getparams__ = getparams
 
     def __add_event__(self, event, func):
@@ -21,7 +26,7 @@ class EventsMixin(object):
         '''
         parameters = self.__getparams__(event)
         validate_func(event, func, parameters)
-        self.__partials__[event].add(partial_bind(func))
+        self.__partials__[event].append(partial_bind(func))
         return func
 
     @asyncio.coroutine
@@ -64,6 +69,7 @@ class EventsMixin(object):
 
 def validate_func(event, func, parameters):
     sig = inspect.signature(func)
+    expected = set(sig.parameters)
     for param in sig.parameters.values():
         kind = param.kind
         if kind == inspect.Parameter.VAR_POSITIONAL:
@@ -85,7 +91,10 @@ def validate_func(event, func, parameters):
                      "used as the **VAR_KEYWORD argument.  They may be "
                      "omitted").format(
                         func.__name__, param.name, event, parameters))
-    expected = set(sig.parameters)
+            else:
+                # Pop from expected, this will gobble up any unused params
+                expected.remove(param.name)
+
     available = set(parameters)
     unavailable = expected - available
     if unavailable:
