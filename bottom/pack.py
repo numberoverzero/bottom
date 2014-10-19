@@ -1,5 +1,5 @@
 """ Simplified support for rfc2812 """
-# http://tools.ietf.org/html/rfc2812
+# https://tools.ietf.org/html/rfc2812
 import collections
 missing = object()
 
@@ -122,7 +122,7 @@ def pack_command(command, **kwargs):
     # ========================================================================
 
     # PASS
-    # http://tools.ietf.org/html/rfc2812#section-3.1.1
+    # https://tools.ietf.org/html/rfc2812#section-3.1.1
     # PASS <password>
     # ----------
     # PASS secretpasswordhere
@@ -130,7 +130,7 @@ def pack_command(command, **kwargs):
         return "PASS " + f("password", kwargs)
 
     # NICK
-    # http://tools.ietf.org/html/rfc2812#section-3.1.2
+    # https://tools.ietf.org/html/rfc2812#section-3.1.2
     # NICK <nick>
     # ----------
     # NICK Wiz
@@ -138,7 +138,7 @@ def pack_command(command, **kwargs):
         return "NICK " + f("nick", kwargs)
 
     # USER
-    # http://tools.ietf.org/html/rfc2812#section-3.1.3
+    # https://tools.ietf.org/html/rfc2812#section-3.1.3
     # USER <user> [<mode>] <realname>
     # ----------
     # USER guest 8 :Ronnie Reagan
@@ -150,7 +150,7 @@ def pack_command(command, **kwargs):
             f("realname", kwargs))
 
     # OPER
-    # http://tools.ietf.org/html/rfc2812#section-3.1.4
+    # https://tools.ietf.org/html/rfc2812#section-3.1.4
     # OPER <user> <password>
     # ----------
     # OPER AzureDiamond hunter2
@@ -158,7 +158,7 @@ def pack_command(command, **kwargs):
         return "OPER {} {}".format(f("user", kwargs), f("password", kwargs))
 
     # USERMODE (renamed from MODE)
-    # http://tools.ietf.org/html/rfc2812#section-3.1.5
+    # https://tools.ietf.org/html/rfc2812#section-3.1.5
     # USERMODE <nick> <modes>
     # ----------
     # USERMODE WiZ -w
@@ -167,7 +167,7 @@ def pack_command(command, **kwargs):
         return "MODE {} {}".format(f("nick", kwargs), f("modes", kwargs))
 
     # SERVICE
-    # http://tools.ietf.org/html/rfc2812#section-3.1.6
+    # https://tools.ietf.org/html/rfc2812#section-3.1.6
     # SERVICE <nick> <distribution> <type> <info>
     # ----------
     # SERVICE dict *.fr 0 :French
@@ -179,7 +179,7 @@ def pack_command(command, **kwargs):
             f("info", kwargs))
 
     # QUIT
-    # http://tools.ietf.org/html/rfc2812#section-3.1.7
+    # https://tools.ietf.org/html/rfc2812#section-3.1.7
     # QUIT [<message>]
     # ----------
     # QUIT :Gone to lunch
@@ -190,7 +190,7 @@ def pack_command(command, **kwargs):
         return "QUIT"
 
     # SQUIT
-    # http://tools.ietf.org/html/rfc2812#section-3.1.8
+    # https://tools.ietf.org/html/rfc2812#section-3.1.8
     # SQUIT <server> [<message>]
     # ----------
     # SQUIT tolsun.oulu.fi :Bad Link
@@ -202,7 +202,7 @@ def pack_command(command, **kwargs):
         return base
 
     # JOIN
-    # http://tools.ietf.org/html/rfc2812#section-3.2.1
+    # https://tools.ietf.org/html/rfc2812#section-3.2.1
     # JOIN <channel> [<key>]
     # ----------
     # JOIN #foo fookey
@@ -215,7 +215,7 @@ def pack_command(command, **kwargs):
         return base
 
     # PART
-    # http://tools.ietf.org/html/rfc2812#section-3.2.2
+    # https://tools.ietf.org/html/rfc2812#section-3.2.2
     # PART <channel> [<message>]
     # ----------
     # PART #foo :I lost
@@ -227,7 +227,7 @@ def pack_command(command, **kwargs):
         return base
 
     # CHANNELMODE (renamed from MODE)
-    # http://tools.ietf.org/html/rfc2812#section-3.2.3
+    # https://tools.ietf.org/html/rfc2812#section-3.2.3
     # CHANNELMODE <channel> <modes> [<params>]
     # ----------
     # CHANNELMODE #Finnish +imI *!*@*.fi
@@ -240,7 +240,7 @@ def pack_command(command, **kwargs):
         return base
 
     # TOPIC
-    # http://tools.ietf.org/html/rfc2812#section-3.2.4
+    # https://tools.ietf.org/html/rfc2812#section-3.2.4
     # TOPIC <channel> [<message>]
     # ----------
     # TOPIC #test :New topic
@@ -253,7 +253,7 @@ def pack_command(command, **kwargs):
         return base
 
     # NAMES
-    # http://tools.ietf.org/html/rfc2812#section-3.2.5
+    # https://tools.ietf.org/html/rfc2812#section-3.2.5
     # NAMES [<channel>]
     # ----------
     # NAMES #twilight_zone
@@ -264,7 +264,7 @@ def pack_command(command, **kwargs):
         return "NAMES"
 
     # LIST
-    # http://tools.ietf.org/html/rfc2812#section-3.2.6
+    # https://tools.ietf.org/html/rfc2812#section-3.2.6
     # LIST [<channel>]
     # ----------
     # LIST #twilight_zone
@@ -275,7 +275,7 @@ def pack_command(command, **kwargs):
         return "LIST"
 
     # INVITE
-    # http://tools.ietf.org/html/rfc2812#section-3.2.7
+    # https://tools.ietf.org/html/rfc2812#section-3.2.7
     # INVITE <nick> <channel>
     # ----------
     # INVITE Wiz #Twilight_Zone
@@ -283,7 +283,7 @@ def pack_command(command, **kwargs):
         return "INVITE {} {}".format(f("nick", kwargs), f("channel", kwargs))
 
     # KICK
-    # http://tools.ietf.org/html/rfc2812#section-3.2.8
+    # https://tools.ietf.org/html/rfc2812#section-3.2.8
     # KICK <channel> <nick> [<message>]
     # ----------
     # KICK #Finnish WiZ :Speaking English
@@ -297,7 +297,7 @@ def pack_command(command, **kwargs):
         return base
 
     # PRIVMSG
-    # http://tools.ietf.org/html/rfc2812#section-3.3.1
+    # https://tools.ietf.org/html/rfc2812#section-3.3.1
     # PRIVMSG <target> <message>
     # ----------
     # PRIVMSG Angel :yes I'm receiving it !
@@ -308,7 +308,7 @@ def pack_command(command, **kwargs):
             f("target", kwargs), f("message", kwargs))
 
     # NOTICE
-    # http://tools.ietf.org/html/rfc2812#section-3.3.2
+    # https://tools.ietf.org/html/rfc2812#section-3.3.2
     # NOTICE <target> <message>
     # ----------
     # NOTICE Angel :yes I'm receiving it !
@@ -319,7 +319,7 @@ def pack_command(command, **kwargs):
             f("target", kwargs), f("message", kwargs))
 
     # MOTD
-    # http://tools.ietf.org/html/rfc2812#section-3.4.1
+    # https://tools.ietf.org/html/rfc2812#section-3.4.1
     # MOTD
     # ----------
     # MOTD
@@ -327,7 +327,7 @@ def pack_command(command, **kwargs):
         return "MOTD"
 
     # LUSERS
-    # http://tools.ietf.org/html/rfc2812#section-3.4.2
+    # https://tools.ietf.org/html/rfc2812#section-3.4.2
     # LUSERS [<mask>]
     # ----------
     # LUSERS *.edu
@@ -338,7 +338,7 @@ def pack_command(command, **kwargs):
         return "LUSERS"
 
     # VERSION
-    # http://tools.ietf.org/html/rfc2812#section-3.4.3
+    # https://tools.ietf.org/html/rfc2812#section-3.4.3
     # VERSION
     # ----------
     # VERSION
@@ -346,7 +346,7 @@ def pack_command(command, **kwargs):
         return "VERSION"
 
     # STATS
-    # http://tools.ietf.org/html/rfc2812#section-3.4.4
+    # https://tools.ietf.org/html/rfc2812#section-3.4.4
     # STATS [<query>]
     # ----------
     # STATS m
@@ -357,7 +357,7 @@ def pack_command(command, **kwargs):
         return "STATS"
 
     # LINKS
-    # http://tools.ietf.org/html/rfc2812#section-3.4.5
+    # https://tools.ietf.org/html/rfc2812#section-3.4.5
     # LINKS [<remote>] [<mask>]
     # ----------
     # LINKS *.edu *.bu.edu
@@ -371,7 +371,7 @@ def pack_command(command, **kwargs):
         return "LINKS"
 
     # TIME
-    # http://tools.ietf.org/html/rfc2812#section-3.4.6
+    # https://tools.ietf.org/html/rfc2812#section-3.4.6
     # TIME
     # ----------
     # TIME
@@ -379,7 +379,7 @@ def pack_command(command, **kwargs):
         return "TIME"
 
     # CONNECT
-    # http://tools.ietf.org/html/rfc2812#section-3.4.7
+    # https://tools.ietf.org/html/rfc2812#section-3.4.7
     # CONNECT <target> <port> [<remote>]
     # ----------
     # CONNECT tolsun.oulu.fi 6667 *.edu
@@ -391,7 +391,7 @@ def pack_command(command, **kwargs):
         return base
 
     # TRACE
-    # http://tools.ietf.org/html/rfc2812#section-3.4.8
+    # https://tools.ietf.org/html/rfc2812#section-3.4.8
     # TRACE
     # ----------
     # TRACE
@@ -399,7 +399,7 @@ def pack_command(command, **kwargs):
         return "TRACE"
 
     # ADMIN
-    # http://tools.ietf.org/html/rfc2812#section-3.4.9
+    # https://tools.ietf.org/html/rfc2812#section-3.4.9
     # ADMIN
     # ----------
     # ADMIN
@@ -407,7 +407,7 @@ def pack_command(command, **kwargs):
         return "ADMIN"
 
     # INFO
-    # http://tools.ietf.org/html/rfc2812#section-3.4.10
+    # https://tools.ietf.org/html/rfc2812#section-3.4.10
     # INFO
     # ----------
     # INFO
@@ -415,7 +415,7 @@ def pack_command(command, **kwargs):
         return "INFO"
 
     # SERVLIST
-    # http://tools.ietf.org/html/rfc2812#section-3.5.1
+    # https://tools.ietf.org/html/rfc2812#section-3.5.1
     # SERVLIST [<mask>] [<type>]
     # ----------
     # SERVLIST *SERV 3
@@ -430,7 +430,7 @@ def pack_command(command, **kwargs):
         return "SERVLIST"
 
     # SQUERY
-    # http://tools.ietf.org/html/rfc2812#section-3.5.2
+    # https://tools.ietf.org/html/rfc2812#section-3.5.2
     # SQUERY <target> <message>
     # ----------
     # SQUERY irchelp :HELP privmsg
@@ -439,7 +439,7 @@ def pack_command(command, **kwargs):
             f("target", kwargs), f("message", kwargs))
 
     # WHO
-    # http://tools.ietf.org/html/rfc2812#section-3.6.1
+    # https://tools.ietf.org/html/rfc2812#section-3.6.1
     # WHO [<mask>]
     # ----------
     # WHO jto* o
@@ -491,7 +491,7 @@ def pack_command(command, **kwargs):
         return "PONG"
 
     # AWAY
-    # http://tools.ietf.org/html/rfc2812#section-4.1
+    # https://tools.ietf.org/html/rfc2812#section-4.1
     # AWAY [<message>]
     # ----------
     # AWAY :Gone to lunch.
@@ -502,7 +502,7 @@ def pack_command(command, **kwargs):
         return "AWAY"
 
     # REHASH
-    # http://tools.ietf.org/html/rfc2812#section-4.2
+    # https://tools.ietf.org/html/rfc2812#section-4.2
     # REHASH
     # ----------
     # REHASH
@@ -510,7 +510,7 @@ def pack_command(command, **kwargs):
         return "REHASH"
 
     # DIE
-    # http://tools.ietf.org/html/rfc2812#section-4.3
+    # https://tools.ietf.org/html/rfc2812#section-4.3
     # DIE
     # ----------
     # DIE
@@ -518,7 +518,7 @@ def pack_command(command, **kwargs):
         return "DIE"
 
     # RESTART
-    # http://tools.ietf.org/html/rfc2812#section-4.4
+    # https://tools.ietf.org/html/rfc2812#section-4.4
     # RESTART
     # ----------
     # RESTART
@@ -526,7 +526,7 @@ def pack_command(command, **kwargs):
         return "RESTART"
 
     # SUMMON
-    # http://tools.ietf.org/html/rfc2812#section-4.5
+    # https://tools.ietf.org/html/rfc2812#section-4.5
     # SUMMON <nick> [<channel>]
     # ----------
     # SUMMON Wiz #Finnish
@@ -538,7 +538,7 @@ def pack_command(command, **kwargs):
         return base
 
     # USERS
-    # http://tools.ietf.org/html/rfc2812#section-4.6
+    # https://tools.ietf.org/html/rfc2812#section-4.6
     # USERS
     # ----------
     # USERS
@@ -546,7 +546,7 @@ def pack_command(command, **kwargs):
         return "USERS"
 
     # WALLOPS
-    # http://tools.ietf.org/html/rfc2812#section-4.7
+    # https://tools.ietf.org/html/rfc2812#section-4.7
     # WALLOPS <message>
     # ----------
     # WALLOPS :Maintenance in 5 minutes
@@ -554,7 +554,7 @@ def pack_command(command, **kwargs):
         return "WALLOPS :" + f("message", kwargs)
 
     # USERHOST
-    # http://tools.ietf.org/html/rfc2812#section-4.8
+    # https://tools.ietf.org/html/rfc2812#section-4.8
     # USERHOST <nick>
     # ----------
     # USERHOST Wiz Michael syrk
@@ -563,7 +563,7 @@ def pack_command(command, **kwargs):
         return "USERHOST " + pack("nick", kwargs, sep=" ")
 
     # ISON
-    # http://tools.ietf.org/html/rfc2812#section-4.9
+    # https://tools.ietf.org/html/rfc2812#section-4.9
     # ISON <nick>
     # ----------
     # ISON Wiz Michael syrk

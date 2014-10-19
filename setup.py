@@ -9,6 +9,7 @@ REQUIREMENTS = [
 ]
 
 TEST_REQUIREMENTS = [
+    'tox',
     'pytest',
 ]
 
@@ -19,7 +20,7 @@ if __name__ == "__main__":
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[
-            'Development Status :: 3 - Alpha',
+            'Development Status :: 4 - Beta',
             'Intended Audience :: Developers',
             'License :: OSI Approved :: MIT License',
             'Operating System :: OS Independent',
@@ -32,9 +33,9 @@ if __name__ == "__main__":
         ],
         author='Joe Cross',
         author_email='joe.mcross@gmail.com',
-        url='http://bottom.readthedocs.org/',
+        url='https://github.com/numberoverzero/bottom',
         license='MIT',
-        keywords='meta metaclass declarative orm',
+        keywords='irc bot asnycio client',
         platforms='any',
         include_package_data=True,
         py_modules=['bottom'],

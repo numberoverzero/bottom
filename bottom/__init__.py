@@ -24,8 +24,8 @@ class Client(event.EventsMixin):
 
         Examples
         --------
-        bot.send('nick', nick='weatherbot')
-        bot.send('privmsg', target='#python', message="Hello, World!")
+        client.send('nick', nick='weatherbot')
+        client.send('privmsg', target='#python', message="Hello, World!")
 
         '''
         self.connection.send(pack.pack_command(command, **kwargs))

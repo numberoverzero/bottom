@@ -2,7 +2,7 @@ bottom 0.9.0
 ============
 
 :Build: |build|_ |coverage|_
-:Downloads: http://pypi.python.org/pypi/bottom
+:Downloads: s://pypi.python.org/pypi/bottom
 :Source: https://github.com/numberoverzero/bottom
 
 .. |build| image:: https://travis-ci.org/numberoverzero/bottom.svg?branch=master
@@ -36,9 +36,9 @@ routing style of bottle.py, hooking into events is one line.
 
     @bot.on('CLIENT_CONNECT')
     def connect():
-        bot.send('NICK', NICK)
-        bot.send('USER', NICK, 0, '*', message='Bot using bottom.py')
-        bot.send('JOIN', CHANNEL)
+        bot.send('NICK', nick=NICK)
+        bot.send('USER', user=NICK, realname='Bot using bottom.py')
+        bot.send('JOIN', channel=CHANNEL)
 
 
     @bot.on('PING')
@@ -55,44 +55,48 @@ routing style of bottle.py, hooking into events is one line.
             return
         # Direct message to bot
         if target == NICK:
-            bot.send("PRIVMSG", nick, message=message)
+            bot.send("PRIVMSG", target=nick, message=message)
         # Message in channel
         else:
-            bot.send("PRIVMSG", target, message=message)
+            bot.send("PRIVMSG", target=target, message=message)
 
     bot.run()
-
 
 API
 ===
 
-While there are other internal classes and structures, everything should be
-considered private except the ``Client`` class.
-
 Versioning
 ----------
 
-bottom strictly follows semver for its public API.  All private methods are
-subject to change at any time, and will correspond to a patch.  I have no
-moral qualms with a version 7.0 or 23.1, and the **public** api (currently,
-only the ``Client`` class) will adhere strictly to this.
-
-You should not rely on the behavior of any internal methods staying the same
-between minor versions, or even patches.
-
-A quick reminder:
-
-* **MAJOR** - Backwards incompatible in at least 1 way with the previous MAJOR
-  version.
-* **MINOR** - New functionality introduced, in a backwards-compatible way.
-* **PATCH** - Backwards-compatible
-
-The only anticipated change will (possibly) be to ``Client.send`` before the
-1.0.0 release.  The rest of the API should be considered stable, bar major
-complaints.
+* Bottom follows semver for its **public** API.
+* * Currently, ``Client`` is the only public member of bottom.
+* * IRC replies/codes which are not yet implemented may be added at any time,
+    and will correspond to a patch.  The contract of the ``@on`` method
+    does not change - this is only an expansion of legal inputs.
+* There are a number of unsupported parameters for IRC commands defined in
+  rfc2812 which should be added.  The list of all adjustments can be found in
+  ``bottom/pack.py`` in the notes of ``pack_command``.  Any changes listed
+  below will be made before 1.0.0, if they occur at all.
+* * RENAMES are unlikely to change by 1.0.0.
+* * MODE is split into USERMODE and CHANNELMODE and will not change.
+* * Any command that doesn't use the ``<target>`` parameter will be updated to
+    use it by 1.0.0
+* * WHO may get a boolean 'o' parameter
+* * PING may be implemented
+* * PONG may use ``server1`` and ``server2``
+* * PONG will continue to have ``message`` although not defined in rfc2812.
+* * ERROR may be implemented
+* All private methods are subject to change at any time, and will correspond
+  to a patch.
+* * You should not rely on the api of any internal methods staying the same
+    between minor versions.
+* Over time, private apis may be raised to become public.  The reverse will
+  never occur.
 
 Client.run
 ----------
+
+*This is a coroutine.*
 
 Start the magic.  This will connect the client, and then read until it
 disconnects.  The ``CLIENT_DISCONNECT`` event will fire before the loop exits,
@@ -161,7 +165,6 @@ wrapped, and will simply execute synchronously.  This allows those who want to
 take advantage of the async framework to do so, without adding syntactical
 overhead for those that don't need such features.
 
-
 Pseudocode::
 
     event_name
@@ -170,6 +173,13 @@ Pseudocode::
             register_for_event(event_name, function_to_wrap)
         except invalid_arguments:
             raise
+
+Client.trigger
+--------------
+
+*This is a coroutine.*
+
+TODO: Document trigger (manual injection of command/reply)
 
 Client.connect
 --------------
@@ -196,88 +206,184 @@ the event handler will make sure it wraps synchronous functions in a coroutine.
 Client.send
 -----------
 
-**API NOT FINAL** - see note below.
-
-Send a command to the server.  Any additional arguments will be sent as
-parameters for the command - a prefix for the command, as well as a message,
-can also be specified.
+Send a command to the server.  The available kwargs are documented below.
 
 Some examples::
 
-    Client.send('join', '#python')
+    Client.send('join', channel='#python')
         --> "JOIN #python"
-    Client.send('privmsg', 'pypi', '#python', message="Hello!")
-        --> "PRIVMSG pypi #python :Hello!"
-    Client.send('privmsg', '#troopers', prefix='rabbit!st3@vermont',
+    Client.send('privmsg', target='#python', message="Hello!")
+        --> "PRIVMSG #python :Hello!"
+    Client.send('privmsg', target='super_trooper_23',
                 message='you are freaking out... man.')
-        --> ":rabbit!st3@vermont PRIVMSG #troopers :you are freaking out... man."
-
-**API NOT FINAL**
-
-This is the only function that *may* change.  It still feels a bit low-level,
-and I think there's room to make it smarter about IRC commands, or less
-ambiguous about ordering.  For example, always taking a command + dict whose
-keys map to the equivalent values output by that command would remove the
-possible confusion around determining parameters automatically but requiring an
-explicit ``message=``.  For example, a PRIVMSG would be::
-
-    Client.send('privmsg', {'message': 'Hello, World', 'target': '#python'})
-
-Or a PONG would be::
-
-    Client.send('PONG', {'message': 'original ping message'})
+        --> "PRIVMSG super_trooper_23 :you are freaking out... man."
 
 Other Classes and Modules
 -------------------------
 
-The ``routing`` module is used to unpack an irc line into the appropriate named
-objects based on the command's grammar.
+The ``unpack`` module is used to unpack an irc line into the appropriate named
+objects based on the command's grammar.  It also houses the synonyms table for
+converting numeric responses to their equivalent string representations.
 
-The ``rfc`` module holds a set of command aliases and the full list of rfc2812's
-available command and response strings.  It primarily parses a single line of
-text into a (prefix, command, params, message) tuple which is (usually)
-consumed by the router.  It also handles dumping a command into the appropriate
-wire format.
+The ``pack`` module is used to pack an irc command and paramaters into the
+appropriate wire format based on the command's grammar.
 
-The ``Connection`` class handles the main read/write loop and socket connections,
-and is entirely asynchronous.
+The ``Connection`` class handles the main read loop, connecting and
+disconnecting from the server, and sending raw strings to the server.
 
-The ``Handler`` class is used to distribute events and register functions
-decorated by ``Client.on``.  It does some optimization using the
-``partial_bind`` function to speed up the connection read -> function call
-time.
+The ``event`` module contains the ``EventsMixin`` class which registers
+handlers and invokes them when the corresponding event is triggered.  It is
+used by the ``@Client.on`` decorator.  It does some optimization using the
+``partial_bind`` function to speed up argument injection.
 
 Supported Commands
 ==================
 
-All commands and responses listed in http://tools.ietf.org/html/rfc2812
-will be available.  Currently, only the following have working parsers:
+Send (``Client.send`` or ``Client.trigger``)
+--------------------------------------------
 
+* Local Events *(trigger only)*
+* * CLIENT_CONNECT
+* * CLIENT_DISCONNECT
+* `Connection Registration`_
+* * PASS
+* * NICK
+* * USER
+* * OPER
+* * USERMODE (renamed from MODE)
+* * SERVICE
+* * QUIT
+* * SQUIT
+* `Channel Operations`_
+* * JOIN
+* * PART
+* * CHANNELMODE (renamed from MODE)
+* * TOPIC
+* * NAMES
+* * LIST
+* * INVITE
+* * KICK
+* `Sending Messages`_
+* * PRIVMSG
+* * NOTICE
+* `Server Queries and Commands`_
+* * MOTD
+* * LUSERS
+* * VERSION
+* * STATS
+* * LINKS
+* * TIME
+* * CONNECT
+* * TRACE
+* * ADMIN
+* * INFO
+* `Service Query and Commands`_
+* * SERVLIST
+* * SQUERY
+* `User Based Queries`_
+* * WHO
+* * WHOIS
+* * WHOWAS
+* `Miscellaneous Messages`_
+* * KILL
+* * PONG
+* `Optional Features`_
+* * AWAY
+* * REHASH
+* * DIE
+* * RESTART
+* * SUMMON
+* * USERS
+* * WALLOPS
+* * USERHOST
+* * ISON*
+
+.. _Connection Registration:
+    https://tools.ietf.org/html/rfc2812#section-3.1
+.. _Channel Operations:
+    https://tools.ietf.org/html/rfc2812#section-3.2
+.. _Sending Messages:
+    https://tools.ietf.org/html/rfc2812#section-3.3
+.. _Server Queries and Commands:
+    https://tools.ietf.org/html/rfc2812#section-3.4
+.. _Service Query and Commands:
+    https://tools.ietf.org/html/rfc2812#section-3.5
+.. _User Based Queries:
+    https://tools.ietf.org/html/rfc2812#section-3.6
+.. _Miscellaneous Messages:
+    https://tools.ietf.org/html/rfc2812#section-3.7
+.. _Optional Features:
+    https://tools.ietf.org/html/rfc2812#section-4
+
+Events (``@Client.on``)
+------------------------
 * PING
-* CLIENT_CONNECT
-* CLIENT_DISCONNECT
-* NOTICE
-* PRIVMSG
 * JOIN
 * PART
-* QUIT
-* RPL_MOTDSTART
-* RPL_MOTD
-* RPL_ENDOFMOTD
-* RPL_WELCOME
-* RPL_YOURHOST
-* RPL_CREATED,
-* RPL_LUSERCLIENT
-* RPL_LUSERME
-* RPL_STATSDLINE
-* RPL_LUSEROP
-* RPL_LUSERUNKNOWN
-* RPL_LUSERCHANNELS
-* RPL_MYINFO
-* RPL_BOUNCE
+* PRIVMSG
+* NOTICE
+* RPL_WELCOME (001)
+* RPL_YOURHOST (002)
+* RPL_CREATED (003)
+* RPL_MYINFO (004)
+* RPL_BOUNCE (005)
+* RPL_MOTDSTART (375)
+* RPL_MOTD (372)
+* RPL_ENDOFMOTD (376)
+* RPL_LUSERCLIENT (251)
+* RPL_LUSERME (255)
+* RPL_LUSEROP (252)
+* RPL_LUSERUNKNOWN (253)
+* RPL_LUSERCHANNELS (254)
 
 Command Parameters
 ==================
 
+Send
+--------------------------------------------
+
+This section will eventually list the required/optional parameters for each
+command, their types, and their defaults.
+
+Events
+------------------------
+
 This section will eventually list the available parameters for each command or
-reply, and what type they are.
+reply, and their types.
+
+Contributing
+============
+
+Any contribution is welcome!  The TODO below is simply a guide for getting to
+1.0.0
+
+Development
+-----------
+
+bottom uses ``tox``, ``pytest`` and ``flake8``.  To get everything set up::
+
+    # RECOMMENDED: create a virtualenv
+    # mkvirtualenv bottom
+    git clone https://github.com/numberoverzero/bottom.git
+    pip install tox
+    tox
+
+Please make sure ``tox`` passes (including flake8) before submitting a PR.
+It's ok if tox doesn't pass, but it makes it much easier (and faster) if it
+does.
+
+TODO
+----
+
+# Resolve open diversions from rfc2812 in ``pack.py:pack_command``
+# # Add ``target`` argument for all listed operations
+# # Implement ``PING`` and ``ERROR`` (How do these work client -> server?)
+# # Add boolean flag for ``WHO``?  How do present/missing flags fit in the API?
+# Add missing replies/errors to ``unpack.py:unpack_command``
+# # Add reply/error parameters to ``unpack.py:parameters``
+# # Remove ``Client.logger`` when all rfc2812 replies implemented
+# Better ``Client`` docstrings
+# # Write README Client.trigger
+# # Write README Command Parameters -> Send
+# # Write README Command Parameters -> Events
+# # Review source for command/event consistency
