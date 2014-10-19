@@ -26,8 +26,6 @@ RE_IRCLINE = re.compile(
 
 def nickmask(prefix, kwargs):
     ''' store nick, user, host in kwargs if prefix is correct format '''
-    if "!" not in prefix:
-        return
     kwargs['nick'], remainder = prefix.split('!', 1)
     kwargs['user'], kwargs['host'] = remainder.split('@', 1)
 
