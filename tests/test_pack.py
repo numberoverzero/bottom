@@ -15,7 +15,7 @@ def test_no_command():
 
 def test_bad_command():
 
-    ''' raise when commad doesn't have upper '''
+    ''' raise when command doesn't have upper '''
 
     with pytest.raises(ValueError):
         pack_command(object())
