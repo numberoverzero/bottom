@@ -1,4 +1,4 @@
-bottom 0.9.0
+bottom 0.9.1
 ============
 
 :Build: |build|_ |coverage|_
@@ -79,7 +79,7 @@ Versioning
   rfc2812 which should be added.  The list of all adjustments can be found in
   ``bottom/pack.py`` in the notes of ``pack_command``.  Any changes listed
   below will be made before 1.0.0, if they occur at all.
-  
+
   * RENAMES are unlikely to change by 1.0.0.
   * MODE is split into USERMODE and CHANNELMODE and will not change.
   * Any command that doesn't use the ``<target>`` parameter will be updated to
@@ -418,4 +418,4 @@ TODO
    #. Client.trigger
    #. Command Parameters -> Send
    #. Command Parameters -> Events
-   
+
