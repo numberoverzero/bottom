@@ -2,15 +2,18 @@
 import logging
 import asyncio
 from . import event
-from . import rfc
-from . import rfc_pack
+from . import pack
+from . import unpack
 __all__ = ["Client"]
 logger = logging.getLogger(__name__)
 
 
 class Client(event.EventsMixin):
     def __init__(self, host, port):
-        super().__init__(rfc.get_event_parameters)
+        # It's ok that unpack.parameters isn't cached, since it's only
+        # called when adding an event handler (which should __usually__
+        # only occur during setup)
+        super().__init__(unpack.parameters)
         self.connection = Connection(host, port, self)
 
     def send(self, command, **kwargs):
@@ -23,7 +26,7 @@ class Client(event.EventsMixin):
         bot.send('privmsg', target='#python', message="Hello, World!")
 
         '''
-        self.connection.send(rfc_pack.pack_command(command, **kwargs))
+        self.connection.send(pack.pack_command(command, **kwargs))
 
     @asyncio.coroutine
     def connect(self):
@@ -46,24 +49,22 @@ class Client(event.EventsMixin):
         '''
         Decorate a function to be invoked when a :param:`command` occurs.
         '''
-        return super().on(rfc.get_event(command))
+        return super().on(command.upper())
 
 
 class Connection(object):
     def __init__(self, host, port, events):
-        # TODO: extract ssl, encoding into configurable settings
         self.events = events
         self._connected = False
         self.host, self.port = host, port
         self.reader, self.writer = None, None
-        self.encoding, self.ssl = 'UTF-8', True
 
     @asyncio.coroutine
     def connect(self):
         if self.connected:
             return
         self.reader, self.writer = yield from asyncio.open_connection(
-            self.host, self.port, ssl=self.ssl)
+            self.host, self.port, ssl=True)
         self._connected = True
         yield from self.events.trigger(
             "CLIENT_CONNECT", host=self.host, port=self.port)
@@ -88,9 +89,13 @@ class Connection(object):
         while self.connected:
             msg = yield from self.read()
             if msg:
-                logger.warn("\tREAD\t" + msg)
-                event, kwargs = rfc.from_wire(msg)
-                if event:
+                try:
+                    event, kwargs = unpack.unpack_command(msg)
+                except ValueError:
+                    # TODO Log error
+                    logger.info("\tREAD\t" + msg)
+                    continue
+                else:
                     yield from self.events.trigger(event, **kwargs)
             else:
                 # Lost connection
@@ -102,13 +107,12 @@ class Connection(object):
                 yield from self.disconnect()
 
     def send(self, msg):
-        logger.warn("\tSEND\t" + msg.strip())
-        self.writer.write((msg.strip() + '\n').encode(self.encoding))
+        self.writer.write((msg.strip() + '\n').encode('UTF-8'))
 
     @asyncio.coroutine
     def read(self):
         try:
             msg = yield from self.reader.readline()
-            return msg.decode(self.encoding, 'ignore').strip()
+            return msg.decode('UTF-8', 'ignore').strip()
         except EOFError:
             return ''

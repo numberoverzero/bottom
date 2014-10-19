@@ -1,4 +1,4 @@
-from bottom.rfc_pack import pack_command
+from bottom.pack import pack_command
 import pytest
 
 
