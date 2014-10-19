@@ -27,6 +27,7 @@ routing style of bottle.py, hooking into events is one line.
 ::
 
     from bottom import Client
+    import asyncio
 
     NICK = 'bottom-bot'
     CHANNEL = '#python'
@@ -60,7 +61,7 @@ routing style of bottle.py, hooking into events is one line.
         else:
             bot.send("PRIVMSG", target=target, message=message)
 
-    bot.run()
+    asyncio.get_event_loop().run_until_complete(bot.run())
 
 API
 ===
