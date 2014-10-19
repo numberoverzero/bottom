@@ -163,139 +163,175 @@ def test_command():
 
 def test_privmsg():
     ''' PRIVMSG command '''
-    pass
+    assert "PRIVMSG #ch :hello, world" == pack_command(
+        "PRIVMSG", target="#ch", message="hello, world")
+    assert "PRIVMSG WiZ :hello, world" == pack_command(
+        "PRIVMSG", target="WiZ", message="hello, world")
 
 
 def test_notice():
     ''' NOTICE command '''
-    pass
+    assert "NOTICE #ch :hello, world" == pack_command(
+        "NOTICE", target="#ch", message="hello, world")
+    assert "NOTICE WiZ :hello, world" == pack_command(
+        "NOTICE", target="WiZ", message="hello, world")
 
 
 def test_motd():
     ''' MOTD command '''
-    pass
+    assert "MOTD" == pack_command("MOTD")
 
 
 def test_lusers():
     ''' LUSERS command '''
-    pass
+    assert "LUSERS" == pack_command("LUSERS")
+    assert "LUSERS *.edu" == pack_command("LUSERS", mask="*.edu")
 
 
 def test_version():
     ''' VERSION command '''
-    pass
+    assert "VERSION" == pack_command("VERSION")
 
 
 def test_stats():
     ''' STATS command '''
-    pass
+    assert "STATS" == pack_command("STATS")
+    assert "STATS m" == pack_command("STATS", query="m")
 
 
 def test_links():
     ''' LINKS command '''
-    pass
+    assert "LINKS *.edu *.bu.edu" == pack_command("LINKS", remote="*.edu",
+                                                  mask="*.bu.edu")
+    assert "LINKS *.au" == pack_command("LINKS", mask="*.au")
+    assert "LINKS" == pack_command("LINKS")
+
+    with pytest.raises(KeyError):
+        pack_command("LINKS", remote="*.edu")
 
 
 def test_time():
     ''' TIME command '''
-    pass
+    assert "TIME" == pack_command("TIME")
 
 
 def test_connect():
     ''' CONNECT command '''
-    pass
+    assert "CONNECT tolsun.oulu.fi 6667 *.edu" == pack_command(
+        "CONNECT", target="tolsun.oulu.fi", port=6667, remote="*.edu")
+    assert "CONNECT tolsun.oulu.fi 6667" == pack_command(
+        "CONNECT", target="tolsun.oulu.fi", port=6667)
 
 
 def test_trace():
     ''' TRACE command '''
-    pass
+    assert "TRACE" == pack_command("TRACE")
 
 
 def test_admin():
     ''' ADMIN command '''
-    pass
+    assert "ADMIN" == pack_command("ADMIN")
 
 
 def test_info():
     ''' INFO command '''
-    pass
+    assert "INFO" == pack_command("INFO")
 
 
 def test_servlist():
     ''' SERVLIST command '''
-    pass
+    assert "SERVLIST *SERV 3" == pack_command("SERVLIST", mask="*SERV", type=3)
+    assert "SERVLIST *SERV" == pack_command("SERVLIST", mask="*SERV")
+    assert "SERVLIST" == pack_command("SERVLIST")
 
 
 def test_squery():
     ''' SQUERY command '''
-    pass
+    assert "SQUERY irchelp :HELP privmsg" == pack_command(
+        "SQUERY", target="irchelp", message="HELP privmsg")
 
 
 def test_who():
     ''' WHO command '''
-    pass
+    assert "WHO jto* o" == pack_command("WHO", mask="jto* o")
+    assert "WHO *.fi" == pack_command("WHO", mask="*.fi")
+    assert "WHO" == pack_command("WHO")
 
 
 def test_whois():
     ''' WHOIS command '''
-    pass
+    assert "WHOIS jto* o" == pack_command("WHOIS", mask="jto* o")
+    assert "WHOIS *.fi" == pack_command("WHOIS", mask="*.fi")
 
 
 def test_whowas():
     ''' WHOWAS command '''
-    pass
+    assert "WHOWAS WiZ 9" == pack_command("WHOWAS", nick="WiZ", count=9)
+    assert "WHOWAS WiZ" == pack_command("WHOWAS", nick="WiZ")
 
 
 def test_kill():
     ''' KILL command '''
-    pass
+    assert "KILL WiZ :Spamming joins" == pack_command(
+        "KILL", nick="WiZ", message="Spamming joins")
 
 
 def test_pong():
     ''' PONG command '''
-    pass
+    assert "PONG :msg" == pack_command("PONG", message="msg")
+    assert "PONG" == pack_command("PONG")
 
 
 def test_away():
     ''' AWAY command '''
-    pass
+    assert "AWAY :msg" == pack_command("AWAY", message="msg")
+    assert "AWAY" == pack_command("AWAY")
 
 
 def test_rehash():
     ''' REHASH command '''
-    pass
+    assert "REHASH" == pack_command("REHASH")
 
 
 def test_die():
     ''' DIE command '''
-    pass
+    assert "DIE" == pack_command("DIE")
 
 
 def test_restart():
     ''' RESTART command '''
-    pass
+    assert "RESTART" == pack_command("RESTART")
 
 
 def test_summon():
     ''' SUMMON command '''
-    pass
+    assert "SUMMON Wiz #Finnish" == pack_command(
+        "SUMMON", nick="Wiz", channel="#Finnish")
+    assert "SUMMON Wiz" == pack_command(
+        "SUMMON", nick="Wiz")
 
 
 def test_users():
     ''' USERS command '''
-    pass
+    assert "USERS" == pack_command("USERS")
 
 
 def test_wallops():
     ''' WALLOPS command '''
-    pass
+    assert "WALLOPS :msg" == pack_command("WALLOPS", message="msg")
 
 
 def test_userhost():
     ''' USERHOST command '''
-    pass
+    assert "USERHOST Wiz Michael syrk" == pack_command(
+        "USERHOST", nick=["Wiz", "Michael", "syrk"])
+    assert "USERHOST syrk" == pack_command(
+        "USERHOST", nick="syrk")
 
 
 def test_ison():
     ''' ISON command '''
-    pass
+    assert "ISON Wiz Michael syrk" == pack_command(
+        "ISON", nick=["Wiz", "Michael", "syrk"])
+    assert "ISON syrk" == pack_command(
+        "ISON", nick="syrk")

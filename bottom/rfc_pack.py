@@ -11,13 +11,9 @@ def f(field, kwargs, default=missing):
     return str(kwargs[field])
 
 
-def pack(field, kwargs, default=missing, sep=","):
+def pack(field, kwargs, sep=","):
     ''' Util for joining multiple fields with commas '''
-    if default is not missing:
-        value = kwargs.get(field, default)
-    else:
-        value = kwargs[field]
-
+    value = kwargs[field]
     if isinstance(value, str):
         return value
     elif isinstance(value, collections.abc.Iterable):
@@ -338,7 +334,7 @@ def pack_command(command, **kwargs):
     # LUSERS
     elif command == "LUSERS":
         if "mask" in kwargs:
-            return "LUSERS :" + f("mask", kwargs)
+            return "LUSERS " + f("mask", kwargs)
         return "LUSERS"
 
     # VERSION
@@ -357,7 +353,7 @@ def pack_command(command, **kwargs):
     # STATS
     elif command == "STATS":
         if "query" in kwargs:
-            return "STATS :" + f("query", kwargs)
+            return "STATS " + f("query", kwargs)
         return "STATS"
 
     # LINKS
@@ -371,7 +367,7 @@ def pack_command(command, **kwargs):
         if "remote" in kwargs:
             return "LINKS {} {}".format(f("remote", kwargs), f("mask", kwargs))
         elif "mask" in kwargs:
-            return "LINKS {}" + f("mask", kwargs)
+            return "LINKS " + f("mask", kwargs)
         return "LINKS"
 
     # TIME
@@ -430,7 +426,7 @@ def pack_command(command, **kwargs):
             return "SERVLIST {} {}".format(
                 f("mask", kwargs), f("type", kwargs))
         elif "mask" in kwargs:
-            return "SERVLIST {}" + f("mask", kwargs)
+            return "SERVLIST " + f("mask", kwargs)
         return "SERVLIST"
 
     # SQUERY
@@ -448,6 +444,7 @@ def pack_command(command, **kwargs):
     # ----------
     # WHO jto* o
     # WHO *.fi
+    # WHO
     elif command == "WHO":
         if "mask" in kwargs:
             return "WHO " + f("mask", kwargs)
@@ -480,7 +477,7 @@ def pack_command(command, **kwargs):
     # ----------
     # KILL WiZ :Spamming joins
     elif command == "KILL":
-        return "KILL {} {}".format(f("nick", kwargs), f("message", kwargs))
+        return "KILL {} :{}".format(f("nick", kwargs), f("message", kwargs))
 
     # PONG
     # https://tools.ietf.org/html/rfc2812#section-3.7.3
