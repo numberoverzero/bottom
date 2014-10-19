@@ -80,6 +80,11 @@ def test_notice():
                        "message": "m", "target": "#t"}
     validate(command, message, expected_kwargs)
 
+    # server notice - can't use validate since not all params are defined
+    message = ":some.host.edu NOTICE #t :m"
+    expected_kwargs = {"host": "some.host.edu", "message": "m", "target": "#t"}
+    assert (command, expected_kwargs) == unpack_command(message)
+
 
 def test_join():
     ''' JOIN command '''
@@ -97,3 +102,31 @@ def test_part():
     expected_kwargs = {"nick": "n", "user": "u", "host": "h",
                        "channel": "#c", "message": "m"}
     validate(command, message, expected_kwargs)
+
+
+def test_message_commands():
+    ''' message-only commands '''
+    cmds = ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD", "RPL_WELCOME",
+            "RPL_YOURHOST", "RPL_CREATED", "RPL_LUSERCLIENT", "RPL_LUSERME"]
+    expected_kwargs = {"message": "m"}
+    for command in cmds:
+        message = command + " :m"
+        validate(command, message, expected_kwargs)
+
+
+def test_count_commands():
+    ''' count + message commands '''
+    cmds = ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]
+    expected_kwargs = {"message": "m", "count": 3}
+    for command in cmds:
+        message = "{} nick 3 :m".format(command)
+        validate(command, message, expected_kwargs)
+
+
+def test_info_commands():
+    ''' *info + message commands '''
+    cmds = ["RPL_MYINFO", "RPL_BOUNCE"]
+    expected_kwargs = {"message": "m", "info": ["one", "two", "three"]}
+    for command in cmds:
+        message = "{} nick one two three :m".format(command)
+        validate(command, message, expected_kwargs)

@@ -173,8 +173,13 @@ def synonym(command):
 
 def nickmask(prefix, kwargs):
     ''' store nick, user, host in kwargs if prefix is correct format '''
-    kwargs['nick'], remainder = prefix.split('!', 1)
-    kwargs['user'], kwargs['host'] = remainder.split('@', 1)
+    if "!" in prefix and "@" in prefix:
+        # From a user
+        kwargs['nick'], remainder = prefix.split('!', 1)
+        kwargs['user'], kwargs['host'] = remainder.split('@', 1)
+    else:
+        # From a server, probably the host
+        kwargs['host'] = prefix
 
 
 def add_nickmask(params):
@@ -217,6 +222,19 @@ def unpack_command(msg):
         kwargs["channel"] = params[0]
         kwargs["message"] = message
 
+    elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
+                     "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
+                     "RPL_LUSERCLIENT", "RPL_LUSERME"]:
+        kwargs["message"] = message
+
+    elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
+        kwargs["count"] = int(params[1])
+        kwargs["message"] = message
+
+    elif command in ["RPL_MYINFO", "RPL_BOUNCE"]:
+        kwargs["info"] = params[1:]
+        kwargs["message"] = message
+
     else:
         raise ValueError("Unknown command '{}'".format(command))
 
@@ -246,6 +264,19 @@ def parameters(command):
     elif command == "PART":
         add_nickmask(params)
         params.append("channel")
+        params.append("message")
+
+    elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
+                     "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
+                     "RPL_LUSERCLIENT", "RPL_LUSERME"]:
+        params.append("message")
+
+    elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
+        params.append("count")
+        params.append("message")
+
+    elif command in ["RPL_MYINFO", "RPL_BOUNCE"]:
+        params.append("info")
         params.append("message")
 
     else:

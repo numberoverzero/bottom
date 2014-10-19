@@ -9,12 +9,14 @@ logger = logging.getLogger(__name__)
 
 
 class Client(event.EventsMixin):
-    def __init__(self, host, port):
+    def __init__(self, host, port, encoding='UTF-8', ssl=True):
         # It's ok that unpack.parameters isn't cached, since it's only
         # called when adding an event handler (which should __usually__
         # only occur during setup)
         super().__init__(unpack.parameters)
-        self.connection = Connection(host, port, self)
+        # trigger events on the client
+        self.connection = Connection(host, port, self,
+                                     encoding=encoding, ssl=ssl)
 
     def send(self, command, **kwargs):
         '''
@@ -53,18 +55,20 @@ class Client(event.EventsMixin):
 
 
 class Connection(object):
-    def __init__(self, host, port, events):
+    def __init__(self, host, port, events, encoding, ssl):
         self.events = events
         self._connected = False
         self.host, self.port = host, port
         self.reader, self.writer = None, None
+        self.encoding = encoding
+        self.ssl = ssl
 
     @asyncio.coroutine
     def connect(self):
         if self.connected:
             return
         self.reader, self.writer = yield from asyncio.open_connection(
-            self.host, self.port, ssl=True)
+            self.host, self.port, ssl=self.ssl)
         self._connected = True
         yield from self.events.trigger(
             "CLIENT_CONNECT", host=self.host, port=self.port)
@@ -92,9 +96,8 @@ class Connection(object):
                 try:
                     event, kwargs = unpack.unpack_command(msg)
                 except ValueError:
-                    # TODO Log error
-                    logger.info("\tREAD\t" + msg)
-                    continue
+                    logger.exception(
+                        "Couldn't parse line <<<{}>>>".format(msg))
                 else:
                     yield from self.events.trigger(event, **kwargs)
             else:
@@ -107,12 +110,12 @@ class Connection(object):
                 yield from self.disconnect()
 
     def send(self, msg):
-        self.writer.write((msg.strip() + '\n').encode('UTF-8'))
+        self.writer.write((msg.strip() + '\n').encode(self.encoding))
 
     @asyncio.coroutine
     def read(self):
         try:
             msg = yield from self.reader.readline()
-            return msg.decode('UTF-8', 'ignore').strip()
+            return msg.decode(self.encoding, 'ignore').strip()
         except EOFError:
             return ''
