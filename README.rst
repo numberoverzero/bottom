@@ -69,27 +69,33 @@ Versioning
 ----------
 
 * Bottom follows semver for its **public** API.
-* * Currently, ``Client`` is the only public member of bottom.
-* * IRC replies/codes which are not yet implemented may be added at any time,
+
+  * Currently, ``Client`` is the only public member of bottom.
+  * IRC replies/codes which are not yet implemented may be added at any time,
     and will correspond to a patch.  The contract of the ``@on`` method
     does not change - this is only an expansion of legal inputs.
+
 * There are a number of unsupported parameters for IRC commands defined in
   rfc2812 which should be added.  The list of all adjustments can be found in
   ``bottom/pack.py`` in the notes of ``pack_command``.  Any changes listed
   below will be made before 1.0.0, if they occur at all.
-* * RENAMES are unlikely to change by 1.0.0.
-* * MODE is split into USERMODE and CHANNELMODE and will not change.
-* * Any command that doesn't use the ``<target>`` parameter will be updated to
+  
+  * RENAMES are unlikely to change by 1.0.0.
+  * MODE is split into USERMODE and CHANNELMODE and will not change.
+  * Any command that doesn't use the ``<target>`` parameter will be updated to
     use it by 1.0.0
-* * WHO may get a boolean 'o' parameter
-* * PING may be implemented
-* * PONG may use ``server1`` and ``server2``
-* * PONG will continue to have ``message`` although not defined in rfc2812.
-* * ERROR may be implemented
+  * WHO may get a boolean 'o' parameter
+  * PING may be implemented
+  * PONG may use ``server1`` and ``server2``
+  * PONG will continue to have ``message`` although not defined in rfc2812.
+  * ERROR may be implemented
+
 * All private methods are subject to change at any time, and will correspond
   to a patch.
-* * You should not rely on the api of any internal methods staying the same
+
+  * You should not rely on the api of any internal methods staying the same
     between minor versions.
+
 * Over time, private apis may be raised to become public.  The reverse will
   never occur.
 
@@ -243,60 +249,77 @@ Send (``Client.send`` or ``Client.trigger``)
 --------------------------------------------
 
 * Local Events *(trigger only)*
-* * CLIENT_CONNECT
-* * CLIENT_DISCONNECT
+
+  * CLIENT_CONNECT
+  * CLIENT_DISCONNECT
+
 * `Connection Registration`_
-* * PASS
-* * NICK
-* * USER
-* * OPER
-* * USERMODE (renamed from MODE)
-* * SERVICE
-* * QUIT
-* * SQUIT
+
+  * PASS
+  * NICK
+  * USER
+  * OPER
+  * USERMODE (renamed from MODE)
+  * SERVICE
+  * QUIT
+  * SQUIT
+
 * `Channel Operations`_
-* * JOIN
-* * PART
-* * CHANNELMODE (renamed from MODE)
-* * TOPIC
-* * NAMES
-* * LIST
-* * INVITE
-* * KICK
+
+  * JOIN
+  * PART
+  * CHANNELMODE (renamed from MODE)
+  * TOPIC
+  * NAMES
+  * LIST
+  * INVITE
+  * KICK
+
 * `Sending Messages`_
-* * PRIVMSG
-* * NOTICE
+
+  * PRIVMSG
+  * NOTICE
+
 * `Server Queries and Commands`_
-* * MOTD
-* * LUSERS
-* * VERSION
-* * STATS
-* * LINKS
-* * TIME
-* * CONNECT
-* * TRACE
-* * ADMIN
-* * INFO
+
+  * MOTD
+  * LUSERS
+  * VERSION
+  * STATS
+  * LINKS
+  * TIME
+  * CONNECT
+  * TRACE
+  * ADMIN
+  * INFO
+
 * `Service Query and Commands`_
-* * SERVLIST
-* * SQUERY
+
+  * SERVLIST
+  * SQUERY
+
 * `User Based Queries`_
-* * WHO
-* * WHOIS
-* * WHOWAS
+
+  * WHO
+  * WHOIS
+  * WHOWAS
+
 * `Miscellaneous Messages`_
-* * KILL
-* * PONG
+
+  * KILL
+  * PONG
+
 * `Optional Features`_
-* * AWAY
-* * REHASH
-* * DIE
-* * RESTART
-* * SUMMON
-* * USERS
-* * WALLOPS
-* * USERHOST
-* * ISON*
+
+  * AWAY
+  * REHASH
+  * DIE
+  * RESTART
+  * SUMMON
+  * USERS
+  * WALLOPS
+  * USERHOST
+  * ISON*
 
 .. _Connection Registration:
     https://tools.ietf.org/html/rfc2812#section-3.1
@@ -375,15 +398,24 @@ does.
 TODO
 ----
 
-# Resolve open diversions from rfc2812 in ``pack.py:pack_command``
-# # Add ``target`` argument for all listed operations
-# # Implement ``PING`` and ``ERROR`` (How do these work client -> server?)
-# # Add boolean flag for ``WHO``?  How do present/missing flags fit in the API?
-# Add missing replies/errors to ``unpack.py:unpack_command``
-# # Add reply/error parameters to ``unpack.py:parameters``
-# # Remove ``Client.logger`` when all rfc2812 replies implemented
-# Better ``Client`` docstrings
-# # Write README Client.trigger
-# # Write README Command Parameters -> Send
-# # Write README Command Parameters -> Events
-# # Review source for command/event consistency
+#. Resolve open diversions from rfc2812 in ``pack.py:pack_command``
+
+   #. Add ``target`` argument for all listed operations
+   #. Implement ``PING`` and ``ERROR`` (How do these work client -> server?)
+   #. Add boolean flag for ``WHO``?  How do present/missing flags fit in the API?
+
+#. Add missing replies/errors to ``unpack.py:unpack_command``
+
+   #. Add reply/error parameters to ``unpack.py:parameters``
+   #. Remove ``Client.logger`` when all rfc2812 replies implemented
+
+#. Better ``Client`` docstrings
+
+   #. Review source for command/event consistency
+
+#. Expand README
+
+   #. Client.trigger
+   #. Command Parameters -> Send
+   #. Command Parameters -> Events
+   
