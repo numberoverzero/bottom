@@ -11,12 +11,15 @@ REQUIREMENTS = [
 TEST_REQUIREMENTS = [
     'tox',
     'pytest',
+    'pytest-cov',
+    'coverage',
+    'flake8'
 ]
 
 if __name__ == "__main__":
     setup(
         name='bottom',
-        version='0.9.1',
+        version='0.9.2',
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[

@@ -1,4 +1,4 @@
-bottom 0.9.1
+bottom 0.9.2
 ============
 
 :Build: |build|_ |coverage|_
@@ -186,7 +186,30 @@ Client.trigger
 
 *This is a coroutine.*
 
-TODO: Document trigger (manual injection of command/reply)
+Manually inject a command or reply as if it came from the server.  This is
+useful for invoking other handlers.
+
+Trigger ``PRIVMSG`` handlers::
+
+    yield from bot.trigger('privmsg', nick="always_says_no", message="yes")
+
+Rename !commands to !help::
+
+    @bot.on('privmsg')
+    def parse(nick, target, message):
+        if message == '!commands':
+            bot.send('privmsg', target=nick,
+                     message="!commands was renamed to !help in 1.2")
+            # Don't make them retype it, just make it happen
+            yield from bot.trigger('privmsg', nick=nick,
+                                   target=target, message="!help")
+
+While testing the auto-reconnect module, simulate a disconnect::
+
+    def test_reconnect(bot):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(bot.trigger("client_disconnect"))
+        assert bot.connected
 
 Client.connect
 --------------
