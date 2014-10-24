@@ -60,7 +60,9 @@ def patch_connection(reader, writer, monkeypatch):
 
     Returns the reader, writer pair for mocking
     '''
-    mock = mock_connection(reader, writer)
+    @asyncio.coroutine
+    def mock(*args, **kwargs):
+        return reader, writer
     monkeypatch.setattr(asyncio, 'open_connection', mock)
     return reader, writer
 
@@ -140,20 +142,3 @@ class MockStreamWriter():
         # lines are stored as bytes - encode the string to test
         # and see if that's in written_lines
         return line.encode(self.encoding) in self.written_lines
-
-
-def mock_connection(reader, writer, **expected):
-    '''
-    returns a function to replace `asyncio.open_connection`
-
-    the returned function validates any expected kwargs (optional) and
-    passed back the (reader, writer) pair.
-    '''
-    missing = object()
-
-    @asyncio.coroutine
-    def mock_open_connection(*args, **kwargs):
-        for key, value in expected.items():
-            assert kwargs.get(key, missing) == value
-        return reader, writer
-    return mock_open_connection
