@@ -77,8 +77,8 @@ class Connection(object):
     def disconnect(self):
         if not self.connected:
             return
-        if self.writer:
-            self.writer.close()
+        self.writer.close()
+        self.writer = None
         self._connected = False
         yield from self.events.trigger(
             "CLIENT_DISCONNECT", host=self.host, port=self.port)
@@ -110,7 +110,8 @@ class Connection(object):
                 yield from self.disconnect()
 
     def send(self, msg):
-        self.writer.write((msg.strip() + '\n').encode(self.encoding))
+        if self.writer:
+            self.writer.write((msg.strip() + '\n').encode(self.encoding))
 
     @asyncio.coroutine
     def read(self):
