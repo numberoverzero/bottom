@@ -43,9 +43,9 @@ class Client(event.EventsMixin):
         return self.connection.connected
 
     @asyncio.coroutine
-    def run(self):
+    def run(self, loop=None):
         ''' Run the client until it disconnects (without reconnecting) '''
-        yield from self.connection.run()
+        yield from self.connection.run(loop=loop)
 
     def on(self, command):
         '''
@@ -64,11 +64,11 @@ class Connection(object):
         self.ssl = ssl
 
     @asyncio.coroutine
-    def connect(self):
+    def connect(self, loop=None):
         if self.connected:
             return
         self.reader, self.writer = yield from asyncio.open_connection(
-            self.host, self.port, ssl=self.ssl)
+            self.host, self.port, ssl=self.ssl, loop=loop)
         self._connected = True
         yield from self.events.trigger(
             "CLIENT_CONNECT", host=self.host, port=self.port)
@@ -89,8 +89,8 @@ class Connection(object):
         return self._connected
 
     @asyncio.coroutine
-    def run(self):
-        yield from self.connect()
+    def run(self, loop=None):
+        yield from self.connect(loop=loop)
         while self.connected:
             msg = yield from self.read()
             if msg:
@@ -103,11 +103,6 @@ class Connection(object):
                     yield from self.events.trigger(event, **kwargs)
             else:
                 # Lost connection
-                yield from self.disconnect()
-                # Don't fire disconnect event twice
-                continue
-            # Give the connection a chance to clean up or reconnect
-            if not self.connected:
                 yield from self.disconnect()
 
     def send(self, msg):

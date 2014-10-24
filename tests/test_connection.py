@@ -17,7 +17,7 @@ def test_connect(patch_connection, writer, events, run):
     run(conn.connect())
     assert conn.connected
     assert not writer.closed
-    assert events.triggers("CLIENT_CONNECT") == 1
+    assert events.triggered("CLIENT_CONNECT")
 
 
 def test_connect_already_connected(patch_connection, writer, events, run):
@@ -26,7 +26,7 @@ def test_connect_already_connected(patch_connection, writer, events, run):
     run(conn.connect())
     run(conn.connect())
     assert not writer.closed
-    assert events.triggers("CLIENT_CONNECT") == 1
+    assert events.triggered("CLIENT_CONNECT")
 
 
 def test_disconnect_before_connect(patch_connection, events, run):
@@ -34,8 +34,8 @@ def test_disconnect_before_connect(patch_connection, events, run):
     conn = Connection("host", "port", events, "UTF-8", True)
     run(conn.disconnect())
     assert not conn.connected
-    assert events.triggers("CLIENT_CONNECT") == 0
-    assert events.triggers("CLIENT_DISCONNECT") == 0
+    assert not events.triggered("CLIENT_CONNECT")
+    assert not events.triggered("CLIENT_DISCONNECT")
 
 
 def test_disconnect(writer, patch_connection, events, run):
@@ -46,8 +46,8 @@ def test_disconnect(writer, patch_connection, events, run):
     assert not conn.connected
     assert writer.closed
     assert conn.writer is None
-    assert events.triggers("CLIENT_CONNECT") == 1
-    assert events.triggers("CLIENT_DISCONNECT") == 1
+    assert events.triggered("CLIENT_CONNECT")
+    assert events.triggered("CLIENT_DISCONNECT")
 
 
 def test_disconnect_already_disconnected(patch_connection, events, run):
@@ -56,8 +56,8 @@ def test_disconnect_already_disconnected(patch_connection, events, run):
     run(conn.connect())
     run(conn.disconnect())
     run(conn.disconnect())
-    assert events.triggers("CLIENT_CONNECT") == 1
-    assert events.triggers("CLIENT_DISCONNECT") == 1
+    assert events.triggered("CLIENT_CONNECT")
+    assert events.triggered("CLIENT_DISCONNECT")
 
 
 def test_send_before_connected(patch_connection, writer, events, run):
@@ -115,3 +115,34 @@ def test_read_strips(conn, reader, run):
     value = run(conn.read())
     assert value == "a b  c | @#$ d"
     assert reader.has_read("  a b  c | @#$ d  \n")
+
+
+def test_run_without_message(conn, events, run):
+    ''' Connection.run should connect, read empty, disconnect, return '''
+    run(conn.run())
+    assert events.triggered("CLIENT_CONNECT")
+    assert events.triggered("CLIENT_DISCONNECT")
+
+
+def test_run_trigger_command(conn, reader, events, eventparams, run):
+    eventparams["PRIVMSG"] = ["nick", "user", "host", "target", "message"]
+    reader.push(":nick!user@host PRIVMSG #target :this is message")
+    received = []
+
+    @events.on("PRIVMSG")
+    def receive(nick, user, host, target, message):
+        received.extend([nick, user, host, target, message])
+
+    run(conn.run())
+
+    assert reader.has_read(":nick!user@host PRIVMSG #target :this is message")
+    assert events.triggered("PRIVMSG")
+    assert received == ["nick", "user", "host", "#target", "this is message"]
+
+
+def test_run_trigger_unknown_command(conn, reader, events, run):
+    reader.push("unknown_command")
+    run(conn.run())
+
+    assert reader.has_read("unknown_command")
+    assert not events.triggered("unknown_command")

@@ -25,7 +25,7 @@ def run():
 
         # Block until coro completes and dumps return in future
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(coro)
+        loop.run_until_complete(future)
 
         # Hand result back
         return future.result()
@@ -33,9 +33,14 @@ def run():
 
 
 @pytest.fixture
-def events():
+def eventparams():
+    return {}
+
+
+@pytest.fixture
+def events(eventparams):
     ''' Return a no-op EventsMixin that tracks triggers '''
-    return MockEvents()
+    return MockEvents(lambda e: eventparams[e])
 
 
 @pytest.fixture
@@ -61,17 +66,26 @@ def patch_connection(reader, writer, monkeypatch):
 
 
 class MockEvents(EventsMixin):
-    def __init__(self):
+    def __init__(self, getparams):
         self.triggered_events = collections.defaultdict(int)
-        super().__init__(None)
+        super().__init__(getparams)
 
-    @asyncio.coroutine
     def trigger(self, event, **kwargs):
         self.triggered_events[event] += 1
+        yield from super().trigger(event, **kwargs)
 
-    def triggers(self, event):
-        ''' Number of times an event was triggered '''
-        return self.triggered_events[event]
+    def triggered(self, event, n=1):
+        '''
+        Assert an event was triggered exactly n times (default exactly once)
+
+        Pass n <= 0 to assert AT LEAST one call
+        '''
+        t = self.triggered_events[event]
+        # Match exact expected call count
+        if n > 0:
+            return t == n
+        # Assert at least one trigger
+        return t > 0
 
 
 class MockStreamReader():
