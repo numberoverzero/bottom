@@ -6,10 +6,29 @@ import collections
 
 @pytest.fixture
 def run():
-    ''' Run a coro until it completes '''
+    '''
+    Run a coro until it completes.
+
+    Returns result from coro, if it produces one.
+    '''
     def run_in_loop(coro):
+        # For more details on what's going on:
+        # https://docs.python.org/3/library/asyncio-task.html\
+        #       #example-future-with-run-until-complete
+        def capture_return(future):
+            ''' Push coro result into future for return '''
+            result = yield from coro
+            future.set_result(result)
+        # Kick off the coro, wrapped in the future above
+        future = asyncio.Future()
+        asyncio.async(capture_return(future))
+
+        # Block until coro completes and dumps return in future
         loop = asyncio.get_event_loop()
         loop.run_until_complete(coro)
+
+        # Hand result back
+        return future.result()
     return run_in_loop
 
 
@@ -61,24 +80,21 @@ class MockStreamReader():
         self.lines = []
         self.read_lines = []
         self.encoding = encoding
+        self.used = False
 
     @asyncio.coroutine
     def readline(self):
+        self.used = True
         try:
             line = self.lines.pop(0)
             self.read_lines.append(line)
-            yield (line + '\n').encode(self.encoding)
+            return line.encode(self.encoding)
         except IndexError:
             raise EOFError
 
     def push(self, line):
         ''' Push a string to be \n terminated and converted to bytes '''
         self.lines.append(line)
-
-    @property
-    def used(self):
-        ''' True if at least one line was read '''
-        return bool(self.read_lines)
 
     def has_read(self, line):
         ''' return True if the given string was read '''
@@ -91,9 +107,11 @@ class MockStreamWriter():
         self.written_lines = []
         self.encoding = encoding
         self._closed = False
+        self.used = False
 
     def write(self, line):
         # store as bytes
+        self.used = True
         self.written_lines.append(line)
 
     def close(self):
@@ -102,11 +120,6 @@ class MockStreamWriter():
     @property
     def closed(self):
         return self._closed
-
-    @property
-    def used(self):
-        ''' True if at least one line was written '''
-        return bool(self.written_lines)
 
     def has_written(self, line):
         ''' returns True if the given string was written '''

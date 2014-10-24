@@ -79,6 +79,7 @@ class Connection(object):
             return
         self.writer.close()
         self.writer = None
+        self.reader = None
         self._connected = False
         yield from self.events.trigger(
             "CLIENT_DISCONNECT", host=self.host, port=self.port)
@@ -115,6 +116,8 @@ class Connection(object):
 
     @asyncio.coroutine
     def read(self):
+        if not self.reader:
+            return ''
         try:
             msg = yield from self.reader.readline()
             return msg.decode(self.encoding, 'ignore').strip()
