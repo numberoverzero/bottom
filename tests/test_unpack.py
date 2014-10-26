@@ -4,7 +4,7 @@ import pytest
 
 def test_no_command():
     ''' raise when command is None or empty '''
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         unpack_command(None)
     with pytest.raises(ValueError):
         unpack_command("")

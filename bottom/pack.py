@@ -11,9 +11,12 @@ def f(field, kwargs, default=missing):
     return str(kwargs[field])
 
 
-def pack(field, kwargs, sep=","):
+def pack(field, kwargs, default=missing, sep=","):
     ''' Util for joining multiple fields with commas '''
-    value = kwargs[field]
+    if default is not missing:
+        value = kwargs.get(field, default)
+    else:
+        value = kwargs[field]
     if isinstance(value, str):
         return value
     elif isinstance(value, collections.abc.Iterable):
@@ -97,11 +100,11 @@ def pack_command(command, **kwargs):
     # WHOIS       param <target> is not used.
     #             param <mask> can be a list of channels
     # WHOWAS      param <target> is not used.
-    # PING        NOT IMPLEMENTED
-    # PONG        param <server> is not used.
-    #             param <server2> is not used.
+    # PING        param <server1> is optional.
     #             ADDED optional param <message>
-    # ERROR       NOT IMPLEMENTED
+    # PONG        RENAMED param FROM <server> TO <server1>
+    #             param <server1> is optional.
+    #             ADDED optional param <message>
     # AWAY        RENAMED param FROM <text> TO <message>
     # SUMMON      param <target> is not used.
     # USERS       param <target> is not used.
@@ -209,10 +212,8 @@ def pack_command(command, **kwargs):
     # JOIN #foo
     # JOIN 0
     elif command == "JOIN":
-        base = "JOIN " + pack("channel", kwargs)
-        if "key" in kwargs:
-            return base + " " + pack("key", kwargs)
-        return base
+        return "JOIN {} {}".format(pack("channel", kwargs),
+                                   pack("key", kwargs, ''))
 
     # PART
     # https://tools.ietf.org/html/rfc2812#section-3.2.2
@@ -234,10 +235,9 @@ def pack_command(command, **kwargs):
     # CHANNELMODE #en-ops +v WiZ
     # CHANNELMODE #Fins -s
     elif command == "CHANNELMODE":
-        base = "MODE {} {}".format(f("channel", kwargs), f("modes", kwargs))
-        if "params" in kwargs:
-            return base + " " + f("params", kwargs)
-        return base
+        return "MODE {} {} {}".format(f("channel", kwargs),
+                                      f("modes", kwargs),
+                                      f("params", kwargs, ''))
 
     # TOPIC
     # https://tools.ietf.org/html/rfc2812#section-3.2.4
@@ -259,9 +259,7 @@ def pack_command(command, **kwargs):
     # NAMES #twilight_zone
     # NAMES
     elif command == "NAMES":
-        if "channel" in kwargs:
-            return "NAMES " + pack("channel", kwargs)
-        return "NAMES"
+        return "NAMES " + pack("channel", kwargs, '')
 
     # LIST
     # https://tools.ietf.org/html/rfc2812#section-3.2.6
@@ -270,9 +268,7 @@ def pack_command(command, **kwargs):
     # LIST #twilight_zone
     # LIST
     elif command == "LIST":
-        if "channel" in kwargs:
-            return "LIST " + pack("channel", kwargs)
-        return "LIST"
+        return "LIST " + pack("channel", kwargs, '')
 
     # INVITE
     # https://tools.ietf.org/html/rfc2812#section-3.2.7
@@ -280,7 +276,8 @@ def pack_command(command, **kwargs):
     # ----------
     # INVITE Wiz #Twilight_Zone
     elif command == "INVITE":
-        return "INVITE {} {}".format(f("nick", kwargs), f("channel", kwargs))
+        return "INVITE {} {}".format(f("nick", kwargs),
+                                     f("channel", kwargs))
 
     # KICK
     # https://tools.ietf.org/html/rfc2812#section-3.2.8
@@ -290,8 +287,8 @@ def pack_command(command, **kwargs):
     # KICK #Finnish WiZ,Wiz-Bot :Both speaking English
     # KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
     elif command == "KICK":
-        base = "KICK {} {}".format(
-            pack("channel", kwargs), pack("nick", kwargs))
+        base = "KICK {} {}".format(pack("channel", kwargs),
+                                   pack("nick", kwargs))
         if "message" in kwargs:
             return base + " :" + pack("message", kwargs)
         return base
@@ -304,8 +301,8 @@ def pack_command(command, **kwargs):
     # PRIVMSG $*.fi :Server tolsun.oulu.fi rebooting.
     # PRIVMSG #Finnish :This message is in english
     elif command == "PRIVMSG":
-        return "PRIVMSG {} :{}".format(
-            f("target", kwargs), f("message", kwargs))
+        return "PRIVMSG {} :{}".format(f("target", kwargs),
+                                       f("message", kwargs))
 
     # NOTICE
     # https://tools.ietf.org/html/rfc2812#section-3.3.2
@@ -315,8 +312,8 @@ def pack_command(command, **kwargs):
     # NOTICE $*.fi :Server tolsun.oulu.fi rebooting.
     # NOTICE #Finnish :This message is in english
     elif command == "NOTICE":
-        return "NOTICE {} :{}".format(
-            f("target", kwargs), f("message", kwargs))
+        return "NOTICE {} :{}".format(f("target", kwargs),
+                                      f("message", kwargs))
 
     # MOTD
     # https://tools.ietf.org/html/rfc2812#section-3.4.1
@@ -333,9 +330,7 @@ def pack_command(command, **kwargs):
     # LUSERS *.edu
     # LUSERS
     elif command == "LUSERS":
-        if "mask" in kwargs:
-            return "LUSERS " + f("mask", kwargs)
-        return "LUSERS"
+        return "LUSERS " + f("mask", kwargs, '')
 
     # VERSION
     # https://tools.ietf.org/html/rfc2812#section-3.4.3
@@ -352,9 +347,7 @@ def pack_command(command, **kwargs):
     # STATS m
     # STATS
     elif command == "STATS":
-        if "query" in kwargs:
-            return "STATS " + f("query", kwargs)
-        return "STATS"
+        return "STATS " + f("query", kwargs, '')
 
     # LINKS
     # https://tools.ietf.org/html/rfc2812#section-3.4.5
@@ -385,10 +378,9 @@ def pack_command(command, **kwargs):
     # CONNECT tolsun.oulu.fi 6667 *.edu
     # CONNECT tolsun.oulu.fi 6667
     elif command == "CONNECT":
-        base = "CONNECT {} {}".format(f("target", kwargs), f("port", kwargs))
-        if "remote" in kwargs:
-            return base + " " + f("remote", kwargs)
-        return base
+        return "CONNECT {} {} {}".format(f("target", kwargs),
+                                         f("port", kwargs),
+                                         f("remote", kwargs, ''))
 
     # TRACE
     # https://tools.ietf.org/html/rfc2812#section-3.4.8
@@ -422,12 +414,8 @@ def pack_command(command, **kwargs):
     # SERVLIST *SERV
     # SERVLIST
     elif command == "SERVLIST":
-        if "type" in kwargs:
-            return "SERVLIST {} {}".format(
-                f("mask", kwargs), f("type", kwargs))
-        elif "mask" in kwargs:
-            return "SERVLIST " + f("mask", kwargs)
-        return "SERVLIST"
+        return "SERVLIST {} {}".format(f("mask", kwargs, ''),
+                                       f("type", kwargs, ''))
 
     # SQUERY
     # https://tools.ietf.org/html/rfc2812#section-3.5.2
@@ -435,8 +423,8 @@ def pack_command(command, **kwargs):
     # ----------
     # SQUERY irchelp :HELP privmsg
     elif command == "SQUERY":
-        return "SQUERY {} :{}".format(
-            f("target", kwargs), f("message", kwargs))
+        return "SQUERY {} :{}".format(f("target", kwargs),
+                                      f("message", kwargs))
 
     # WHO
     # https://tools.ietf.org/html/rfc2812#section-3.6.1
@@ -446,9 +434,7 @@ def pack_command(command, **kwargs):
     # WHO *.fi
     # WHO
     elif command == "WHO":
-        if "mask" in kwargs:
-            return "WHO " + f("mask", kwargs)
-        return "WHO"
+        return "WHO " + f("mask", kwargs, '')
 
     # WHOIS
     # https://tools.ietf.org/html/rfc2812#section-3.6.2
@@ -466,10 +452,8 @@ def pack_command(command, **kwargs):
     # WHOWAS Wiz 9
     # WHOWAS Mermaid
     elif command == "WHOWAS":
-        base = "WHOWAS " + pack("nick", kwargs)
-        if "count" in kwargs:
-            return base + " " + f("count", kwargs)
-        return base
+        return "WHOWAS {} {}".format(pack("nick", kwargs),
+                                     f("count", kwargs, ''))
 
     # KILL
     # https://tools.ietf.org/html/rfc2812#section-3.7.1
@@ -479,16 +463,35 @@ def pack_command(command, **kwargs):
     elif command == "KILL":
         return "KILL {} :{}".format(f("nick", kwargs), f("message", kwargs))
 
+    # PING
+    # https://tools.ietf.org/html/rfc2812#section-3.7.3
+    # PING [<server1>] [<server2>] :[<message>]
+    # ----------
+    # PING csd.bu.edu tolsun.oulu.fi :Keepalive
+    # PING csd.bu.edu :I'm still here
+    # PING :I'm still here
+    # PING
+    elif command == "PING":
+        message = "PING {} {}".format(f("server1", kwargs, ''),
+                                      f("server2", kwargs, ''))
+        if "message" in kwargs:
+            message += " :" + f("message", kwargs)
+        return message
+
     # PONG
     # https://tools.ietf.org/html/rfc2812#section-3.7.3
-    # PONG [<message>]
+    # PONG [<server1>] [<server2>] :[<message>]
     # ----------
+    # PONG csd.bu.edu tolsun.oulu.fi :Keepalive
+    # PONG csd.bu.edu :I'm still here
     # PONG :I'm still here
     # PONG
     elif command == "PONG":
+        message = "PONG {} {}".format(f("server1", kwargs, ''),
+                                      f("server2", kwargs, ''))
         if "message" in kwargs:
-            return "PONG :" + f("message", kwargs)
-        return "PONG"
+            message += " :" + f("message", kwargs)
+        return message
 
     # AWAY
     # https://tools.ietf.org/html/rfc2812#section-4.1
@@ -532,10 +535,8 @@ def pack_command(command, **kwargs):
     # SUMMON Wiz #Finnish
     # SUMMON Wiz
     elif command == "SUMMON":
-        base = "SUMMON " + f("nick", kwargs)
-        if "channel" in kwargs:
-            return base + " " + f("channel", kwargs)
-        return base
+        return "SUMMON {} {}".format(f("nick", kwargs),
+                                     f("channel", kwargs, ''))
 
     # USERS
     # https://tools.ietf.org/html/rfc2812#section-4.6

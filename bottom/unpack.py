@@ -201,7 +201,7 @@ def split_line(msg):
 
 
 def unpack_command(msg):
-    prefix, command, params, message = split_line(msg)
+    prefix, command, params, message = split_line(msg.strip())
     command = synonym(command)
     kwargs = {}
 
