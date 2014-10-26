@@ -1,4 +1,4 @@
-bottom 0.9.2
+bottom 0.9.3
 ============
 
 :Build: |build|_ |coverage|_
@@ -81,15 +81,13 @@ Versioning
   ``bottom/pack.py`` in the notes of ``pack_command``.  Any changes listed
   below will be made before 1.0.0, if they occur at all.
 
-  * RENAMES are unlikely to change by 1.0.0.
+  * RENAMES will not change.
   * MODE is split into USERMODE and CHANNELMODE and will not change.
   * Any command that doesn't use the ``<target>`` parameter will be updated to
     use it by 1.0.0
   * WHO may get a boolean 'o' parameter
-  * PING may be implemented
-  * PONG may use ``server1`` and ``server2``
-  * PONG will continue to have ``message`` although not defined in rfc2812.
-  * ERROR may be implemented
+  * PING and PONG have an optional parameter ``message`` although not formally
+    defined in rfc2812.
 
 * All private methods are subject to change at any time, and will correspond
   to a patch.
@@ -331,6 +329,7 @@ Send (``Client.send`` or ``Client.trigger``)
 * `Miscellaneous Messages`_
 
   * KILL
+  * PING
   * PONG
 
 * `Optional Features`_
@@ -425,7 +424,6 @@ TODO
 #. Resolve open diversions from rfc2812 in ``pack.py:pack_command``
 
    #. Add ``target`` argument for all listed operations
-   #. Implement ``PING`` and ``ERROR`` (How do these work client -> server?)
    #. Add boolean flag for ``WHO``?  How do present/missing flags fit in the API?
 
 #. Add missing replies/errors to ``unpack.py:unpack_command``
