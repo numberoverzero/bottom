@@ -7,6 +7,7 @@
 (https://coveralls.io/r/numberoverzero/bottom?branch=master)
 
 Downloads https://pypi.python.org/pypi/bottom
+
 Source https://github.com/numberoverzero/bottom
 
 asyncio-based rfc2812-compliant IRC Client
@@ -214,13 +215,28 @@ def test_reconnect(bot):
 
 *This is a coroutine.*
 
-Attempt to reconnect using the client's host, port.  This is a passthrough to the underlying Connection.  Because it is a coroutine, you MUST invoke this using `yield from`.  As mentioned above, don't worry about calling `yield from Client.connect()` in a function - any functions registered with the event handler will make sure it wraps synchronous functions in a coroutine.
+Attempt to reconnect using the client's host, port.
+
+```python
+@bot.on('client_disconnect')
+def reconnect():
+    # Wait a few seconds
+    yield from asyncio.sleep(3)
+    yield from bot.connect()
+```
 
 ### Client.disconnect()
 
 *This is a coroutine.*
 
-Disconnect from the server if connected.  This is a passthrough to the underlying Connection.  Because it is a coroutine, you MUST invoke this using `yield from`.  As mentioned above, don't worry about calling `yield from Client.connect()` in a function - any functions registered with the event handler will make sure it wraps synchronous functions in a coroutine.
+Disconnect from the server if connected.
+
+```python
+@bot.on('privmsg')
+def suicide_pill(nick, message):
+    if nick == "spy_handler" and message == "last stop":
+        yield from bot.disconnect()
+```
 
 ### Client.send(command, **kwargs)
 
@@ -240,7 +256,9 @@ Client.send('privmsg', target='super_trooper_23',
 
 # Supported Commands
 
-These commands can be sent to the server using `Client.send(...)`.  For incoming signals and messages, see `Supported Events` below.
+These commands can be sent to the server using `Client.send(...)`.
+
+For incoming signals and messages, see `Supported Events` below.
 
 ## Local Events
 *(trigger only)*
@@ -283,7 +301,7 @@ client.send('PASS', password='hunter2')
 
     PASS password
 
-#### [USERMODE] (renamed from [MODE][USERMODE])
+#### [USERMODE][USERMODE] (renamed from [MODE][USERMODE])
 ```python
 client.send('PASS', password='hunter2')
 ```
@@ -327,7 +345,7 @@ client.send('PASS', password='hunter2')
 
     PASS password
 
-#### [CHANNELMODE] (renamed from [MODE][CHANNELMODE])
+#### [CHANNELMODE][CHANNELMODE] (renamed from [MODE][CHANNELMODE])
 ```python
 client.send('PASS', password='hunter2')
 ```
@@ -643,7 +661,9 @@ client.send('PASS', password='hunter2')
 
 # Supported Events
 
-These commands are received from the server, or dispatched using `Client.trigger(...)`.  For sending commands, see `Supported Commands` above.
+These commands are received from the server, or dispatched using `Client.trigger(...)`.
+
+For sending commands, see `Supported Commands` above.
 
 * PING
 * JOIN
