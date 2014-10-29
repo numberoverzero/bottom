@@ -66,7 +66,7 @@ def pack_command(command, **kwargs):
     # USER        mode defaults to 0
     # MODE        split into USERMODE and CHANNELMODE.
     #             USERMODE conforms to 3.1.5 User Mode message
-    #             CHANNELMODE conforms to 3.
+    #             CHANNELMODE conforms to 3.2.3
     # USERMODE    (see MODE)
     # QUIT        RENAMED param FROM <Quit Message> TO <message>
     # JOIN        param <channel> can be a list of channels
