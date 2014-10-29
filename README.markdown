@@ -258,7 +258,7 @@ Client.send('privmsg', target='super_trooper_23',
 
 These commands can be sent to the server using `Client.send(...)`.
 
-For incoming signals and messages, see `Supported Events` below.
+For incoming signals and messages, see [`Supported Events`](#Supported-Events) below.
 
 ## Local Events
 *(trigger only)*
@@ -663,7 +663,7 @@ client.send('PASS', password='hunter2')
 
 These commands are received from the server, or dispatched using `Client.trigger(...)`.
 
-For sending commands, see `Supported Commands` above.
+For sending commands, see [`Supported Commands`](#Supported Commands) above.
 
 * PING
 * JOIN
