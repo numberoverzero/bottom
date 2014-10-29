@@ -3,7 +3,7 @@ import os
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(HERE, 'README.rst')).read()
+README = open(os.path.join(HERE, 'README.markdown')).read()
 
 REQUIREMENTS = [
 ]
@@ -19,7 +19,7 @@ TEST_REQUIREMENTS = [
 if __name__ == "__main__":
     setup(
         name='bottom',
-        version='0.9.3',
+        version='0.9.4',
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[
