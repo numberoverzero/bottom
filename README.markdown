@@ -290,7 +290,7 @@ client.send('nick', nick='WiZ')
 
     NICK <nick>
 
-* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `nickname -> nick`
 
 #### [USER]
 ```python
@@ -309,7 +309,7 @@ client.send('OPER', user='WiZ', password='hunter2')
 
     OPER <user> <password>
 
-* PARAM_RENAME `name` -> `user`
+* PARAM_RENAME `name -> user`
 
 #### [USERMODE][USERMODE] (renamed from [MODE][USERMODE])
 ```python
@@ -329,7 +329,7 @@ client.send('SERVICE', nick='CHANSERV', distribution='*.en',
 
     SERVICE <nick> <distribution> <type> :<info>
 
-* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `nickname -> nick`
 
 #### [QUIT]
 ```python
@@ -339,7 +339,7 @@ client.send('QUIT', message='Gone to Lunch')
 
     QUIT :[<message>]
 
-* PARAM_RENAME `Quit Message` -> `message`
+* PARAM_RENAME `Quit Message -> message`
 
 #### [SQUIT]
 ```python
@@ -349,7 +349,7 @@ client.send('SQUIT', server='tolsun.oulu.fi', message='Bad Link')
 
     SQUIT <server> :[<message>]
 
-* PARAM_RENAME `Comment` -> `message`
+* PARAM_RENAME `Comment -> message`
 * RFC_DELTA `message` is optional - rfc says comment SHOULD be supplied; syntax shows required
 
 ## Channel Operations
@@ -388,7 +388,7 @@ client.send('CHANNELMODE', channel='#foo-chan', modes='+l', params='10')
 
     MODE <channel> <modes> [<params>]
 
-* PARAM_RENAME `modeparams` -> `params`
+* PARAM_RENAME `modeparams -> params`
 
 #### [TOPIC]
 ```python
@@ -399,7 +399,7 @@ client.send('TOPIC', channel='#foo-chan', message='Yes, this is dog')
 
     TOPIC <channel> :[<message>]
 
-* PARAM_RENAME `topic` -> `message`
+* PARAM_RENAME `topic -> message`
 
 #### [NAMES]
 ```python
@@ -432,7 +432,7 @@ client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
 
     INVITE <nick> <channel>
 
-* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `nickname -> nick`
 
 #### [KICK]
 ```python
@@ -445,8 +445,8 @@ client.send('KICK', channel=['#foo', '#bar'], nick=['WiZ', 'WiZ-friend'])
 
     KICK <channel> <nick> :[<message>]
 
-* PARAM_RENAME `nickname` -> `nick`
-* PARAM_RENAME `comment` -> `message`
+* PARAM_RENAME `nickname -> nick`
+* PARAM_RENAME `comment -> message`
 * MULTIPLE_VALUES `channel` and `nick`
 * If `nick` has n > 1 values, channel MUST have 1 or n values
 * `channel` can have n > 1 values IFF `nick` has n values
@@ -459,8 +459,8 @@ client.send('PRIVMSG', target='WiZ-friend', message='Hello, friend!')
 
     PRIVMSG <target> :<message>
 
-* PARAM_RENAME `msgtarget` -> `target`
-* PARAM_RENAME `text to be sent` -> `message`
+* PARAM_RENAME `msgtarget -> target`
+* PARAM_RENAME `text to be sent -> message`
 
 #### [NOTICE]
 ```python
@@ -469,8 +469,8 @@ client.send('NOTICE', target='#foo-chan', message='Maintenance in 5 mins')
 
     NOTICE <target> :<message>
 
-* PARAM_RENAME `msgtarget` -> `target`
-* PARAM_RENAME `text` -> `message`
+* PARAM_RENAME `msgtarget -> target`
+* PARAM_RENAME `text -> message`
 
 ## Server Queries and Commands
 #### [MOTD]
@@ -520,8 +520,8 @@ client.send('LINKS', remote='*.edu', mask='*.bu.edu')
 
     LINKS [<remote>] [<mask>]
 
-* PARAM_RENAME `remote server` -> `remote`
-* PARAM_RENAME `server mask` -> `mask`
+* PARAM_RENAME `remote server -> remote`
+* PARAM_RENAME `server mask -> mask`
 * CONDITIONAL_OPTION `remote` requires `mask`
 
 #### [TIME]
@@ -541,8 +541,8 @@ client.send('CONNECT', target='tolsun.oulu.fi', port=6667, remote='*.edu')
 
     CONNECT <target> <port> [<remote>]
 
-* PARAM_RENAME `target server` -> `target`
-* PARAM_RENAME `remote server` -> `remote`
+* PARAM_RENAME `target server -> target`
+* PARAM_RENAME `remote server -> remote`
 
 #### [TRACE]
 ```python
@@ -589,8 +589,8 @@ client.send('SQUERY', target='irchelp', message='HELP privmsg')
 
     SQUERY <target> :<message>
 
-* PARAM_RENAME `servicename` -> `target`
-* PARAM_RENAME `text` -> `message`
+* PARAM_RENAME `servicename -> target`
+* PARAM_RENAME `text -> message`
 
 ## User Based Queries
 #### [WHO]
@@ -623,7 +623,7 @@ client.send('WHOWAS', nick=['WiZ', 'WiZ-friend'], count=10)
     WHOWAS <nick> [<count>]
 
 * RFC_DELTA optional parameter `target` is not available
-* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `nickname -> nick`
 * MULTIPLE_VALUES `nick`
 
 ## Miscellaneous Messages
@@ -634,8 +634,8 @@ client.send('KILL', nick='WiZ', message='Spamming Joins')
 
     KILL <nick> :<message>
 
-* PARAM_RENAME `nickname` -> `nick`
-* PARAM_RENAME `comment` -> `message`
+* PARAM_RENAME `nickname -> nick`
+* PARAM_RENAME `comment -> message`
 
 #### [PING]
 ```python
@@ -676,7 +676,7 @@ client.send('AWAY', message='Gone to Lunch')
 
     AWAY :[<message>]
 
-* PARAM_RENAME `text` -> `message`
+* PARAM_RENAME `text -> message`
 
 #### [REHASH]
 ```python
@@ -708,7 +708,7 @@ client.send('SUMMON', nick='WiZ', channel='#foo-chan')
     SUMMON <nick> [<channel>]
 
 * RFC_DELTA optional parameter `target` is not available
-* PARAM_RENAME `target` -> `nick`  *(since target can only be a nick)*
+* PARAM_RENAME `target -> nick`  *(since target can only be a nick)*
 
 #### [USERS]
 ```python
@@ -726,7 +726,7 @@ client.send('WALLOPS', message='Maintenance in 5 minutes')
 
     WALLOPS :<message>
 
-* PARAM_RENAME `Text to be sent` -> `message`
+* PARAM_RENAME `Text to be sent -> message`
 
 #### [USERHOST]
 ```python
@@ -736,7 +736,7 @@ client.send('USERHOST', nick=['WiZ', 'WiZ-friend'])
 
     USERHOST <nick>
 
-* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `nickname -> nick`
 * MULTIPLE_VALUES `nick`
 
 #### [ISON]
@@ -747,7 +747,7 @@ client.send('ISON', nick=['WiZ', 'WiZ-friend'])
 
     ISON <nick>
 
-* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `nickname -> nick`
 * MULTIPLE_VALUES `nick`
 
 [PASS]: https://tools.ietf.org/html/rfc2812#section-3.1.1
