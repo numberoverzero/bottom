@@ -64,8 +64,8 @@ asyncio.get_event_loop().run_until_complete(bot.run())
 * Bottom follows semver for its **public** API.
 
   * Currently, `Client` is the only public member of bottom.
-  * IRC replies/codes which are not yet implemented may be added at any time, and will correspond to a patch.  The contract of the `@on` method does not change - this is only an expansion of legal inputs.
-  * You should not rely on the api of any internal methods staying the same between minor versions.
+  * IRC replies/codes which are not yet implemented may be added at any time, and will correspond to a patch - the function contract of `@on` method does not change.
+  * You should not rely on the internal api staying the same between minor versions.
   * Over time, private apis may be raised to become public.  The reverse will never occur.
 
 * There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes section of each command in [`Supported Commands`](#supported-commands).  Please note that the `target` parameter will be added to commands that are currently missing it before 1.0.0.
@@ -137,27 +137,22 @@ def func(message, target):
         execute_heist()
 ```
 
-VAR_KWARGS can be used, as long as the name doesn't mask an actual field.
-
-The following is ok:
+VAR_KWARGS can be used, as long as the name doesn't mask an actual parameter.  VAR_ARGS may not be used.
 
 ```python
+# OK - kwargs, no masking
 @bot.on('PRIVMSG')
 def event(message, **everything_else):
     logger.log(everything_else['nick'] + " said " + message)
-```
 
-But this is not:
 
-```python
+# NOT OK - kwargs, masking parameter <nick>
 @bot.on('PRIVMSG')
 def event(message, **nick):
     logger.log(nick['target'])
-```
 
-VAR_ARGS may not be used.  This will raise:
 
-```python
+# NOT OK - uses VAR_ARGS
 @bot.on('PRIVMSG')
 def event(message, *args):
     logger.log(args)
@@ -171,13 +166,13 @@ Decorated functions will be invoked asynchronously, and may optionally use the `
 
 Manually inject a command or reply as if it came from the server.  This is useful for invoking other handlers.
 
-Trigger `PRIVMSG` handlers:
-
-    yield from bot.trigger('privmsg', nick="always_says_no", message="yes")
-
-Rename !commands to !help:
+```python
+# Manually trigger `PRIVMSG` handlers:
+yield from bot.trigger('privmsg', nick="always_says_no", message="yes")
+```
 
 ```python
+# Rename !commands to !help
 @bot.on('privmsg')
 def parse(nick, target, message):
     if message == '!commands':
@@ -188,9 +183,8 @@ def parse(nick, target, message):
                                target=target, message="!help")
 ```
 
-While testing the auto-reconnect module, simulate a disconnect:
-
 ```python
+# While testing the auto-reconnect module, simulate a disconnect:
 def test_reconnect(bot):
     loop = asyncio.get_event_loop()
     loop.run_until_complete(bot.trigger("client_disconnect"))
@@ -249,18 +243,18 @@ For incoming signals and messages, see [`Supported Events`](#supported-events) b
 #### Documentation Layout
 There are three parts to each command's documentation:
 
-1. **python syntax** - sample calls with all possible combinations of keywords
-2. **normalized IRC wire format** - the normalized translation from python keywords to a literal string that will be constructed by the client and sent to the server.  The following syntax is used:
+1. **Python syntax** - sample calls with all possible combinations of keywords
+2. **Normalized IRC wire format** - the normalized translation from python keywords to a literal string that will be constructed by the client and sent to the server.  The following syntax is used:
   * `<parameter>` denotes the location of the `parameter` passed to `send`.  Literal `<>` are not transferred.
   * `[value]` denotes an optional value, which may be excluded.  In some cases, such as [`LINKS`](#links), an optional value may only be provided if another dependant value is present.  Literal `[]` are not transferred.
   * `:` denotes the start of a field which may contain spaces.  This is always the last field of an IRC line.
-3. **notes** - Notes any additional options or restrictions on commands that do not fit a pre-defined convention.  Common notes include keywords for ease of searching:
-  * `CONDITIONAL_OPTION` - there are some commands whose values depend on each other.  For [`LINKS`](#links), `<mask>` MUST be provided to specify `<remote>`.  [`SERVLIST`](#servlist) is exactly reversed - the second optional value `<type>` MUST NOT be provided unless the first optional value `<mask>` is present.
-  * `MULTIPLE_VALUES` - Some commands can handle non-string iterables, such as [`WHOWAS`](#whowas) where `<nick>` can handle both `"WiZ"` and `["WiZ", "WiZ-friend"]`.
+3. **Notes** - additional options or restrictions on commands that do not fit a pre-defined convention.  Common notes include keywords for ease of searching:
   * `RFC_DELTA` - Some commands have different parameters from their RFC2812 definitions.  **Please pay attention to these notes, since they are the most likely to cause issues**.  These changes can include:
     * Omission of required or optional parameters
     * Addition of new required or optional parameters
     * Default values for new or existing parameters
+  * `CONDITIONAL_OPTION` - there are some commands whose values depend on each other.  For [`LINKS`](#links), `<mask>` REQUIRES `<remote>`.  [`SERVLIST`](#servlist) `<type>` REQUIRES `<mask>`.
+  * `MULTIPLE_VALUES` - Some commands can handle non-string iterables, such as [`WHOWAS`](#whowas) where `<nick>` can handle both `"WiZ"` and `["WiZ", "WiZ-friend"]`.
   * `PARAM_RENAME` - Some commands have renamed parameters from their RFC2812 specification to improve comsistency.
 
 ## Local Events
