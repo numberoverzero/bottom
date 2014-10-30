@@ -130,6 +130,7 @@ def event(nick, message, target):
     elif target == bot.monitored_channel:
         logger.info("{} -> {}: {}".format(nick, target, message))
 
+
 @bot.on('PRIVMSG')
 def func(message, target):
     ''' Just waiting for the signal '''
@@ -220,34 +221,22 @@ def suicide_pill(nick, message):
 
 ### Client.send(command, **kwargs)
 
-Send a command to the server.  The available kwargs are documented below.
-
-Some examples of how `send` maps to raw IRC lines:
-
-```python
-Client.send('join', channel='#python')
-    --> "JOIN #python"
-Client.send('privmsg', target='#python', message="Hello!")
-    --> "PRIVMSG #python :Hello!"
-Client.send('privmsg', target='super_trooper_23',
-            message='you are freaking out... man.')
-    --> "PRIVMSG super_trooper_23 :you are freaking out... man."
-```
+Send a command to the server.  See [`Supported Commands`](#supported-commands) for a detailed breakdown of available commands and their parameters.
 
 # Supported Commands
 
-These commands can be sent to the server using `Client.send(...)`.
+These commands can be sent to the server using [`Client.send`](#clientsendcommand-kwargs).
 
 For incoming signals and messages, see [`Supported Events`](#supported-events) below.
 
 #### Documentation Layout
 There are three parts to each command's documentation:
 
-1. **Python syntax** - sample calls with all possible combinations of keywords
+1. **Python syntax** - sample calls using available parameters
 2. **Normalized IRC wire format** - the normalized translation from python keywords to a literal string that will be constructed by the client and sent to the server.  The following syntax is used:
-  * `<parameter>` denotes the location of the `parameter` passed to `send`.  Literal `<>` are not transferred.
-  * `[value]` denotes an optional value, which may be excluded.  In some cases, such as [`LINKS`](#links), an optional value may only be provided if another dependant value is present.  Literal `[]` are not transferred.
-  * `:` denotes the start of a field which may contain spaces.  This is always the last field of an IRC line.
+  * `<parameter>` the location of the `parameter` passed to `send`.  Literal `<>` are not transferred.
+  * `[value]` an optional value, which may be excluded.  In some cases, such as [`LINKS`](#links), an optional value may only be provided if another dependant value is present.  Literal `[]` are not transferred.
+  * `:` the start of a field which may contain spaces.  This is always the last field of an IRC line.
 3. **Notes** - additional options or restrictions on commands that do not fit a pre-defined convention.  Common notes include keywords for ease of searching:
   * `RFC_DELTA` - Some commands have different parameters from their RFC2812 definitions.  **Please pay attention to these notes, since they are the most likely to cause issues**.  These changes can include:
     * Omission of required or optional parameters
@@ -353,8 +342,8 @@ client.send('SQUIT', server='tolsun.oulu.fi', message='Bad Link')
 client.send('JOIN', channel='0')  # send PART to all joined channels
 client.send('JOIN', channel='#foo-chan')
 client.send('JOIN', channel='#foo-chan', key='foo-key')
-client.send('JOIN', channel=['#foo-chan', '#other'],
-                    key=['foo-key', 'other-key'])
+client.send('JOIN', channel=['#foo-chan', '#other'], key='key-for-both')
+client.send('JOIN', channel=['#foo-chan', '#other'], key=['foo-key', 'other-key'])
 ```
 
     JOIN <channel> [<key>]
@@ -367,7 +356,6 @@ client.send('JOIN', channel=['#foo-chan', '#other'],
 client.send('PART', channel='#foo-chan')
 client.send('PART', channel=['#foo-chan', '#other'])
 client.send('PART', channel='#foo-chan', message='I lost')
-client.send('PART', channel=['#foo-chan', '#other'], message='I lost')
 ```
 
     PART <channel> :[<message>]
@@ -432,8 +420,7 @@ client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
 ```python
 client.send('KICK', channel='#foo-chan', nick='WiZ')
 client.send('KICK', channel='#foo-chan', nick='WiZ', message='Spamming')
-client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend'],
-                    message='Both Spamming')
+client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend'])
 client.send('KICK', channel=['#foo', '#bar'], nick=['WiZ', 'WiZ-friend'])
 ```
 
@@ -635,9 +622,7 @@ client.send('KILL', nick='WiZ', message='Spamming Joins')
 ```python
 client.send('PING', message='Test..')
 client.send('PING', server2='tolsun.oulu.fi')
-client.send('PING', server2='tolsun.oulu.fi', message='Test..')
 client.send('PING', server1='WiZ', server2='tolsun.oulu.fi')
-client.send('PING', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 ```
 
     PING [<server1>] [<server2>] :[<message>]
@@ -650,9 +635,7 @@ client.send('PING', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 ```python
 client.send('PONG', message='Test..')
 client.send('PONG', server2='tolsun.oulu.fi')
-client.send('PONG', server2='tolsun.oulu.fi', message='Test..')
 client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi')
-client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 ```
 
     PONG [<server1>] [<server2>] :[<message>]
