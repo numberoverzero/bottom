@@ -1,4 +1,4 @@
-# bottom 0.9.4
+# bottom 0.9.5
 
 [![Build Status]
 (https://travis-ci.org/numberoverzero/bottom.svg?branch=master)]
@@ -272,332 +272,370 @@ yield from client.trigger('CLIENT_CONNECT', host='localhost', port=6697)
 yield from client.trigger('CLIENT_DISCONNECT', host='localhost', port=6697)
 ```
 
-## [Connection Registration]
+## Connection Registration
 #### [PASS]
 ```python
 client.send('PASS', password='hunter2')
 ```
 
-    PASS password
+    PASS <password>
 
 #### [NICK]
 ```python
-client.send('PASS', password='hunter2')
+client.send('nick', nick='WiZ')
 ```
 
-    PASS password
+    NICK <nick>
 
 #### [USER]
 ```python
-client.send('PASS', password='hunter2')
+client.send('USER', user='WiZ-user', realname='Ronnie')
+client.send('USER', user='WiZ-user', mode='8', realname='Ronnie')
 ```
 
-    PASS password
+    USER <user> [<mode>] :<realname>
 
 #### [OPER]
 ```python
-client.send('PASS', password='hunter2')
+client.send('OPER', user='WiZ', password='hunter2')
 ```
 
-    PASS password
+    OPER <user> <password>
 
 #### [USERMODE][USERMODE] (renamed from [MODE][USERMODE])
 ```python
-client.send('PASS', password='hunter2')
+client.send('USERMODE', nick='WiZ')
+client.send('USERMODE', nick='WiZ', modes='+io')
 ```
 
-    PASS password
+    MODE <nick> [<modes>]
 
 #### [SERVICE]
 ```python
-client.send('PASS', password='hunter2')
+client.send('SERVICE', nick='CHANSERV', distribution='*.en',
+            type='0', info='manages channels')
 ```
 
-    PASS password
+    SERVICE <nick> <distribution> <type> :<info>
 
 #### [QUIT]
 ```python
-client.send('PASS', password='hunter2')
+client.send('QUIT')
+client.send('QUIT', message='Gone to Lunch')
 ```
 
-    PASS password
+    QUIT :[<message>]
 
 #### [SQUIT]
 ```python
-client.send('PASS', password='hunter2')
+client.send('SQUIT', server='tolsun.oulu.fi')
+client.send('SQUIT', server='tolsun.oulu.fi', message='Bad Link')
 ```
 
-    PASS password
+    SQUIT <server> :[<message>]
 
 
-## [Channel Operations]
+## Channel Operations
 #### [JOIN]
 ```python
-client.send('PASS', password='hunter2')
+client.send('JOIN', channel='#foo-chan')
+client.send('JOIN', channel='#foo-chan', key='foo-key')
+client.send('JOIN', channel=['#foo-chan', '#other'],
+                    key=['foo-key', 'other-key'])
 ```
 
-    PASS password
+    JOIN <channel> [<key>]
 
 #### [PART]
 ```python
-client.send('PASS', password='hunter2')
+client.send('PART', channel='#foo-chan')
+client.send('PART', channel='#foo-chan', message='I lost')
 ```
 
-    PASS password
+    PART <channel> :[<message>]
 
 #### [CHANNELMODE][CHANNELMODE] (renamed from [MODE][CHANNELMODE])
 ```python
-client.send('PASS', password='hunter2')
+client.send('CHANNELMODE', channel='#foo-chan', modes='+b')
+client.send('CHANNELMODE', channel='#foo-chan', modes='+l', params='10')
 ```
 
-    PASS password
+    MODE <channel> <modes> [<params>]
 
 #### [TOPIC]
 ```python
-client.send('PASS', password='hunter2')
+client.send('TOPIC', channel='#foo-chan')
+client.send('TOPIC', channel='#foo-chan', message='Yes, this is dog')
 ```
 
-    PASS password
+    TOPIC <channel> :[<message>]
 
 #### [NAMES]
 ```python
-client.send('PASS', password='hunter2')
+client.send('NAMES')
+client.send('NAMES', channel='#foo-chan')
+client.send('NAMES', channel=['#foo-chan', '#other'])
 ```
 
-    PASS password
+    NAMES [<channel>]
 
 #### [LIST]
 ```python
-client.send('PASS', password='hunter2')
+client.send('LIST')
+client.send('LIST', channel='#foo-chan')
+client.send('LIST', channel=['#foo-chan', '#other'])
 ```
 
-    PASS password
+    LIST [<channel>]
 
 #### [INVITE]
 ```python
-client.send('PASS', password='hunter2')
+client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
 ```
 
-    PASS password
+    INVITE <nick> <channel>
 
 #### [KICK]
 ```python
-client.send('PASS', password='hunter2')
+client.send('KICK', channel='#foo-chan', nick='WiZ')
+client.send('KICK', channel='#foo-chan', nick='WiZ', message='Spamming')
+client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend',
+                    message='Both Spamming')
 ```
 
-    PASS password
+    KICK <channel> <nick> :[<message>]
 
-## [Sending Messages]
+## Sending Messages
 #### [PRIVMSG]
 ```python
-client.send('PASS', password='hunter2')
+client.send('PRIVMSG', target='WiZ-friend', message='Hello, friend!')
 ```
 
-    PASS password
+    PRIVMSG <target> :<message>
 
 #### [NOTICE]
 ```python
-client.send('PASS', password='hunter2')
+client.send('NOTICE', target='#foo-chan', message='Maintenance in 5 mins')
 ```
 
-    PASS password
+    NOTICE <target> :<message>
 
-## [Server Queries and Commands]
+## Server Queries and Commands
 #### [MOTD]
 ```python
-client.send('PASS', password='hunter2')
+client.send('MOTD')
 ```
 
-    PASS password
+    MOTD
 
 #### [LUSERS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('LUSERS')
+client.send('LUSERS', mask='*.edu')
 ```
 
-    PASS password
+    LUSERS [<mask>]
 
 #### [VERSION]
 ```python
-client.send('PASS', password='hunter2')
+client.send('VERSION')
 ```
 
-    PASS password
+    VERSION
 
 #### [STATS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('STATS')
+client.send('STATS', query='m')
 ```
 
-    PASS password
+    STATS [<query>]
 
 #### [LINKS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('LINKS')
+client.send('LINKS', mask='*.bu.edu')
+client.send('LINKS', remote='*.edu', mask='*.bu.edu')
 ```
 
-    PASS password
+    LINKS [<remote>] [<mask>]
 
 #### [TIME]
 ```python
-client.send('PASS', password='hunter2')
+client.send('TIME')
 ```
 
-    PASS password
+    TIME
 
 #### [CONNECT]
 ```python
-client.send('PASS', password='hunter2')
+client.send('CONNECT', target='tolsun.oulu.fi', port=6667)
+client.send('CONNECT', target='tolsun.oulu.fi', port=6667, remote='*.edu')
 ```
 
-    PASS password
+    CONNECT <target> <port> [<remote>]
 
 #### [TRACE]
 ```python
-client.send('PASS', password='hunter2')
+client.send('TRACE')
 ```
 
-    PASS password
+    TRACE
 
 #### [ADMIN]
 ```python
-client.send('PASS', password='hunter2')
+client.send('ADMIN')
 ```
 
-    PASS password
+    ADMIN
 
 #### [INFO]
 ```python
-client.send('PASS', password='hunter2')
+client.send('INFO')
 ```
 
-    PASS password
+    INFO
 
-## [Service Query and Commands]
+## Service Query and Commands
 #### [SERVLIST]
 ```python
-client.send('PASS', password='hunter2')
+client.send('SERVLIST', mask='*SERV')
+client.send('SERVLIST', mask='*SERV', type=3)
 ```
 
-    PASS password
+    SERVLIST [<mask>] [<type>]
 
 #### [SQUERY]
 ```python
-client.send('PASS', password='hunter2')
+client.send('SQUERY', target='irchelp', message='HELP privmsg')
 ```
 
-    PASS password
+    SQUERY <target> :<message>
 
-## [User Based Queries]
+## User Based Queries
 #### [WHO]
 ```python
-client.send('PASS', password='hunter2')
+client.send('WHO')
+client.send('WHO', mask='*.fi')
 ```
 
-    PASS password
+    WHO [<mask>]
 
 #### [WHOIS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('WHOIS', mask='*.fi')
 ```
 
-    PASS password
+    WHOIS <mask>
 
 #### [WHOWAS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('WHOWAS', nick='WiZ')
+client.send('WHOWAS', nick='WiZ', count=10)
+client.send('WHOWAS', nick=['WiZ', 'WiZ-friend'], count=10)
 ```
 
-    PASS password
+    WHOWAS <nick> [<count>]
 
-## [Miscellaneous Messages]
+## Miscellaneous Messages
 #### [KILL]
 ```python
-client.send('PASS', password='hunter2')
+client.send('KILL', nick='WiZ', message='Spamming Joins')
 ```
 
-    PASS password
+    KILL <nick> :<message>
 
 #### [PING]
 ```python
-client.send('PASS', password='hunter2')
+client.send('PING', message='Test..')
+client.send('PING', server2='tolsun.oulu.fi')
+client.send('PING', server2='tolsun.oulu.fi', message='Test..')
+client.send('PING', server1='WiZ', server2='tolsun.oulu.fi')
+client.send('PING', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 ```
 
-    PASS password
+    PING [<server1>] [<server2>] :[<message>]
 
 #### [PONG]
 ```python
-client.send('PASS', password='hunter2')
+client.send('PONG', message='Test..')
+client.send('PONG', server2='tolsun.oulu.fi')
+client.send('PONG', server2='tolsun.oulu.fi', message='Test..')
+client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi')
+client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 ```
 
-    PASS password
+    PONG [<server1>] [<server2>] :[<message>]
 
-## [Optional Features]
+## Optional Features
 #### [AWAY]
 ```python
-client.send('PASS', password='hunter2')
+client.send('AWAY')
+client.send('AWAY', message='Gone to Lunch')
 ```
 
-    PASS password
+    AWAY :[<message>]
 
 #### [REHASH]
 ```python
-client.send('PASS', password='hunter2')
+client.send('REHASH')
 ```
 
-    PASS password
+    REHASH
 
 #### [DIE]
 ```python
-client.send('PASS', password='hunter2')
+client.send('DIE')
 ```
 
-    PASS password
+    DIE
 
 #### [RESTART]
 ```python
-client.send('PASS', password='hunter2')
+client.send('RESTART')
 ```
 
-    PASS password
+    RESTART
 
 #### [SUMMON]
 ```python
-client.send('PASS', password='hunter2')
+client.send('SUMMON', nick='WiZ')
+client.send('SUMMON', nick='WiZ', channel='#foo-chan')
 ```
 
-    PASS password
+    SUMMON <nick> [<channel>]
 
 #### [USERS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('USERS')
 ```
 
-    PASS password
+    USERS
 
 #### [WALLOPS]
 ```python
-client.send('PASS', password='hunter2')
+client.send('WALLOPS', message='Maintenance in 5 minutes')
 ```
 
-    PASS password
+    WALLOPS :<message>
 
 #### [USERHOST]
 ```python
-client.send('PASS', password='hunter2')
+client.send('USERHOST', nick='WiZ')
+client.send('USERHOST', nick=['WiZ', 'WiZ-friend'])
 ```
 
-    PASS password
+    USERHOST <nick>
 
 #### [ISON]
 ```python
-client.send('PASS', password='hunter2')
+client.send('ISON', nick='WiZ')
+client.send('ISON', nick=['WiZ', 'WiZ-friend'])
 ```
 
-    PASS password
+    ISON <nick>
 
 
-[Connection Registration]: https://tools.ietf.org/html/rfc2812#section-3.1
 [PASS]: https://tools.ietf.org/html/rfc2812#section-3.1.1
 [NICK]: https://tools.ietf.org/html/rfc2812#section-3.1.2
 [USER]: https://tools.ietf.org/html/rfc2812#section-3.1.3
@@ -607,7 +645,6 @@ client.send('PASS', password='hunter2')
 [QUIT]: https://tools.ietf.org/html/rfc2812#section-3.1.7
 [SQUIT]: https://tools.ietf.org/html/rfc2812#section-3.1.8
 
-[Channel Operations]: https://tools.ietf.org/html/rfc2812#section-3.2
 [JOIN]: https://tools.ietf.org/html/rfc2812#section-3.2.1
 [PART]: https://tools.ietf.org/html/rfc2812#section-3.2.2
 [CHANNELMODE]: https://tools.ietf.org/html/rfc2812#section-3.2.3
@@ -617,11 +654,9 @@ client.send('PASS', password='hunter2')
 [INVITE]: https://tools.ietf.org/html/rfc2812#section-3.2.7
 [KICK]: https://tools.ietf.org/html/rfc2812#section-3.2.8
 
-[Sending Messages]: https://tools.ietf.org/html/rfc2812#section-3.3
 [PRIVMSG]: https://tools.ietf.org/html/rfc2812#section-3.3.1
 [NOTICE]: https://tools.ietf.org/html/rfc2812#section-3.3.2
 
-[Server Queries and Commands]: https://tools.ietf.org/html/rfc2812#section-3.4
 [MOTD]: https://tools.ietf.org/html/rfc2812#section-3.4.1
 [LUSERS]: https://tools.ietf.org/html/rfc2812#section-3.4.2
 [VERSION]: https://tools.ietf.org/html/rfc2812#section-3.4.3
@@ -633,21 +668,17 @@ client.send('PASS', password='hunter2')
 [ADMIN]: https://tools.ietf.org/html/rfc2812#section-3.4.9
 [INFO]: https://tools.ietf.org/html/rfc2812#section-3.4.10
 
-[Service Query and Commands]: https://tools.ietf.org/html/rfc2812#section-3.5
 [SERVLIST]: https://tools.ietf.org/html/rfc2812#section-3.5.1
 [SQUERY]: https://tools.ietf.org/html/rfc2812#section-3.5.2
 
-[User Based Queries]: https://tools.ietf.org/html/rfc2812#section-3.6
 [WHO]: https://tools.ietf.org/html/rfc2812#section-3.6.1
 [WHOIS]: https://tools.ietf.org/html/rfc2812#section-3.6.2
 [WHOWAS]: https://tools.ietf.org/html/rfc2812#section-3.6.3
 
-[Miscellaneous Messages]: https://tools.ietf.org/html/rfc2812#section-3.7
 [KILL]: https://tools.ietf.org/html/rfc2812#section-3.7.1
 [PING]: https://tools.ietf.org/html/rfc2812#section-3.7.2
 [PONG]: https://tools.ietf.org/html/rfc2812#section-3.7.3
 
-[Optional Features]: https://tools.ietf.org/html/rfc2812#section-4
 [AWAY]: https://tools.ietf.org/html/rfc2812#section-4.1
 [REHASH]: https://tools.ietf.org/html/rfc2812#section-4.2
 [DIE]: https://tools.ietf.org/html/rfc2812#section-4.3

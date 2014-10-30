@@ -142,7 +142,7 @@ def pack_command(command, **kwargs):
 
     # USER
     # https://tools.ietf.org/html/rfc2812#section-3.1.3
-    # USER <user> [<mode>] <realname>
+    # USER <user> [<mode>] :<realname>
     # ----------
     # USER guest 8 :Ronnie Reagan
     # USER guest :Ronnie Reagan
@@ -162,16 +162,17 @@ def pack_command(command, **kwargs):
 
     # USERMODE (renamed from MODE)
     # https://tools.ietf.org/html/rfc2812#section-3.1.5
-    # USERMODE <nick> <modes>
+    # MODE <nick> [<modes>]
     # ----------
-    # USERMODE WiZ -w
-    # USERMODE Angel +i
+    # MODE WiZ -w
+    # MODE Angel +i
+    # MODE
     elif command == "USERMODE":
-        return "MODE {} {}".format(f("nick", kwargs), f("modes", kwargs))
+        return "MODE {} {}".format(f("nick", kwargs), f("modes", kwargs, ''))
 
     # SERVICE
     # https://tools.ietf.org/html/rfc2812#section-3.1.6
-    # SERVICE <nick> <distribution> <type> <info>
+    # SERVICE <nick> <distribution> <type> :<info>
     # ----------
     # SERVICE dict *.fr 0 :French
     elif command == "SERVICE":
@@ -183,7 +184,7 @@ def pack_command(command, **kwargs):
 
     # QUIT
     # https://tools.ietf.org/html/rfc2812#section-3.1.7
-    # QUIT [<message>]
+    # QUIT :[<message>]
     # ----------
     # QUIT :Gone to lunch
     # QUIT
@@ -217,7 +218,7 @@ def pack_command(command, **kwargs):
 
     # PART
     # https://tools.ietf.org/html/rfc2812#section-3.2.2
-    # PART <channel> [<message>]
+    # PART <channel> :[<message>]
     # ----------
     # PART #foo :I lost
     # PART #foo
@@ -229,11 +230,11 @@ def pack_command(command, **kwargs):
 
     # CHANNELMODE (renamed from MODE)
     # https://tools.ietf.org/html/rfc2812#section-3.2.3
-    # CHANNELMODE <channel> <modes> [<params>]
+    # MODE <channel> <modes> [<params>]
     # ----------
-    # CHANNELMODE #Finnish +imI *!*@*.fi
-    # CHANNELMODE #en-ops +v WiZ
-    # CHANNELMODE #Fins -s
+    # MODE #Finnish +imI *!*@*.fi
+    # MODE #en-ops +v WiZ
+    # MODE #Fins -s
     elif command == "CHANNELMODE":
         return "MODE {} {} {}".format(f("channel", kwargs),
                                       f("modes", kwargs),
@@ -241,7 +242,7 @@ def pack_command(command, **kwargs):
 
     # TOPIC
     # https://tools.ietf.org/html/rfc2812#section-3.2.4
-    # TOPIC <channel> [<message>]
+    # TOPIC <channel> :[<message>]
     # ----------
     # TOPIC #test :New topic
     # TOPIC #test :
@@ -281,7 +282,7 @@ def pack_command(command, **kwargs):
 
     # KICK
     # https://tools.ietf.org/html/rfc2812#section-3.2.8
-    # KICK <channel> <nick> [<message>]
+    # KICK <channel> <nick> :[<message>]
     # ----------
     # KICK #Finnish WiZ :Speaking English
     # KICK #Finnish WiZ,Wiz-Bot :Both speaking English
@@ -295,7 +296,7 @@ def pack_command(command, **kwargs):
 
     # PRIVMSG
     # https://tools.ietf.org/html/rfc2812#section-3.3.1
-    # PRIVMSG <target> <message>
+    # PRIVMSG <target> :<message>
     # ----------
     # PRIVMSG Angel :yes I'm receiving it !
     # PRIVMSG $*.fi :Server tolsun.oulu.fi rebooting.
@@ -306,7 +307,7 @@ def pack_command(command, **kwargs):
 
     # NOTICE
     # https://tools.ietf.org/html/rfc2812#section-3.3.2
-    # NOTICE <target> <message>
+    # NOTICE <target> :<message>
     # ----------
     # NOTICE Angel :yes I'm receiving it !
     # NOTICE $*.fi :Server tolsun.oulu.fi rebooting.
@@ -419,7 +420,7 @@ def pack_command(command, **kwargs):
 
     # SQUERY
     # https://tools.ietf.org/html/rfc2812#section-3.5.2
-    # SQUERY <target> <message>
+    # SQUERY <target> :<message>
     # ----------
     # SQUERY irchelp :HELP privmsg
     elif command == "SQUERY":
@@ -443,7 +444,7 @@ def pack_command(command, **kwargs):
     # WHOIS jto* o
     # WHOIS *.fi
     elif command == "WHOIS":
-        return "WHOIS " + pack("mask", kwargs)
+        return "WHOIS " + f("mask", kwargs)
 
     # WHOWAS
     # https://tools.ietf.org/html/rfc2812#section-3.6.3
@@ -457,7 +458,7 @@ def pack_command(command, **kwargs):
 
     # KILL
     # https://tools.ietf.org/html/rfc2812#section-3.7.1
-    # KILL <nick> <message>
+    # KILL <nick> :<message>
     # ----------
     # KILL WiZ :Spamming joins
     elif command == "KILL":
@@ -495,7 +496,7 @@ def pack_command(command, **kwargs):
 
     # AWAY
     # https://tools.ietf.org/html/rfc2812#section-4.1
-    # AWAY [<message>]
+    # AWAY :[<message>]
     # ----------
     # AWAY :Gone to lunch.
     # AWAY
@@ -548,7 +549,7 @@ def pack_command(command, **kwargs):
 
     # WALLOPS
     # https://tools.ietf.org/html/rfc2812#section-4.7
-    # WALLOPS <message>
+    # WALLOPS :<message>
     # ----------
     # WALLOPS :Maintenance in 5 minutes
     elif command == "WALLOPS":
