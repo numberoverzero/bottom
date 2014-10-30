@@ -47,73 +47,6 @@ def pack_command(command, **kwargs):
     # ========================================================================
 
     # ========================================================================
-    # Diversions from rfc2812
-    # For the most part, commands try to stay as close to the spec as
-    #   is reasonable.  However, some commands unintuitively overload the
-    #   positional arguments, and are inconsistent w.r.t specifying
-    #   singular vs multiple values.
-    # In those cases, the examples below and normalized grammar will
-    #   unambiguously explain how the kwargs dict will be parsed, and
-    #   what fields will be used.
-    # A list of non-coforming commands and a note on their difference
-    #   is kept below for ease of reference.
-    #
-    # ALL CMDS    RENAMED param FROM <nickname> TO <nick>
-    #             RENAMED param FROM <user> TO <nick>
-    #                 EXCEPT USER, OPER
-    #             RENAMED param FROM <comment> TO <message>
-    # ------------------------------------------------------------
-    # USER        mode defaults to 0
-    # MODE        split into USERMODE and CHANNELMODE.
-    #             USERMODE conforms to 3.1.5 User Mode message
-    #             CHANNELMODE conforms to 3.2.3
-    # USERMODE    (see MODE)
-    # QUIT        RENAMED param FROM <Quit Message> TO <message>
-    # JOIN        param <channel> can be a list of channels
-    #             param <key> can be a list of keys
-    # PART        param <channel> can be a list of channels
-    # CHANNELMODE (see MODE)
-    # TOPIC       RENAMED param FROM <topic> TO <message>
-    # NAMES       param <target> is not used.
-    #             param <channel> can be a list of channels
-    # LIST        param <target> is not used
-    #             param <channel> can be a list of channels
-    # PRIVMSG     RENAMED param FROM <msgtarget> TO <target>
-    #             RENAMED param FROM <text to be sent> TO <message>
-    # NOTICE      RENAMED param FROM <msgtarget> TO <target>
-    #             RENAMED param FROM <text to be sent> TO <message>
-    # MOTD        param <target> is not used.
-    # LUSERS      param <target> is not used.
-    # VERSION     param <target> is not used.
-    # STATS       param <target> is not used.
-    # LINKS       RENAMED param FROM <remote server> TO <remote>
-    #             RENAMED param FROM <server mask> TO <mask>
-    # TIME        param <target> is not used.
-    # CONNECT     RENAMED param FROM <target server> TO <target>
-    #             RENAMED param FROM <remote server> TO <remote>
-    # TRACE       param <target> is not used.
-    # ADMIN       param <target> is not used.
-    # INFO        param <target> is not used.
-    # SQUERY      RENAMED param FROM <servicename> TO <target>
-    #             RENAMED param FROM <text> TO <message>
-    # WHO         No explicit param for "o" (include in <mask>)
-    # WHOIS       param <target> is not used.
-    #             param <mask> can be a list of channels
-    # WHOWAS      param <target> is not used.
-    # PING        param <server1> is optional.
-    #             ADDED optional param <message>
-    # PONG        RENAMED param FROM <server> TO <server1>
-    #             param <server1> is optional.
-    #             ADDED optional param <message>
-    # AWAY        RENAMED param FROM <text> TO <message>
-    # SUMMON      param <target> is not used.
-    # USERS       param <target> is not used.
-    # WALLOPS     RENAMED param FROM <Text to be sent> TO <message>
-    # USERHOST    param <nick> can be a list of nicks
-    # ISON        param <nick> can be a list of nicks
-    # ========================================================================
-
-    # ========================================================================
     # Normalized grammar:
     # : should not be provided; it denotes the beginning of the last
     #   field, which may contain spaces
@@ -444,7 +377,7 @@ def pack_command(command, **kwargs):
     # WHOIS jto* o
     # WHOIS *.fi
     elif command == "WHOIS":
-        return "WHOIS " + f("mask", kwargs)
+        return "WHOIS " + pack("mask", kwargs)
 
     # WHOWAS
     # https://tools.ietf.org/html/rfc2812#section-3.6.3

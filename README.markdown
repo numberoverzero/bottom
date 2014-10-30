@@ -59,26 +59,16 @@ def message(nick, target, message):
 asyncio.get_event_loop().run_until_complete(bot.run())
 ```
 
-# Versioning
+# Versioning  and RFC2812
 
 * Bottom follows semver for its **public** API.
 
   * Currently, `Client` is the only public member of bottom.
   * IRC replies/codes which are not yet implemented may be added at any time, and will correspond to a patch.  The contract of the `@on` method does not change - this is only an expansion of legal inputs.
-
-* There are a number of unsupported parameters for IRC commands defined in rfc2812 which should be added.  The list of all adjustments can be found in `bottom/pack.py` in the notes of `pack_command`.  Any changes listed below will be made before 1.0.0, if they occur at all.
-
-  * RENAMES will not change.
-  * MODE is split into USERMODE and CHANNELMODE and will not change.
-  * Any command that doesn't use the `<target>` parameter will be updated to use it by 1.0.0
-  * WHO may get a boolean 'o' parameter
-  * PING and PONG have an optional parameter `message` although not formally defined in rfc2812.
-
-* All private methods are subject to change at any time, and will correspond to a patch.
-
   * You should not rely on the api of any internal methods staying the same between minor versions.
+  * Over time, private apis may be raised to become public.  The reverse will never occur.
 
-* Over time, private apis may be raised to become public.  The reverse will never occur.
+* There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes section of each command in [`Supported Commands`](#supported-commands).  Please note that the `target` parameter will be added to commands that are currently missing it before 1.0.0.
 
 # Contributing
 Contributions welcome!  Please make sure `tox` passes (including flake8) before submitting a PR.
@@ -102,11 +92,7 @@ tox
   * Add reply/error parameters to `unpack.py:parameters`
   * Remove `Client.logger` when all rfc2812 replies implemented
 * Better `Client` docstrings
-  * Review source for command/event consistency
-* Expand README
-  * Client.trigger
-  * Command Parameters -> Send
-  * Command Parameters -> Events
+* Document [`Supported Events`](#supported-events)
 
 # API
 
@@ -260,6 +246,23 @@ These commands can be sent to the server using `Client.send(...)`.
 
 For incoming signals and messages, see [`Supported Events`](#supported-events) below.
 
+#### Documentation Layout
+There are three parts to each command's documentation:
+
+1. **python syntax** - sample calls with all possible combinations of keywords
+2. **normalized IRC wire format** - the normalized translation from python keywords to a literal string that will be constructed by the client and sent to the server.  The following syntax is used:
+  * `<parameter>` denotes the location of the `parameter` passed to `send`.  Literal `<>` are not transferred.
+  * `[value]` denotes an optional value, which may be excluded.  In some cases, such as [`LINKS`](#links), an optional value may only be provided if another dependant value is present.  Literal `[]` are not transferred.
+  * `:` denotes the start of a field which may contain spaces.  This is always the last field of an IRC line.
+3. **notes** - Notes any additional options or restrictions on commands that do not fit a pre-defined convention.  Common notes include keywords for ease of searching:
+  * `CONDITIONAL_OPTION` - there are some commands whose values depend on each other.  For [`LINKS`](#links), `<mask>` MUST be provided to specify `<remote>`.  [`SERVLIST`](#servlist) is exactly reversed - the second optional value `<type>` MUST NOT be provided unless the first optional value `<mask>` is present.
+  * `MULTIPLE_VALUES` - Some commands can handle non-string iterables, such as [`WHOWAS`](#whowas) where `<nick>` can handle both `"WiZ"` and `["WiZ", "WiZ-friend"]`.
+  * `RFC_DELTA` - Some commands have different parameters from their RFC2812 definitions.  **Please pay attention to these notes, since they are the most likely to cause issues**.  These changes can include:
+    * Omission of required or optional parameters
+    * Addition of new required or optional parameters
+    * Default values for new or existing parameters
+  * `PARAM_RENAME` - Some commands have renamed parameters from their RFC2812 specification to improve comsistency.
+
 ## Local Events
 *(trigger only)*
 
@@ -287,6 +290,8 @@ client.send('nick', nick='WiZ')
 
     NICK <nick>
 
+* PARAM_RENAME `nickname` -> `nick`
+
 #### [USER]
 ```python
 client.send('USER', user='WiZ-user', realname='Ronnie')
@@ -295,12 +300,16 @@ client.send('USER', user='WiZ-user', mode='8', realname='Ronnie')
 
     USER <user> [<mode>] :<realname>
 
+* RFC_DELTA `mode` is optional - default is `0`
+
 #### [OPER]
 ```python
 client.send('OPER', user='WiZ', password='hunter2')
 ```
 
     OPER <user> <password>
+
+* PARAM_RENAME `name` -> `user`
 
 #### [USERMODE][USERMODE] (renamed from [MODE][USERMODE])
 ```python
@@ -310,6 +319,8 @@ client.send('USERMODE', nick='WiZ', modes='+io')
 
     MODE <nick> [<modes>]
 
+* RFC_DELTA rfc did not name `modes` parameter
+
 #### [SERVICE]
 ```python
 client.send('SERVICE', nick='CHANSERV', distribution='*.en',
@@ -317,6 +328,8 @@ client.send('SERVICE', nick='CHANSERV', distribution='*.en',
 ```
 
     SERVICE <nick> <distribution> <type> :<info>
+
+* PARAM_RENAME `nickname` -> `nick`
 
 #### [QUIT]
 ```python
@@ -326,6 +339,8 @@ client.send('QUIT', message='Gone to Lunch')
 
     QUIT :[<message>]
 
+* PARAM_RENAME `Quit Message` -> `message`
+
 #### [SQUIT]
 ```python
 client.send('SQUIT', server='tolsun.oulu.fi')
@@ -334,10 +349,14 @@ client.send('SQUIT', server='tolsun.oulu.fi', message='Bad Link')
 
     SQUIT <server> :[<message>]
 
+* PARAM_RENAME `Comment` -> `message`
+* RFC_DELTA `message` is optional - rfc says comment SHOULD be supplied; syntax shows required
 
 ## Channel Operations
+
 #### [JOIN]
 ```python
+client.send('JOIN', channel='0')  # send PART to all joined channels
 client.send('JOIN', channel='#foo-chan')
 client.send('JOIN', channel='#foo-chan', key='foo-key')
 client.send('JOIN', channel=['#foo-chan', '#other'],
@@ -346,13 +365,20 @@ client.send('JOIN', channel=['#foo-chan', '#other'],
 
     JOIN <channel> [<key>]
 
+* MULTIPLE_VALUES `channel` and `key`
+* If `channel` has n > 1 values, `key` MUST have 1 or n values
+
 #### [PART]
 ```python
 client.send('PART', channel='#foo-chan')
+client.send('PART', channel=['#foo-chan', '#other'])
 client.send('PART', channel='#foo-chan', message='I lost')
+client.send('PART', channel=['#foo-chan', '#other'], message='I lost')
 ```
 
     PART <channel> :[<message>]
+
+* MULTIPLE_VALUES `channel`
 
 #### [CHANNELMODE][CHANNELMODE] (renamed from [MODE][CHANNELMODE])
 ```python
@@ -362,13 +388,18 @@ client.send('CHANNELMODE', channel='#foo-chan', modes='+l', params='10')
 
     MODE <channel> <modes> [<params>]
 
+* PARAM_RENAME `modeparams` -> `params`
+
 #### [TOPIC]
 ```python
 client.send('TOPIC', channel='#foo-chan')
+client.send('TOPIC', channel='#foo-chan', message='')  # Clear channel message
 client.send('TOPIC', channel='#foo-chan', message='Yes, this is dog')
 ```
 
     TOPIC <channel> :[<message>]
+
+* PARAM_RENAME `topic` -> `message`
 
 #### [NAMES]
 ```python
@@ -379,6 +410,9 @@ client.send('NAMES', channel=['#foo-chan', '#other'])
 
     NAMES [<channel>]
 
+* MULTIPLE_VALUES `channel`
+* RFC_DELTA optional parameter `target` is not available
+
 #### [LIST]
 ```python
 client.send('LIST')
@@ -388,6 +422,9 @@ client.send('LIST', channel=['#foo-chan', '#other'])
 
     LIST [<channel>]
 
+* MULTIPLE_VALUES `channel`
+* RFC_DELTA optional parameter `target` is not available
+
 #### [INVITE]
 ```python
 client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
@@ -395,15 +432,24 @@ client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
 
     INVITE <nick> <channel>
 
+* PARAM_RENAME `nickname` -> `nick`
+
 #### [KICK]
 ```python
 client.send('KICK', channel='#foo-chan', nick='WiZ')
 client.send('KICK', channel='#foo-chan', nick='WiZ', message='Spamming')
-client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend',
+client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend'],
                     message='Both Spamming')
+client.send('KICK', channel=['#foo', '#bar'], nick=['WiZ', 'WiZ-friend'])
 ```
 
     KICK <channel> <nick> :[<message>]
+
+* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `comment` -> `message`
+* MULTIPLE_VALUES `channel` and `nick`
+* If `nick` has n > 1 values, channel MUST have 1 or n values
+* `channel` can have n > 1 values IFF `nick` has n values
 
 ## Sending Messages
 #### [PRIVMSG]
@@ -413,12 +459,18 @@ client.send('PRIVMSG', target='WiZ-friend', message='Hello, friend!')
 
     PRIVMSG <target> :<message>
 
+* PARAM_RENAME `msgtarget` -> `target`
+* PARAM_RENAME `text to be sent` -> `message`
+
 #### [NOTICE]
 ```python
 client.send('NOTICE', target='#foo-chan', message='Maintenance in 5 mins')
 ```
 
     NOTICE <target> :<message>
+
+* PARAM_RENAME `msgtarget` -> `target`
+* PARAM_RENAME `text` -> `message`
 
 ## Server Queries and Commands
 #### [MOTD]
@@ -428,6 +480,8 @@ client.send('MOTD')
 
     MOTD
 
+* RFC_DELTA optional parameter `target` is not available
+
 #### [LUSERS]
 ```python
 client.send('LUSERS')
@@ -436,12 +490,16 @@ client.send('LUSERS', mask='*.edu')
 
     LUSERS [<mask>]
 
+* RFC_DELTA optional parameter `target` is not available
+
 #### [VERSION]
 ```python
 client.send('VERSION')
 ```
 
     VERSION
+
+* RFC_DELTA optional parameter `target` is not available
 
 #### [STATS]
 ```python
@@ -450,6 +508,8 @@ client.send('STATS', query='m')
 ```
 
     STATS [<query>]
+
+* RFC_DELTA optional parameter `target` is not available
 
 #### [LINKS]
 ```python
@@ -460,12 +520,18 @@ client.send('LINKS', remote='*.edu', mask='*.bu.edu')
 
     LINKS [<remote>] [<mask>]
 
+* PARAM_RENAME `remote server` -> `remote`
+* PARAM_RENAME `server mask` -> `mask`
+* CONDITIONAL_OPTION `remote` requires `mask`
+
 #### [TIME]
 ```python
 client.send('TIME')
 ```
 
     TIME
+
+* RFC_DELTA optional parameter `target` is not available
 
 #### [CONNECT]
 ```python
@@ -475,12 +541,17 @@ client.send('CONNECT', target='tolsun.oulu.fi', port=6667, remote='*.edu')
 
     CONNECT <target> <port> [<remote>]
 
+* PARAM_RENAME `target server` -> `target`
+* PARAM_RENAME `remote server` -> `remote`
+
 #### [TRACE]
 ```python
 client.send('TRACE')
 ```
 
     TRACE
+
+* RFC_DELTA optional parameter `target` is not available
 
 #### [ADMIN]
 ```python
@@ -489,12 +560,16 @@ client.send('ADMIN')
 
     ADMIN
 
+* RFC_DELTA optional parameter `target` is not available
+
 #### [INFO]
 ```python
 client.send('INFO')
 ```
 
     INFO
+
+* RFC_DELTA optional parameter `target` is not available
 
 ## Service Query and Commands
 #### [SERVLIST]
@@ -505,12 +580,17 @@ client.send('SERVLIST', mask='*SERV', type=3)
 
     SERVLIST [<mask>] [<type>]
 
+* CONDITIONAL_OPTION `type` requires `mask`
+
 #### [SQUERY]
 ```python
 client.send('SQUERY', target='irchelp', message='HELP privmsg')
 ```
 
     SQUERY <target> :<message>
+
+* PARAM_RENAME `servicename` -> `target`
+* PARAM_RENAME `text` -> `message`
 
 ## User Based Queries
 #### [WHO]
@@ -521,12 +601,17 @@ client.send('WHO', mask='*.fi')
 
     WHO [<mask>]
 
+* RFC_DELTA optional positional parameter `o` cannot be specified, and should be included (with space) in mask.  Example: `mask='*.fi o'`
+
 #### [WHOIS]
 ```python
 client.send('WHOIS', mask='*.fi')
 ```
 
     WHOIS <mask>
+
+* RFC_DELTA optional parameter `target` is not available
+* MULTIPLE_VALUES `mask`
 
 #### [WHOWAS]
 ```python
@@ -537,6 +622,10 @@ client.send('WHOWAS', nick=['WiZ', 'WiZ-friend'], count=10)
 
     WHOWAS <nick> [<count>]
 
+* RFC_DELTA optional parameter `target` is not available
+* PARAM_RENAME `nickname` -> `nick`
+* MULTIPLE_VALUES `nick`
+
 ## Miscellaneous Messages
 #### [KILL]
 ```python
@@ -544,6 +633,9 @@ client.send('KILL', nick='WiZ', message='Spamming Joins')
 ```
 
     KILL <nick> :<message>
+
+* PARAM_RENAME `nickname` -> `nick`
+* PARAM_RENAME `comment` -> `message`
 
 #### [PING]
 ```python
@@ -556,6 +648,10 @@ client.send('PING', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 
     PING [<server1>] [<server2>] :[<message>]
 
+* RFC_DELTA `server1` is optional
+* RFC_DELTA `message` is new, and optional
+* CONDITIONAL_OPTION `server2` requires `server1`
+
 #### [PONG]
 ```python
 client.send('PONG', message='Test..')
@@ -567,6 +663,10 @@ client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi', message='Test..')
 
     PONG [<server1>] [<server2>] :[<message>]
 
+* RFC_DELTA `server1` is optional
+* RFC_DELTA `message` is new, and optional
+* CONDITIONAL_OPTION `server2` requires `server1`
+
 ## Optional Features
 #### [AWAY]
 ```python
@@ -575,6 +675,8 @@ client.send('AWAY', message='Gone to Lunch')
 ```
 
     AWAY :[<message>]
+
+* PARAM_RENAME `text` -> `message`
 
 #### [REHASH]
 ```python
@@ -605,6 +707,9 @@ client.send('SUMMON', nick='WiZ', channel='#foo-chan')
 
     SUMMON <nick> [<channel>]
 
+* RFC_DELTA optional parameter `target` is not available
+* PARAM_RENAME `target` -> `nick`  *(since target can only be a nick)*
+
 #### [USERS]
 ```python
 client.send('USERS')
@@ -612,12 +717,16 @@ client.send('USERS')
 
     USERS
 
+* RFC_DELTA optional parameter `target` is not available
+
 #### [WALLOPS]
 ```python
 client.send('WALLOPS', message='Maintenance in 5 minutes')
 ```
 
     WALLOPS :<message>
+
+* PARAM_RENAME `Text to be sent` -> `message`
 
 #### [USERHOST]
 ```python
@@ -627,6 +736,9 @@ client.send('USERHOST', nick=['WiZ', 'WiZ-friend'])
 
     USERHOST <nick>
 
+* PARAM_RENAME `nickname` -> `nick`
+* MULTIPLE_VALUES `nick`
+
 #### [ISON]
 ```python
 client.send('ISON', nick='WiZ')
@@ -635,6 +747,8 @@ client.send('ISON', nick=['WiZ', 'WiZ-friend'])
 
     ISON <nick>
 
+* PARAM_RENAME `nickname` -> `nick`
+* MULTIPLE_VALUES `nick`
 
 [PASS]: https://tools.ietf.org/html/rfc2812#section-3.1.1
 [NICK]: https://tools.ietf.org/html/rfc2812#section-3.1.2
