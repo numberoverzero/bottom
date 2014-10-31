@@ -277,7 +277,7 @@ def test_squery():
 
 def test_who():
     ''' WHO command '''
-    assert like("WHO jto* o", pack_command("WHO", mask="jto* o"))
+    assert like("WHO jto* o", pack_command("WHO", mask="jto*", o=True))
     assert like("WHO *.fi", pack_command("WHO", mask="*.fi"))
     assert like("WHO", pack_command("WHO"))
 

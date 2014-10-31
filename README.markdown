@@ -1,4 +1,4 @@
-# bottom 0.9.5
+# bottom 0.9.6
 
 [![Build Status]
 (https://travis-ci.org/numberoverzero/bottom.svg?branch=master)]
@@ -18,7 +18,7 @@ asyncio-based rfc2812-compliant IRC Client
 
 # Getting Started
 
-bottom isn't a kitchen-sink library.  Instead, it provides an API with a small surface area, tuned for performance and ease of extension.  Similar to the routing style of bottle.py, hooking into events is one line.
+bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with a small surface area, tuned for performance and ease of extension.  Similar to the routing style of bottle.py, hooking into events is one line.
 
 ```python
 import bottom
@@ -87,7 +87,6 @@ tox
 ### TODO
 * Resolve open diversions from rfc2812 in `pack.py:pack_command`
   * Add `target` argument for all listed operations
-  * Add boolean flag for `WHO`?  How do present/missing flags fit in the API?
 * Add missing replies/errors to `unpack.py:unpack_command`
   * Add reply/error parameters to `unpack.py:parameters`
   * Remove `Client.logger` when all rfc2812 replies implemented
@@ -578,11 +577,12 @@ client.send('SQUERY', target='irchelp', message='HELP privmsg')
 ```python
 client.send('WHO')
 client.send('WHO', mask='*.fi')
+client.send('WHO', mask='*.fi', o=True)
 ```
 
-    WHO [<mask>]
+    WHO [<mask>] ["o"]
 
-* RFC_DELTA optional positional parameter `o` cannot be specified, and should be included (with space) in mask.  Example: `mask='*.fi o'`
+* Optional positional parameter "o" is included if the kwarg "o" is Truthy
 
 #### [WHOIS]
 ```python

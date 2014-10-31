@@ -1,19 +1,29 @@
 """ Simplified support for rfc2812 """
 # https://tools.ietf.org/html/rfc2812
 import collections
-missing = object()
+MISSING = object()
 
 
-def f(field, kwargs, default=missing):
+def b(field, kwargs, present=MISSING, missing=''):
+    '''
+    Return `present` value (default to `field`) if `field` in `kwargs` and
+    Truthy, otherwise return `missing` value
+    '''
+    if bool(kwargs.get(field, False)):
+        return field if present is MISSING else str(present)
+    return str(missing)
+
+
+def f(field, kwargs, default=MISSING):
     ''' Alias for more readable command construction '''
-    if default is not missing:
+    if default is not MISSING:
         return str(kwargs.get(field, default))
     return str(kwargs[field])
 
 
-def pack(field, kwargs, default=missing, sep=","):
+def pack(field, kwargs, default=MISSING, sep=","):
     ''' Util for joining multiple fields with commas '''
-    if default is not missing:
+    if default is not MISSING:
         value = kwargs.get(field, default)
     else:
         value = kwargs[field]
@@ -368,7 +378,7 @@ def pack_command(command, **kwargs):
     # WHO *.fi
     # WHO
     elif command == "WHO":
-        return "WHO " + f("mask", kwargs, '')
+        return "WHO " + f("mask", kwargs, '') + " " + b("o", kwargs)
 
     # WHOIS
     # https://tools.ietf.org/html/rfc2812#section-3.6.2
