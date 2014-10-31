@@ -68,7 +68,7 @@ asyncio.get_event_loop().run_until_complete(bot.run())
   * You should not rely on the internal api staying the same between minor versions.
   * Over time, private apis may be raised to become public.  The reverse will never occur.
 
-* There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes section of each command in [`Supported Commands`](#supported-commands).  Please note that the `target` parameter will be added to commands that are currently missing it before 1.0.0.
+* There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes section of each command in [`Supported Commands`](#supported-commands).
 
 # Contributing
 Contributions welcome!  Please make sure `tox` passes (including flake8) before submitting a PR.
@@ -239,7 +239,7 @@ There are three parts to each command's documentation:
   * `RFC_DELTA` - Some commands have different parameters from their RFC2812 definitions.  **Please pay attention to these notes, since they are the most likely to cause issues**.  These changes can include:
     * Addition of new required or optional parameters
     * Default values for new or existing parameters
-  * `CONDITIONAL_OPTION` - there are some commands whose values depend on each other.  For [`LINKS`](#links), `<mask>` REQUIRES `<remote>`.  [`SERVLIST`](#servlist) `<type>` REQUIRES `<mask>`.
+  * `CONDITIONAL_OPTION` - there are some commands whose values depend on each other.  For example, [`LINKS`](#links), `<mask>` REQUIRES `<remote>`.
   * `MULTIPLE_VALUES` - Some commands can handle non-string iterables, such as [`WHOWAS`](#whowas) where `<nick>` can handle both `"WiZ"` and `["WiZ", "WiZ-friend"]`.
   * `PARAM_RENAME` - Some commands have renamed parameters from their RFC2812 specification to improve comsistency.
 
@@ -582,7 +582,7 @@ client.send('WHO', mask='*.fi', o=True)
 #### [WHOIS]
 ```python
 client.send('WHOIS', mask='*.fi')
-client.send('WHOIS', mask='*.fi', target='remote.*.edu')
+client.send('WHOIS', mask=['*.fi', '*.edu'], target='remote.*.edu')
 ```
 
     WHOIS <mask> [<target>]
