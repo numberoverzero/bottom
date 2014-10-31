@@ -65,6 +65,7 @@ def pack_command(command, **kwargs):
     # because fields are filled from a dict, required fields may follow
     #   optional fields - see USER command, where mode is optional
     #   (and defaults to 0)
+    # "" indicates a literal value that is inserted if present
     # ========================================================================
 
     # PASS
@@ -198,21 +199,29 @@ def pack_command(command, **kwargs):
 
     # NAMES
     # https://tools.ietf.org/html/rfc2812#section-3.2.5
-    # NAMES [<channel>]
+    # NAMES [<channel>] [<target>]
     # ----------
+    # NAMES #twilight_zone remote.*.edu
     # NAMES #twilight_zone
     # NAMES
     elif command == "NAMES":
-        return "NAMES " + pack("channel", kwargs, '')
+        if "channel" in kwargs:
+            return "NAMES {} {}".format(pack("channel", kwargs),
+                                        f("target", kwargs, ''))
+        return "NAMES"
 
     # LIST
     # https://tools.ietf.org/html/rfc2812#section-3.2.6
-    # LIST [<channel>]
+    # LIST [<channel>] [<target>]
     # ----------
+    # LIST #twilight_zone remote.*.edu
     # LIST #twilight_zone
     # LIST
     elif command == "LIST":
-        return "LIST " + pack("channel", kwargs, '')
+        if "channel" in kwargs:
+            return "LIST {} {}".format(pack("channel", kwargs),
+                                       f("target", kwargs, ''))
+        return "LIST"
 
     # INVITE
     # https://tools.ietf.org/html/rfc2812#section-3.2.7
@@ -261,37 +270,47 @@ def pack_command(command, **kwargs):
 
     # MOTD
     # https://tools.ietf.org/html/rfc2812#section-3.4.1
-    # MOTD
+    # MOTD [<target>]
     # ----------
+    # MOTD remote.*.edu
     # MOTD
     elif command == "MOTD":
-        return "MOTD"
+        return "MOTD " + f("target", kwargs, '')
 
     # LUSERS
     # https://tools.ietf.org/html/rfc2812#section-3.4.2
-    # LUSERS [<mask>]
+    # LUSERS [<mask>] [<target>]
     # ----------
+    # LUSERS *.edu remote.*.edu
     # LUSERS *.edu
     # LUSERS
     elif command == "LUSERS":
-        return "LUSERS " + f("mask", kwargs, '')
+        if "mask" in kwargs:
+            return "LUSERS {} {}".format(f("mask", kwargs),
+                                         f("target", kwargs, ''))
+        return "LUSERS"
 
     # VERSION
     # https://tools.ietf.org/html/rfc2812#section-3.4.3
-    # VERSION
+    # VERSION [<target>]
     # ----------
+    # VERSION remote.*.edu
     # VERSION
     elif command == "VERSION":
-        return "VERSION"
+        return "VERSION " + f("target", kwargs, '')
 
     # STATS
     # https://tools.ietf.org/html/rfc2812#section-3.4.4
-    # STATS [<query>]
+    # STATS [<query>] [<target>]
     # ----------
+    # STATS m remote.*.edu
     # STATS m
     # STATS
     elif command == "STATS":
-        return "STATS " + f("query", kwargs, '')
+        if "query" in kwargs:
+            return "STATS {} {}".format(f("query", kwargs),
+                                        f("target", kwargs, ''))
+        return "STATS"
 
     # LINKS
     # https://tools.ietf.org/html/rfc2812#section-3.4.5
@@ -309,11 +328,12 @@ def pack_command(command, **kwargs):
 
     # TIME
     # https://tools.ietf.org/html/rfc2812#section-3.4.6
-    # TIME
+    # TIME [<target>]
     # ----------
+    # TIME remote.*.edu
     # TIME
     elif command == "TIME":
-        return "TIME"
+        return "TIME " + f("target", kwargs, '')
 
     # CONNECT
     # https://tools.ietf.org/html/rfc2812#section-3.4.7
@@ -328,27 +348,27 @@ def pack_command(command, **kwargs):
 
     # TRACE
     # https://tools.ietf.org/html/rfc2812#section-3.4.8
-    # TRACE
+    # TRACE [<target>]
     # ----------
     # TRACE
     elif command == "TRACE":
-        return "TRACE"
+        return "TRACE " + f("target", kwargs, '')
 
     # ADMIN
     # https://tools.ietf.org/html/rfc2812#section-3.4.9
-    # ADMIN
+    # ADMIN [<target>]
     # ----------
     # ADMIN
     elif command == "ADMIN":
-        return "ADMIN"
+        return "ADMIN " + f("target", kwargs, '')
 
     # INFO
     # https://tools.ietf.org/html/rfc2812#section-3.4.10
-    # INFO
+    # INFO [<target>]
     # ----------
     # INFO
     elif command == "INFO":
-        return "INFO"
+        return "INFO " + f("target", kwargs, '')
 
     # SERVLIST
     # https://tools.ietf.org/html/rfc2812#section-3.5.1
@@ -372,32 +392,38 @@ def pack_command(command, **kwargs):
 
     # WHO
     # https://tools.ietf.org/html/rfc2812#section-3.6.1
-    # WHO [<mask>]
+    # WHO [<mask>] ["o"]
     # ----------
     # WHO jto* o
     # WHO *.fi
     # WHO
     elif command == "WHO":
-        return "WHO " + f("mask", kwargs, '') + " " + b("o", kwargs)
+        return "WHO {} {}".format(f("mask", kwargs, ''), b("o", kwargs))
 
     # WHOIS
     # https://tools.ietf.org/html/rfc2812#section-3.6.2
-    # WHOIS <mask>
+    # WHOIS <mask> [<target>]
     # ----------
+    # WHOIS jto* o remote.*.edu
     # WHOIS jto* o
     # WHOIS *.fi
     elif command == "WHOIS":
-        return "WHOIS " + pack("mask", kwargs)
+        return "WHOIS {} {}".format(pack("mask", kwargs),
+                                    f("target", kwargs, ''))
 
     # WHOWAS
     # https://tools.ietf.org/html/rfc2812#section-3.6.3
-    # WHOWAS <nick> [<count>]
+    # WHOWAS <nick> [<count>] [<target>]
     # ----------
+    # WHOWAS Wiz 9 remote.*.edu
     # WHOWAS Wiz 9
     # WHOWAS Mermaid
     elif command == "WHOWAS":
-        return "WHOWAS {} {}".format(pack("nick", kwargs),
-                                     f("count", kwargs, ''))
+        if "count" in kwargs:
+            return "WHOWAS {} {} {}".format(pack("nick", kwargs),
+                                            f("count", kwargs),
+                                            f("target", kwargs, ''))
+        return "WHOWAS " + pack("nick", kwargs)
 
     # KILL
     # https://tools.ietf.org/html/rfc2812#section-3.7.1
@@ -474,21 +500,26 @@ def pack_command(command, **kwargs):
 
     # SUMMON
     # https://tools.ietf.org/html/rfc2812#section-4.5
-    # SUMMON <nick> [<channel>]
+    # SUMMON <nick> [<target>] [<channel>]
     # ----------
-    # SUMMON Wiz #Finnish
+    # SUMMON Wiz remote.*.edu #Finnish
+    # SUMMON Wiz remote.*.edu
     # SUMMON Wiz
     elif command == "SUMMON":
-        return "SUMMON {} {}".format(f("nick", kwargs),
-                                     f("channel", kwargs, ''))
+        if "target" in kwargs:
+            return "SUMMON {} {} {}".format(f("nick", kwargs),
+                                            f("target", kwargs),
+                                            f("channel", kwargs, ''))
+        return "SUMMON " + f("nick", kwargs)
 
     # USERS
     # https://tools.ietf.org/html/rfc2812#section-4.6
-    # USERS
+    # USERS [<target>]
     # ----------
+    # USERS remote.*.edu
     # USERS
     elif command == "USERS":
-        return "USERS"
+        return "USERS " + f("target", kwargs, '')
 
     # WALLOPS
     # https://tools.ietf.org/html/rfc2812#section-4.7

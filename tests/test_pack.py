@@ -335,8 +335,10 @@ def test_restart():
 
 def test_summon():
     ''' SUMMON command '''
-    assert like("SUMMON Wiz #Finnish", pack_command(
-        "SUMMON", nick="Wiz", channel="#Finnish"))
+    assert like("SUMMON Wiz remote.*.edu #Finnish", pack_command(
+        "SUMMON", nick="Wiz", target="remote.*.edu", channel="#Finnish"))
+    assert like("SUMMON Wiz remote.*.edu", pack_command(
+        "SUMMON", nick="Wiz", target="remote.*.edu"))
     assert like("SUMMON Wiz", pack_command(
         "SUMMON", nick="Wiz"))
 

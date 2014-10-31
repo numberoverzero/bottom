@@ -1,4 +1,4 @@
-# bottom 0.9.6
+# bottom 0.9.7
 
 [![Build Status]
 (https://travis-ci.org/numberoverzero/bottom.svg?branch=master)]
@@ -85,13 +85,11 @@ tox
 ```
 
 ### TODO
-* Resolve open diversions from rfc2812 in `pack.py:pack_command`
-  * Add `target` argument for all listed operations
+* Better `Client` docstrings
 * Add missing replies/errors to `unpack.py:unpack_command`
   * Add reply/error parameters to `unpack.py:parameters`
   * Remove `Client.logger` when all rfc2812 replies implemented
-* Better `Client` docstrings
-* Document [`Supported Events`](#supported-events)
+  * Document [`Supported Events`](#supported-events)
 
 # API
 
@@ -236,9 +234,9 @@ There are three parts to each command's documentation:
   * `<parameter>` the location of the `parameter` passed to `send`.  Literal `<>` are not transferred.
   * `[value]` an optional value, which may be excluded.  In some cases, such as [`LINKS`](#links), an optional value may only be provided if another dependant value is present.  Literal `[]` are not transferred.
   * `:` the start of a field which may contain spaces.  This is always the last field of an IRC line.
+  * `"value"` literal value as printed.  Literal `""` are not transferred.
 3. **Notes** - additional options or restrictions on commands that do not fit a pre-defined convention.  Common notes include keywords for ease of searching:
   * `RFC_DELTA` - Some commands have different parameters from their RFC2812 definitions.  **Please pay attention to these notes, since they are the most likely to cause issues**.  These changes can include:
-    * Omission of required or optional parameters
     * Addition of new required or optional parameters
     * Default values for new or existing parameters
   * `CONDITIONAL_OPTION` - there are some commands whose values depend on each other.  For [`LINKS`](#links), `<mask>` REQUIRES `<remote>`.  [`SERVLIST`](#servlist) `<type>` REQUIRES `<mask>`.
@@ -387,24 +385,26 @@ client.send('TOPIC', channel='#foo-chan', message='Yes, this is dog')
 client.send('NAMES')
 client.send('NAMES', channel='#foo-chan')
 client.send('NAMES', channel=['#foo-chan', '#other'])
+client.send('NAMES', channel=['#foo-chan', '#other'], target='remote.*.edu')
 ```
 
-    NAMES [<channel>]
+    NAMES [<channel>] [<target>]
 
 * MULTIPLE_VALUES `channel`
-* RFC_DELTA optional parameter `target` is not available
+* CONDITIONAL_OPTION `target` requires `channel`
 
 #### [LIST]
 ```python
 client.send('LIST')
 client.send('LIST', channel='#foo-chan')
 client.send('LIST', channel=['#foo-chan', '#other'])
+client.send('LIST', channel=['#foo-chan', '#other'], target='remote.*.edu')
 ```
 
-    LIST [<channel>]
+    LIST [<channel>] [<target>]
 
 * MULTIPLE_VALUES `channel`
-* RFC_DELTA optional parameter `target` is not available
+* CONDITIONAL_OPTION `target` requires `channel`
 
 #### [INVITE]
 ```python
@@ -456,40 +456,39 @@ client.send('NOTICE', target='#foo-chan', message='Maintenance in 5 mins')
 #### [MOTD]
 ```python
 client.send('MOTD')
+client.send('MOTD', target='remote.*.edu')
 ```
 
-    MOTD
-
-* RFC_DELTA optional parameter `target` is not available
+    MOTD [<target>]
 
 #### [LUSERS]
 ```python
 client.send('LUSERS')
 client.send('LUSERS', mask='*.edu')
+client.send('LUSERS', mask='*.edu', target='remote.*.edu')
 ```
 
-    LUSERS [<mask>]
+    LUSERS [<mask>] [<target>]
 
-* RFC_DELTA optional parameter `target` is not available
+* CONDITIONAL_OPTION `target` requires `mask`
 
 #### [VERSION]
 ```python
 client.send('VERSION')
 ```
 
-    VERSION
-
-* RFC_DELTA optional parameter `target` is not available
+    VERSION [<target>]
 
 #### [STATS]
 ```python
 client.send('STATS')
 client.send('STATS', query='m')
+client.send('STATS', query='m', target='remote.*.edu')
 ```
 
-    STATS [<query>]
+    STATS [<query>] [<target>]
 
-* RFC_DELTA optional parameter `target` is not available
+* CONDITIONAL_OPTION `target` requires `query`
 
 #### [LINKS]
 ```python
@@ -507,11 +506,10 @@ client.send('LINKS', remote='*.edu', mask='*.bu.edu')
 #### [TIME]
 ```python
 client.send('TIME')
+client.send('TIME', target='remote.*.edu')
 ```
 
-    TIME
-
-* RFC_DELTA optional parameter `target` is not available
+    TIME [<target>]
 
 #### [CONNECT]
 ```python
@@ -527,29 +525,26 @@ client.send('CONNECT', target='tolsun.oulu.fi', port=6667, remote='*.edu')
 #### [TRACE]
 ```python
 client.send('TRACE')
+client.send('TRACE', target='remote.*.edu')
 ```
 
-    TRACE
-
-* RFC_DELTA optional parameter `target` is not available
+    TRACE [<target>]
 
 #### [ADMIN]
 ```python
 client.send('ADMIN')
+client.send('ADMIN', target='remote.*.edu')
 ```
 
-    ADMIN
-
-* RFC_DELTA optional parameter `target` is not available
+    ADMIN [<target>]
 
 #### [INFO]
 ```python
 client.send('INFO')
+client.send('INFO', target='remote.*.edu')
 ```
 
-    INFO
-
-* RFC_DELTA optional parameter `target` is not available
+    INFO [<target>]
 
 ## Service Query and Commands
 #### [SERVLIST]
@@ -587,11 +582,11 @@ client.send('WHO', mask='*.fi', o=True)
 #### [WHOIS]
 ```python
 client.send('WHOIS', mask='*.fi')
+client.send('WHOIS', mask='*.fi', target='remote.*.edu')
 ```
 
-    WHOIS <mask>
+    WHOIS <mask> [<target>]
 
-* RFC_DELTA optional parameter `target` is not available
 * MULTIPLE_VALUES `mask`
 
 #### [WHOWAS]
@@ -599,13 +594,14 @@ client.send('WHOIS', mask='*.fi')
 client.send('WHOWAS', nick='WiZ')
 client.send('WHOWAS', nick='WiZ', count=10)
 client.send('WHOWAS', nick=['WiZ', 'WiZ-friend'], count=10)
+client.send('WHOWAS', nick='WiZ', count=10, target='remote.*.edu')
 ```
 
-    WHOWAS <nick> [<count>]
+    WHOWAS <nick> [<count>] [<target>]
 
-* RFC_DELTA optional parameter `target` is not available
 * PARAM_RENAME `nickname -> nick`
 * MULTIPLE_VALUES `nick`
+* CONDITIONAL_OPTION `target` requires `count`
 
 ## Miscellaneous Messages
 #### [KILL]
@@ -679,22 +675,22 @@ client.send('RESTART')
 #### [SUMMON]
 ```python
 client.send('SUMMON', nick='WiZ')
-client.send('SUMMON', nick='WiZ', channel='#foo-chan')
+client.send('SUMMON', nick='WiZ', target='remote.*.edu')
+client.send('SUMMON', nick='WiZ', target='remote.*.edu', channel='#foo-chan')
 ```
 
-    SUMMON <nick> [<channel>]
+    SUMMON <nick> [<target>] [<channel>]
 
-* RFC_DELTA optional parameter `target` is not available
-* PARAM_RENAME `target -> nick`  *(since target can only be a nick)*
+* PARAM_RENAME `user -> nick`
+* CONDITIONAL_OPTION `channel` requires `target`
 
 #### [USERS]
 ```python
 client.send('USERS')
+client.send('USERS', target='remote.*.edu')
 ```
 
-    USERS
-
-* RFC_DELTA optional parameter `target` is not available
+    USERS [<target>]
 
 #### [WALLOPS]
 ```python
