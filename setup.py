@@ -19,7 +19,7 @@ TEST_REQUIREMENTS = [
 if __name__ == "__main__":
     setup(
         name='bottom',
-        version='0.9.7',
+        version='0.9.8',
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[
