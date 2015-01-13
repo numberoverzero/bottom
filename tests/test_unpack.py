@@ -37,15 +37,28 @@ def test_synonym():
     assert synonym("!@#test") == synonym("!@#TEST") == "!@#TEST"
 
 
-# =====================================
-# Specific command tests start here
-# =====================================
-
-
 def validate(command, message, expected_kwargs):
     ''' Basic case - expected_kwargs expects all parameters of the command '''
     assert (command, expected_kwargs) == unpack_command(message)
     assert set(expected_kwargs) == set(parameters(command))
+
+
+def test_param_positioning():
+    '''use of : shouldn't matter when parsing args'''
+    command = "PING"
+    message = "PING this_is_message"
+    expected_kwargs = {"message": "this_is_message"}
+    validate(command, message, expected_kwargs)
+
+    command = "PING"
+    message = "PING :this_is_message"
+    expected_kwargs = {"message": "this_is_message"}
+    validate(command, message, expected_kwargs)
+
+
+# =====================================
+# Specific command tests start here
+# =====================================
 
 
 def test_client_commands():
@@ -104,6 +117,15 @@ def test_part():
     validate(command, message, expected_kwargs)
 
 
+def test_part_no_msg():
+    ''' PART command '''
+    command = "PART"
+    message = ":n!u@h PART #c"
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
+                       "channel": "#c", "message": ""}
+    validate(command, message, expected_kwargs)
+
+
 def test_message_commands():
     ''' message-only commands '''
     cmds = ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD", "RPL_WELCOME",
@@ -120,6 +142,15 @@ def test_count_commands():
     expected_kwargs = {"message": "m", "count": 3}
     for command in cmds:
         message = "{} nick 3 :m".format(command)
+        validate(command, message, expected_kwargs)
+
+
+def test_count_commands_no_msg():
+    ''' count + message commands '''
+    cmds = ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]
+    expected_kwargs = {"message": "", "count": 3}
+    for command in cmds:
+        message = "{} nick :3".format(command)
         validate(command, message, expected_kwargs)
 
 
