@@ -197,21 +197,24 @@ def split_line(msg):
     params = (match.group('params') or '').split()
     message = match.group('message') or ''
 
-    return prefix, command, params, message
+    if message:
+        params.append(message)
+
+    return prefix, command, params
 
 
 def unpack_command(msg):
-    prefix, command, params, message = split_line(msg.strip())
+    prefix, command, params = split_line(msg.strip())
     command = synonym(command)
     kwargs = {}
 
     if command == "PING":
-        kwargs["message"] = message
+        kwargs["message"] = params[-1]
 
     elif command in ["PRIVMSG", "NOTICE"]:
         nickmask(prefix, kwargs)
         kwargs["target"] = params[0]
-        kwargs["message"] = message
+        kwargs["message"] = params[-1]
 
     elif command == "JOIN":
         nickmask(prefix, kwargs)
@@ -220,20 +223,26 @@ def unpack_command(msg):
     elif command == "PART":
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
-        kwargs["message"] = message
+        if(len(params) > 1):
+            kwargs["message"] = params[-1]
+        else:
+            kwargs["message"] = ''
 
     elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
                      "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
                      "RPL_LUSERCLIENT", "RPL_LUSERME"]:
-        kwargs["message"] = message
+        kwargs["message"] = params[-1]
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
         kwargs["count"] = int(params[1])
-        kwargs["message"] = message
+        if(len(params) > 2):
+            kwargs["message"] = params[-1]
+        else:
+            kwargs["message"] = ''
 
     elif command in ["RPL_MYINFO", "RPL_BOUNCE"]:
-        kwargs["info"] = params[1:]
-        kwargs["message"] = message
+        kwargs["info"] = params[1:-1]
+        kwargs["message"] = params[-1]
 
     else:
         raise ValueError("Unknown command '{}'".format(command))
