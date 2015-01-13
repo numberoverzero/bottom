@@ -106,10 +106,10 @@ def validate_func(event, func, parameters):
 
 
 def partial_bind(func):
+    sig = inspect.signature(func)
     # Wrap non-coroutines so we can always `yield from func(**kw)`
     if not asyncio.iscoroutinefunction(func):
         func = asyncio.coroutine(func)
-    sig = inspect.signature(func)
     base = {}
     for key, param in sig.parameters.items():
         default = param.default
