@@ -1,4 +1,4 @@
-# bottom 0.9.8
+# bottom 0.9.9
 
 [![Build Status]
 (https://travis-ci.org/numberoverzero/bottom.svg?branch=master)]
