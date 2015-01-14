@@ -204,3 +204,27 @@ def test_trigger_subset_params_with_defaults(events, run):
 
     assert params["one"] == 1
     assert params["two"] == "default"
+
+
+# ===================
+# Function binding
+# ===================
+
+
+def test_bound_method_of_instance(events, run):
+    ''' verify bound methods are correctly inspected '''
+    params = {}
+
+    class Class(object):
+        def method(self, one, two="default"):
+            params["one"] = one
+            params["two"] = two
+    instance = Class()
+    bound_method = instance.method
+    events.on("2")(bound_method)
+
+    kwargs = {"one": 1}
+    run(events.trigger("2", **kwargs))
+
+    assert params["one"] == 1
+    assert params["two"] == "default"
