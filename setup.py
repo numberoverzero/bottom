@@ -6,6 +6,7 @@ HERE = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(HERE, 'README.markdown')).read()
 
 REQUIREMENTS = [
+    'simplex'
 ]
 
 TEST_REQUIREMENTS = [
@@ -19,7 +20,7 @@ TEST_REQUIREMENTS = [
 if __name__ == "__main__":
     setup(
         name='bottom',
-        version='0.9.9',
+        version='0.9.10',
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[
@@ -41,7 +42,6 @@ if __name__ == "__main__":
         keywords='irc bot asnycio client',
         platforms='any',
         include_package_data=True,
-        py_modules=['bottom'],
         packages=find_packages(exclude=('tests',)),
         install_requires=REQUIREMENTS,
         tests_require=REQUIREMENTS + TEST_REQUIREMENTS,
