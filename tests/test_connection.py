@@ -1,4 +1,4 @@
-from bottom import Connection
+from bottom.connection import Connection
 import pytest
 
 
