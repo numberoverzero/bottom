@@ -39,7 +39,7 @@ class Router(object):
             if match:
                 fields = match.groupdict()
                 func(nick, target, fields)
-            break
+                break
 
     def route(self, pattern, **kwargs):
         '''
