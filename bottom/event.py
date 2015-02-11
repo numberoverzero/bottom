@@ -64,7 +64,10 @@ class EventsMixin(object):
         loop.run_until_complete(events.trigger(event, **kwargs))
 
         '''
-        return lambda func: self.__add_event__(event, func)
+        def wrap_function(func):
+            self.__add_event__(event, func)
+            return func
+        return wrap_function
 
 
 def validate_func(event, func, parameters):
