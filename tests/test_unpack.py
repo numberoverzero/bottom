@@ -146,7 +146,7 @@ def test_part_no_msg():
 
 def test_channel_message_commands():
     ''' channel and message commands '''
-    cmds = ["RPL_TOPIC", "RPL_NOTOPIC"]
+    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]
     expected_kwargs = {"channel": "#ch", "message": "m"}
     for command in cmds:
         message = command + " nick #ch :m"

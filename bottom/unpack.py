@@ -235,7 +235,7 @@ def unpack_command(msg):
         else:
             kwargs["message"] = ''
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
 
@@ -285,7 +285,7 @@ def parameters(command):
         add_nickmask(params)
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         params.append("channel")
         params.append("message")
 
