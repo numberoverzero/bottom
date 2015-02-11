@@ -208,7 +208,7 @@ def unpack_command(msg):
     command = synonym(command)
     kwargs = {}
 
-    if command == "PING":
+    if command in ["PING"]:
         kwargs["message"] = params[-1]
 
     elif command in ["PRIVMSG", "NOTICE"]:
@@ -216,17 +216,21 @@ def unpack_command(msg):
         kwargs["target"] = params[0]
         kwargs["message"] = params[-1]
 
-    elif command == "JOIN":
+    elif command in ["JOIN"]:
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
 
-    elif command == "PART":
+    elif command in ["PART"]:
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
         if(len(params) > 1):
             kwargs["message"] = params[-1]
         else:
             kwargs["message"] = ''
+
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC"]:
+        kwargs["channel"] = params[1]
+        kwargs["message"] = params[2]
 
     elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
                      "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
@@ -258,7 +262,7 @@ def parameters(command):
         params.append("host")
         params.append("port")
 
-    elif command == "PING":
+    elif command in ["PING"]:
         params.append("message")
 
     elif command in ["PRIVMSG", "NOTICE"]:
@@ -266,11 +270,15 @@ def parameters(command):
         params.append("target")
         params.append("message")
 
-    elif command == "JOIN":
+    elif command in ["JOIN"]:
         add_nickmask(params)
         params.append("channel")
 
-    elif command == "PART":
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC"]:
+        params.append("channel")
+        params.append("message")
+
+    elif command in ["PART"]:
         add_nickmask(params)
         params.append("channel")
         params.append("message")

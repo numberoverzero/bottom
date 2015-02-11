@@ -126,6 +126,15 @@ def test_part_no_msg():
     validate(command, message, expected_kwargs)
 
 
+def test_channel_message_commands():
+    ''' channel and message commands '''
+    cmds = ["RPL_TOPIC", "RPL_NOTOPIC"]
+    expected_kwargs = {"channel": "#ch", "message": "m"}
+    for command in cmds:
+        message = command + " nick #ch :m"
+        validate(command, message, expected_kwargs)
+
+
 def test_message_commands():
     ''' message-only commands '''
     cmds = ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD", "RPL_WELCOME",
