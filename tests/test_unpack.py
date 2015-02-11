@@ -108,6 +108,24 @@ def test_join():
     validate(command, message, expected_kwargs)
 
 
+def test_quit():
+    ''' QUIT command '''
+    command = "QUIT"
+    message = ":n!u@h QUIT :m"
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
+                       "message": "m"}
+    validate(command, message, expected_kwargs)
+
+
+def test_quit_no_msg():
+    ''' QUIT command '''
+    command = "QUIT"
+    message = ":n!u@h QUIT"
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
+                       "message": ""}
+    validate(command, message, expected_kwargs)
+
+
 def test_part():
     ''' PART command '''
     command = "PART"
@@ -138,7 +156,8 @@ def test_channel_message_commands():
 def test_message_commands():
     ''' message-only commands '''
     cmds = ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD", "RPL_WELCOME",
-            "RPL_YOURHOST", "RPL_CREATED", "RPL_LUSERCLIENT", "RPL_LUSERME"]
+            "RPL_YOURHOST", "RPL_CREATED", "RPL_LUSERCLIENT", "RPL_LUSERME",
+            "ERR_NOMOTD"]
     expected_kwargs = {"message": "m"}
     for command in cmds:
         message = command + " :m"
