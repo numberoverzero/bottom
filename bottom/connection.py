@@ -45,7 +45,7 @@ class Connection(object):
                 try:
                     event, kwargs = unpack.unpack_command(msg)
                 except ValueError:
-                    print("Couldn't parse line <<<{}>>>".format(msg))
+                    print("PARSE ERROR {}".format(msg))
                 else:
                     yield from self.events.trigger(event, **kwargs)
             else:
