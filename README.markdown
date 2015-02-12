@@ -1,4 +1,4 @@
-# bottom 0.9.12
+# bottom 0.9.13
 
 [![Build Status]
 (https://travis-ci.org/numberoverzero/bottom.svg?branch=master)]
@@ -71,7 +71,7 @@ asyncio.get_event_loop().run_until_complete(bot.run())
 * There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes section of each command in [`Supported Commands`](#supported-commands).
 
 # Contributing
-Contributions welcome!  Please make sure `tox` passes (including flake8) before submitting a PR.
+Contributions welcome!  When reporting issues, please provide enough detail to reproduce the bug - sample code is ideal.  When submitting a PR, please make sure `tox` passes (including flake8).
 
 ### Development
 bottom uses `tox`, `pytest` and `flake8`.  To get everything set up:
@@ -88,8 +88,11 @@ tox
 * Better `Client` docstrings
 * Add missing replies/errors to `unpack.py:unpack_command`
   * Add reply/error parameters to `unpack.py:parameters`
-  * Remove `Client.logger` when all rfc2812 replies implemented
   * Document [`Supported Events`](#supported-events)
+
+
+### Contributors
+* [thebigmunch](https://github.com/thebigmunch)
 
 # API
 

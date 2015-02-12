@@ -1,6 +1,6 @@
 """ Simplified support for rfc2812 """
 # https://tools.ietf.org/html/rfc2812
-import collections
+import collections.abc
 MISSING = object()
 
 
