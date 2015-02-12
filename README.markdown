@@ -92,6 +92,7 @@ tox
 
 
 ### Contributors
+* [fahhem](https://github.com/fahhem)
 * [thebigmunch](https://github.com/thebigmunch)
 
 # API
