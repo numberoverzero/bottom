@@ -23,6 +23,7 @@
             router.bot.send("PRIVMSG", target=target, message=message)
 
 """
+import asyncio
 import simplex
 
 
@@ -32,14 +33,14 @@ class Router(object):
         self.routes = {}
         bot.on("PRIVMSG")(self.handle)
 
+    @asyncio.coroutine
     def handle(self, nick, target, message):
         ''' bot callback entrance '''
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
                 fields = match.groupdict()
-                func(nick, target, fields)
-                break
+                yield from func(nick, target, fields)
 
     def route(self, pattern, **kwargs):
         '''
@@ -54,6 +55,8 @@ class Router(object):
 
         '''
         def wrapper(function):
+            if not asyncio.iscoroutinefunction(function):
+                function = asyncio.coroutine(function)
             compiled = simplex.compile(pattern)
             self.routes[compiled] = (function, pattern)
             return function
