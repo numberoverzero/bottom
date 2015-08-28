@@ -52,7 +52,7 @@ def test_handle_no_routes(router, loop):
 
 def test_handle_no_matching_route(router, loop):
     @router.route("hello, [name]")
-    def handle(nick, target, fields):
+    async def handle(nick, target, fields):
         # Should not be called
         assert False
 
