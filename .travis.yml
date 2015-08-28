@@ -1,8 +1,8 @@
 language: python
-python: 3.4
+python: 3.5-dev
 env:
-  - TOXENV=py34
+  - TOXENV=py35
 install: pip install tox coveralls
 script: tox -e $TOXENV
 after_success:
-  - coveralls --rcfile=setup.cfg
+  - coveralls
