@@ -33,6 +33,13 @@ def run():
 
 
 @pytest.fixture
+def loop():
+    # TODO: fix to use a new event loop.  Because the loop fix will require
+    # touching a lot of code, this is an easy way to get the build green again
+    return asyncio.new_event_loop()
+
+
+@pytest.fixture
 def eventparams():
     return {}
 
