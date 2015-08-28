@@ -55,9 +55,10 @@ class Router(object):
 
         '''
         def wrapper(function):
-            if not asyncio.iscoroutinefunction(function):
-                function = asyncio.coroutine(function)
+            wrapped = function
+            if not asyncio.iscoroutinefunction(wrapped):
+                wrapped = asyncio.coroutine(wrapped)
             compiled = simplex.compile(pattern)
-            self.routes[compiled] = (function, pattern)
+            self.routes[compiled] = (wrapped, pattern)
             return function
         return wrapper
