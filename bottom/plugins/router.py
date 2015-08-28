@@ -33,14 +33,13 @@ class Router(object):
         self.routes = {}
         bot.on("PRIVMSG")(self.handle)
 
-    @asyncio.coroutine
-    def handle(self, nick, target, message):
+    async def handle(self, nick, target, message):
         ''' bot callback entrance '''
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
                 fields = match.groupdict()
-                yield from func(nick, target, fields)
+                await func(nick, target, fields)
 
     def route(self, pattern, **kwargs):
         '''
