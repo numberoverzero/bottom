@@ -144,6 +144,15 @@ def test_part_no_msg():
     validate(command, message, expected_kwargs)
 
 
+def test_invite():
+    ''' INVITE command '''
+    command = "INVITE"
+    message = ":n!u@h INVITE n #c"
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
+                       "target": "n", "channel": "#c"}
+    validate(command, message, expected_kwargs)
+
+
 def test_channel_message_commands():
     ''' channel and message commands '''
     cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]
