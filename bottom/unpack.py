@@ -235,6 +235,11 @@ def unpack_command(msg):
         else:
             kwargs["message"] = ''
 
+    elif command in ["INVITE"]:
+        nickmask(prefix, kwargs)
+        kwargs["target"] = params[0]
+        kwargs["channel"] = params[1]
+
     elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
@@ -293,6 +298,11 @@ def parameters(command):
         add_nickmask(params)
         params.append("channel")
         params.append("message")
+
+    elif command in ['INVITE']:
+        add_nickmask(params)
+        params.append("target")
+        params.append("channel")
 
     elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
                      "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
