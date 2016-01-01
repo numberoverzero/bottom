@@ -18,8 +18,8 @@ class Connection(object):
         self.reader, self.writer = yield from asyncio.open_connection(
             self.host, self.port, ssl=self.ssl, loop=loop)
         self._connected = True
-        yield from self.events.trigger(
-            "CLIENT_CONNECT", host=self.host, port=self.port)
+        asyncio.Task(self.events.trigger(
+            "CLIENT_CONNECT", host=self.host, port=self.port))
 
     @asyncio.coroutine
     def disconnect(self):
