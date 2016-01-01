@@ -29,8 +29,8 @@ class Connection(object):
         self.writer = None
         self.reader = None
         self._connected = False
-        yield from self.events.trigger(
-            "CLIENT_DISCONNECT", host=self.host, port=self.port)
+        asyncio.Task(self.events.trigger(
+            "CLIENT_DISCONNECT", host=self.host, port=self.port))
 
     @property
     def connected(self):
