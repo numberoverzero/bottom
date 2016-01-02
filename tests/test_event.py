@@ -83,7 +83,8 @@ def test_defaults(events):
 
 def test_on_coroutine(events):
     ''' coroutines are fine '''
-    handle = asyncio.coroutine(lambda one: None)
+    async def handle(one):
+        pass
     events.on("1")(handle)
 
 
@@ -207,14 +208,12 @@ def test_callback_ordering(events, flush, loop):
     call_order = []
     complete_order = []
 
-    @asyncio.coroutine
-    def first():
+    async def first():
         call_order.append("first")
-        yield from second_complete.wait()
+        await second_complete.wait()
         complete_order.append("first")
 
-    @asyncio.coroutine
-    def second():
+    async def second():
         call_order.append("second")
         complete_order.append("second")
         second_complete.set()

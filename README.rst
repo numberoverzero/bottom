@@ -9,7 +9,7 @@
 .. image:: https://img.shields.io/pypi/l/bottom.svg?style=flat-square
     :target: https://github.com/numberoverzero/bottom/blob/master/LICENSE
 
-asyncio-based rfc2812-compliant IRC Client
+asyncio-based rfc2812-compliant IRC Client (3.5+)
 
 Installation
 ============
@@ -115,7 +115,7 @@ Client.run()
 
 *This is a coroutine.*
 
-Start the magic.  This will connect the client, and then read until it disconnects.  The ``CLIENT_DISCONNECT`` event will fire before the loop exits, allowing you to ``yield from Client.connect()`` and keep the client running.
+Start the magic.  This will connect the client, and then read until it disconnects.  The ``CLIENT_DISCONNECT`` event will fire before the loop exits, allowing you to ``await Client.connect()`` and keep the client running.
 
 If you want to call this synchronously (block until it's complete) use the following::
 
@@ -174,7 +174,7 @@ VAR_KWARGS can be used, as long as the name doesn't mask an actual parameter.  V
         logger.log(args)
 
 
-Decorated functions will be invoked asynchronously, and may optionally use the ``yield from`` syntax.  Functions do not need to be wrapped with ``@ayncio.coroutine`` - this is handled as part of the function caching process.
+Decorated functions will be invoked asynchronously, and may optionally use the ``await`` syntax.  Functions do not need to be wrapped with ``@ayncio.coroutine`` - this is handled as part of the function caching process.
 
 Client.trigger(event, \*\*kwargs)
 -------------------------------
@@ -217,10 +217,10 @@ Client.connect()
 Attempt to reconnect using the client's host, port::
 
     @bot.on('client_disconnect')
-    def reconnect():
+    async def reconnect():
         # Wait a few seconds
-        yield from asyncio.sleep(3)
-        yield from bot.connect()
+        await asyncio.sleep(3)
+        await bot.connect()
 
 
 Client.disconnect()
@@ -231,9 +231,9 @@ Client.disconnect()
 Disconnect from the server if connected::
 
     @bot.on('privmsg')
-    def suicide_pill(nick, message):
+    async def suicide_pill(nick, message):
         if nick == "spy_handler" and message == "last stop":
-            yield from bot.disconnect()
+            await bot.disconnect()
 
 Client.send(command, \*\*kwargs)
 ------------------------------
