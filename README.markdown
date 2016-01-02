@@ -1,5 +1,5 @@
-[![Build](https://img.shields.io/travis/numberoverzero/bloop/master.svg?style=flat-square)]()
-[![Coverage](https://img.shields.io/coveralls/numberoverzero/bloop/master.svg?style=flat-square)]()
+[![Build](https://img.shields.io/travis/numberoverzero/bottom/master.svg?style=flat-square)]()
+[![Coverage](https://img.shields.io/coveralls/numberoverzero/bottom/master.svg?style=flat-square)]()
 
 Downloads https://pypi.python.org/pypi/bottom
 
