@@ -1,4 +1,12 @@
+import asyncio
 import pytest
+from bottom import Client
+
+
+def test_default_event_loop():
+    default_loop = asyncio.get_event_loop()
+    client = Client(host="host", port="port")
+    assert client.loop is default_loop
 
 
 def test_send_unknown_command(client, loop):

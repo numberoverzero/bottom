@@ -31,22 +31,19 @@ class Client(event.EventsMixin):
         packed_command = pack.pack_command(command, **kwargs)
         self.connection.send(packed_command)
 
-    @asyncio.coroutine
-    def connect(self):
-        yield from self.connection.connect()
+    async def connect(self):
+        await self.connection.connect()
 
-    @asyncio.coroutine
-    def disconnect(self):
-        yield from self.connection.disconnect()
+    async def disconnect(self):
+        await self.connection.disconnect()
 
     @property
     def connected(self):
         return self.connection.connected
 
-    @asyncio.coroutine
-    def run(self):
+    async def run(self):
         ''' Run the client until it disconnects (without reconnecting) '''
-        yield from self.connection.run()
+        await self.connection.run()
 
     def on(self, command):
         '''
