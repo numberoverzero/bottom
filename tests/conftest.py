@@ -15,6 +15,15 @@ def loop():
 
 
 @pytest.fixture
+def flush(loop):
+    """Run loop once, to execute any pending tasks"""
+    def _flush():
+        loop.stop()
+        loop.run_forever()
+    return _flush
+
+
+@pytest.fixture
 def eventparams():
     return {}
 

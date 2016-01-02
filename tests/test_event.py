@@ -37,7 +37,6 @@ def watch():
 # EventsMixin.on
 # ==============
 
-
 def test_on_subset(events):
     ''' register a handler with a subset of available parameters '''
     for e in ["0", "1", "2"]:
@@ -92,40 +91,44 @@ def test_on_coroutine(events):
 # EventsMixin.trigger
 # ===================
 
-def test_trigger(events, loop, watch):
+def test_trigger(events, watch, flush):
     ''' trigger calls registered handler '''
     w = watch()
     events.on("0")(lambda: w.call())
-    loop.run_until_complete(events.trigger("0"))
+    events.trigger("0")
+    flush()
     assert w.called
 
 
-def test_trigger_multiple_calls(events, loop, watch):
+def test_trigger_multiple_calls(events, watch, flush):
     ''' trigger calls re-registered handler twice '''
     w = watch()
     events.on("0")(lambda: w.call())
     events.on("0")(lambda: w.call())
-    loop.run_until_complete(events.trigger("0"))
+    events.trigger("0")
+    flush()
     assert w.calls == 2
 
 
-def test_trigger_multiple_handlers(events, loop, watch):
+def test_trigger_multiple_handlers(events, watch, flush):
     ''' trigger calls re-registered handler twice '''
     w1 = watch()
     w2 = watch()
     events.on("0")(lambda: w1.call())
     events.on("0")(lambda: w2.call())
-    loop.run_until_complete(events.trigger("0"))
+    events.trigger("0")
+    flush()
     assert w1.calls == 1
     assert w2.calls == 1
 
 
-def test_trigger_no_handlers(events, loop):
+def test_trigger_no_handlers(events, flush):
     ''' trigger an event with no handlers '''
-    loop.run_until_complete(events.trigger("some event"))
+    events.trigger("some event")
+    flush()
 
 
-def test_trigger_superset_params(events, loop):
+def test_trigger_superset_params(events, flush):
     ''' trigger an event with kwarg keys that aren't in event params '''
     params = {}
 
@@ -134,12 +137,13 @@ def test_trigger_superset_params(events, loop):
         params["two"] = two
     events.on("2")(func)
     kwargs = {"one": 1, "two": 2, "unused": "value"}
-    loop.run_until_complete(events.trigger("2", **kwargs))
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] == 2
 
 
-def test_trigger_subset_params(events, loop):
+def test_trigger_subset_params(events, flush):
     ''' trigger an event with missing kwargs pads with None '''
     params = {}
 
@@ -148,12 +152,13 @@ def test_trigger_subset_params(events, loop):
         params["two"] = two
     events.on("2")(func)
     kwargs = {"one": 1}
-    loop.run_until_complete(events.trigger("2", **kwargs))
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] is None
 
 
-def test_trigger_subset_params_with_defaults(events, loop):
+def test_trigger_subset_params_with_defaults(events, flush):
     ''' trigger an event with missing kwargs uses function defaults '''
     params = {}
 
@@ -162,7 +167,8 @@ def test_trigger_subset_params_with_defaults(events, loop):
         params["two"] = two
     events.on("2")(func)
     kwargs = {"one": 1}
-    loop.run_until_complete(events.trigger("2", **kwargs))
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] == "default"
 
@@ -172,7 +178,7 @@ def test_trigger_subset_params_with_defaults(events, loop):
 # ===================
 
 
-def test_bound_method_of_instance(events, loop):
+def test_bound_method_of_instance(events, flush):
     ''' verify bound methods are correctly inspected '''
     params = {}
 
@@ -184,6 +190,7 @@ def test_bound_method_of_instance(events, loop):
     bound_method = instance.method
     events.on("2")(bound_method)
     kwargs = {"one": 1}
-    loop.run_until_complete(events.trigger("2", **kwargs))
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] == "default"

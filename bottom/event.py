@@ -19,7 +19,7 @@ class EventsMixin(object):
         self.__getparams__ = getparams
         self.loop = loop
 
-    def __add_event__(self, event, func):
+    def _add_event(self, event, func):
         '''
         Validate the func's signature, then partial_bind the function to speed
         up argument injection.
@@ -30,14 +30,10 @@ class EventsMixin(object):
         self.__partials__[event].append(partial_bind(func))
         return func
 
-    @asyncio.coroutine
     def trigger(self, event, **kwargs):
-        ''' This is a coroutine so that we can `yield from` its execution '''
         partials = self.__partials__[event]
-        tasks = [func(**kwargs) for func in partials]
-        if not tasks:
-            return
-        yield from asyncio.wait(tasks, loop=self.loop)
+        for func in partials:
+            asyncio.async(func(**kwargs), loop=self.loop)
 
     def on(self, event):
         '''
@@ -61,12 +57,15 @@ class EventsMixin(object):
         event = 'test'
         kwargs = {'one': 1, 'two': 2, 'arg': 'arg'}
 
+        events.trigger(event, **kwargs)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(events.trigger(event, **kwargs))
+        # Run all queued events
+        loop.stop()
+        loop.run_forever()
 
         '''
         def wrap_function(func):
-            self.__add_event__(event, func)
+            self._add_event(event, func)
             return func
         return wrap_function
 
