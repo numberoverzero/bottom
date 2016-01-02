@@ -95,6 +95,7 @@ TODO
 
 * Better `Client` docstrings
 * Add missing replies/errors to `unpack.py:unpack_command`
+
   * Add reply/error parameters to `unpack.py:parameters`
   * Document supported_events_
 
