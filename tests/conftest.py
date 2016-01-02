@@ -6,6 +6,11 @@ import collections
 
 
 @pytest.fixture
+def watch():
+    return Watcher()
+
+
+@pytest.fixture
 def loop():
     '''
     Keep things clean by using a new event loop
@@ -18,7 +23,6 @@ def loop():
 @pytest.fixture
 def flush(loop):
     """Run loop once, to execute any pending tasks"""
-
     async def sentinel():
         pass
 
@@ -38,11 +42,6 @@ def schedule(loop, flush):
 
 
 @pytest.fixture
-def connection(patch_connection, client, loop):
-    return Connection("host", "port", client, "UTF-8", True, loop=loop)
-
-
-@pytest.fixture
 def reader():
     return MockStreamReader()
 
@@ -50,6 +49,19 @@ def reader():
 @pytest.fixture
 def writer():
     return MockStreamWriter()
+
+
+@pytest.fixture
+def patch_connection(reader, writer, monkeypatch):
+    '''
+    Patch asyncio.open_connection to return a mock reader, writer.
+
+    Returns the reader, writer pair for mocking
+    '''
+    async def mock(*args, **kwargs):
+        return reader, writer
+    monkeypatch.setattr(asyncio, 'open_connection', mock)
+    return reader, writer
 
 
 @pytest.fixture
@@ -64,22 +76,8 @@ def client(patch_connection, loop):
 
 
 @pytest.fixture
-def patch_connection(reader, writer, monkeypatch):
-    '''
-    Patch asyncio.open_connection to return a mock reader, writer.
-
-    Returns the reader, writer pair for mocking
-    '''
-    @asyncio.coroutine
-    def mock(*args, **kwargs):
-        return reader, writer
-    monkeypatch.setattr(asyncio, 'open_connection', mock)
-    return reader, writer
-
-
-@pytest.fixture
-def watch():
-    return Watcher()
+def connection(client, loop):
+    return Connection("host", "port", client, "UTF-8", True, loop=loop)
 
 
 class TrackingClient(Client):

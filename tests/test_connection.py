@@ -95,14 +95,14 @@ def test_read_strips(connection, reader, loop):
     assert reader.has_read("  a b  c | @#$ d  \n")
 
 
-def test_run_without_message(connection, client, loop):
+def test_run_without_message(connection, client, schedule):
     ''' Connection.run should connect, read empty, disconnect, return '''
-    loop.run_until_complete(connection.run())
+    schedule(connection.run())
     assert client.triggers["CLIENT_CONNECT"] == 1
     assert client.triggers["CLIENT_DISCONNECT"] == 1
 
 
-def test_run_trigger_command(connection, reader, client, loop):
+def test_run_trigger_command(connection, reader, client, schedule):
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []
 
@@ -110,15 +110,15 @@ def test_run_trigger_command(connection, reader, client, loop):
     def receive(nick, user, host, target, message):
         received.extend([nick, user, host, target, message])
 
-    loop.run_until_complete(connection.run())
+    schedule(connection.run())
     assert reader.has_read(":nick!user@host PRIVMSG #target :this is message")
     assert client.triggers["PRIVMSG"] == 1
     assert received == ["nick", "user", "host", "#target", "this is message"]
 
 
-def test_run_trigger_unknown_command(connection, reader, client, loop):
+def test_run_trigger_unknown_command(connection, reader, client, schedule):
     reader.push("unknown_command")
-    loop.run_until_complete(connection.run())
+    schedule(connection.run())
 
     assert reader.has_read("unknown_command")
     assert client.triggers["unknown_command"] == 0

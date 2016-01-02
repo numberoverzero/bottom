@@ -9,9 +9,9 @@ def test_default_event_loop():
     assert client.loop is default_loop
 
 
-def test_send_unknown_command(client, loop):
+def test_send_unknown_command(client, schedule):
     ''' Sending an unknown command raises '''
-    loop.run_until_complete(client.connect())
+    schedule(client.connect())
     assert client.connected
     with pytest.raises(ValueError):
         client.send("Unknown_Command")
@@ -30,7 +30,7 @@ def test_send_after_disconnected(client, writer, schedule):
     assert not writer.used
 
 
-def test_run_(client, reader, loop):
+def test_run_(client, reader, schedule):
     ''' run delegates to Connection, which triggers events on the Client '''
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []
@@ -39,7 +39,7 @@ def test_run_(client, reader, loop):
     async def receive(nick, user, host, target, message):
         received.extend([nick, user, host, target, message])
 
-    loop.run_until_complete(client.run())
+    schedule(client.run())
 
     assert reader.has_read(":nick!user@host PRIVMSG #target :this is message")
     assert received == ["nick", "user", "host", "#target", "this is message"]
@@ -93,12 +93,12 @@ def test_trigger_unpacking(client, flush):
     called = False
 
     def func(arg, *args, kw_only, kw_default="default", **kwargs):
-        nonlocal called
         assert arg == "arg"
         assert not args
         assert kw_only == "kw_only"
         assert kw_default == "default"
         assert kwargs["extra"] == "extra"
+        nonlocal called
         called = True
 
     client.on("f")(func)
@@ -113,8 +113,8 @@ def test_bound_method_of_instance(client, flush):
         def method(self, arg, kw_default="default"):
             assert arg == "arg"
             assert kw_default == "default"
-    instance = Class()
 
+    instance = Class()
     client.on("f")(instance.method)
     client.trigger("f", **{"arg": "arg"})
     flush()
