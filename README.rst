@@ -9,10 +9,6 @@
 .. image:: https://img.shields.io/pypi/l/bottom.svg?style=flat-square
     :target: https://github.com/numberoverzero/bottom/blob/master/LICENSE
 
-Downloads https://pypi.python.org/pypi/bottom
-
-Source https://github.com/numberoverzero/bottom
-
 asyncio-based rfc2812-compliant IRC Client
 
 Installation
@@ -100,14 +96,14 @@ TODO
 * Better `Client` docstrings
 * Add missing replies/errors to `unpack.py:unpack_command`
   * Add reply/error parameters to `unpack.py:parameters`
-  * Document [`Supported Events`](#supported-events)
+  * Document supported_events_
 
 
 Contributors
 ------------
-* [fahhem](https://github.com/fahhem)
-* [thebigmunch](https://github.com/thebigmunch)
-* [tilal6991](https://github.com/tilal6991)
+* `fahhem <https://github.com/fahhem>`_
+* `thebigmunch <https://github.com/thebigmunch>`_
+* `tilal6991 <https://github.com/tilal6991>`_
 
 API
 ===
@@ -178,7 +174,7 @@ VAR_KWARGS can be used, as long as the name doesn't mask an actual parameter.  V
 
 Decorated functions will be invoked asynchronously, and may optionally use the ``yield from`` syntax.  Functions do not need to be wrapped with ``@ayncio.coroutine`` - this is handled as part of the function caching process.
 
-Client.trigger(event, **kwargs)
+Client.trigger(event, \*\*kwargs)
 -------------------------------
 
 *This is a coroutine.*
@@ -236,25 +232,15 @@ Disconnect from the server if connected::
         if nick == "spy_handler" and message == "last stop":
             yield from bot.disconnect()
 
-Client.send(command, **kwargs)
+Client.send(command, \*\*kwargs)
 ------------------------------
 
-Send a command to the server.  See supported_commands_ for a detailed breakdown of available commands and their parameters.
+Send a command to the server.
 
 .. _supported_commands:
 
 Supported Commands
 ==================
-
-These commands can be sent to the server using ``Client.send``.
-
-For incoming signals and messages, see supported_events_ below.
-
-::
-
-    # Local only events
-    client.trigger('CLIENT_CONNECT', host='localhost', port=6697)
-    client.trigger('CLIENT_DISCONNECT', host='localhost', port=6697)
 
 ::
 
@@ -509,7 +495,11 @@ Supported Events
 
 These commands are received from the server, or dispatched using ``Client.trigger(...)``.
 
-For sending commands, see supported_commands_ above.
+::
+
+    # Local only events
+    client.trigger('CLIENT_CONNECT', host='localhost', port=6697)
+    client.trigger('CLIENT_DISCONNECT', host='localhost', port=6697)
 
 * PING
 * JOIN
