@@ -3,20 +3,23 @@ from . import unpack
 
 
 class Connection(object):
-    def __init__(self, host, port, events, encoding, ssl):
+    def __init__(self, host, port, events, encoding, ssl, *, loop=None):
         self.events = events
         self._connected = False
         self.host, self.port = host, port
         self.reader, self.writer = None, None
         self.encoding = encoding
         self.ssl = ssl
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        self.loop = loop
 
     @asyncio.coroutine
-    def connect(self, loop=None):
+    def connect(self):
         if self.connected:
             return
         self.reader, self.writer = yield from asyncio.open_connection(
-            self.host, self.port, ssl=self.ssl, loop=loop)
+            self.host, self.port, ssl=self.ssl, loop=self.loop)
         self._connected = True
         yield from self.events.trigger(
             "CLIENT_CONNECT", host=self.host, port=self.port)
@@ -37,8 +40,8 @@ class Connection(object):
         return self._connected
 
     @asyncio.coroutine
-    def run(self, loop=None):
-        yield from self.connect(loop=loop)
+    def run(self):
+        yield from self.connect()
         while self.connected:
             msg = yield from self.read()
             if msg:

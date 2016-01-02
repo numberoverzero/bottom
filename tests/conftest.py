@@ -5,38 +5,13 @@ import collections
 
 
 @pytest.fixture
-def run():
-    '''
-    Run a coro until it completes.
-
-    Returns result from coro, if it produces one.
-    '''
-    def run_in_loop(coro):
-        # For more details on what's going on:
-        # https://docs.python.org/3/library/asyncio-task.html\
-        #       #example-future-with-run-until-complete
-        def capture_return(future):
-            ''' Push coro result into future for return '''
-            result = yield from coro
-            future.set_result(result)
-        # Kick off the coro, wrapped in the future above
-        future = asyncio.Future()
-        asyncio.async(capture_return(future))
-
-        # Block until coro completes and dumps return in future
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(future)
-
-        # Hand result back
-        return future.result()
-    return run_in_loop
-
-
-@pytest.fixture
 def loop():
-    # TODO: fix to use a new event loop.  Because the loop fix will require
-    # touching a lot of code, this is an easy way to get the build green again
-    return asyncio.new_event_loop()
+    '''
+    Keep things clean by using a new event loop
+    '''
+    loop = asyncio.new_event_loop()
+    loop.set_debug(True)
+    return loop
 
 
 @pytest.fixture
@@ -45,9 +20,9 @@ def eventparams():
 
 
 @pytest.fixture
-def events(eventparams):
+def events(eventparams, loop):
     ''' Return a no-op EventsMixin that tracks triggers '''
-    return MockEvents(lambda e: eventparams[e])
+    return MockEvents(lambda e: eventparams[e], loop=loop)
 
 
 @pytest.fixture
@@ -75,9 +50,9 @@ def patch_connection(reader, writer, monkeypatch):
 
 
 class MockEvents(EventsMixin):
-    def __init__(self, getparams):
+    def __init__(self, getparams, *, loop=None):
         self.triggered_events = collections.defaultdict(int)
-        super().__init__(getparams)
+        super().__init__(getparams, loop=loop)
 
     def trigger(self, event, **kwargs):
         self.triggered_events[event] += 1

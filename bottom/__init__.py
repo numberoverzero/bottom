@@ -12,14 +12,14 @@ logger = logging.getLogger(__name__)
 class Client(event.EventsMixin):
     __conn_cls__ = connection.Connection
 
-    def __init__(self, host, port, encoding='UTF-8', ssl=True):
+    def __init__(self, host, port, *, encoding='UTF-8', ssl=True, loop=None):
         # It's ok that unpack.parameters isn't cached, since it's only
         # called when adding an event handler (which should __usually__
         # only occur during setup)
-        super().__init__(unpack.parameters)
+        super().__init__(unpack.parameters, loop=loop)
         # trigger events on the client
-        self.connection = self.__conn_cls__(host, port, self,
-                                            encoding=encoding, ssl=ssl)
+        self.connection = self.__conn_cls__(host, port, self, ssl=ssl,
+                                            encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
         '''
@@ -47,9 +47,9 @@ class Client(event.EventsMixin):
         return self.connection.connected
 
     @asyncio.coroutine
-    def run(self, loop=None):
+    def run(self):
         ''' Run the client until it disconnects (without reconnecting) '''
-        yield from self.connection.run(loop=loop)
+        yield from self.connection.run()
 
     def on(self, command):
         '''
