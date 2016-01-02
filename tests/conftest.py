@@ -1,6 +1,5 @@
 from bottom.client import Client
 from bottom.connection import Connection
-from bottom.event import EventsMixin
 import pytest
 import asyncio
 import collections
@@ -29,23 +28,18 @@ def flush(loop):
 
 
 @pytest.fixture
-def schedule(loop):
-    def _schedule(*coros):
+def schedule(loop, flush):
+    def _schedule(*coros, immediate=True):
         for coro in coros:
             loop.create_task(coro)
+        if immediate:
+            flush()
     return _schedule
 
 
 @pytest.fixture
-def connection(patch_connection, events, loop):
-    print("connection")
-    return Connection("host", "port", events, "UTF-8", True, loop=loop)
-
-
-@pytest.fixture
-def events(loop):
-    ''' Return a no-op EventsMixin that tracks triggers '''
-    return MockEvents(loop=loop)
+def connection(patch_connection, client, loop):
+    return Connection("host", "port", client, "UTF-8", True, loop=loop)
 
 
 @pytest.fixture
@@ -66,7 +60,7 @@ def client(patch_connection, loop):
     Pulling in patch_connection here mocks out asyncio.open_connection,
     so that we can use reader, writer, run in tests.
     '''
-    return Client("host", "port", loop=loop)
+    return TrackingClient("host", "port", loop=loop)
 
 
 @pytest.fixture
@@ -88,27 +82,14 @@ def watch():
     return Watcher()
 
 
-class MockEvents(EventsMixin):
-    def __init__(self, *, loop=None):
-        self.triggered_events = collections.defaultdict(int)
-        super().__init__(loop=loop)
+class TrackingClient(Client):
+    def __init__(self, *args, **kwargs):
+        self.triggers = collections.defaultdict(int)
+        super().__init__(*args, **kwargs)
 
     def trigger(self, event, **kwargs):
-        self.triggered_events[event] += 1
+        self.triggers[event] += 1
         super().trigger(event, **kwargs)
-
-    def triggered(self, event, n=1):
-        '''
-        Assert an event was triggered exactly n times (default exactly once)
-
-        Pass n <= 0 to assert AT LEAST one call
-        '''
-        t = self.triggered_events[event]
-        # Match exact expected call count
-        if n > 0:
-            return t == n
-        # Assert at least one trigger
-        return t > 0
 
 
 class MockStreamReader():
