@@ -31,19 +31,7 @@ def test_send_after_disconnected(client, writer, loop):
     assert not writer.used
 
 
-def test_on(client):
-    ''' Client.on corrects case, throws on unknown events '''
-
-    @client.on('privmsg')
-    def route(nick, target, message):
-        pass
-    assert len(client._partials["PRIVMSG"]) == 1
-
-    with pytest.raises(ValueError):
-        client.on("UNKNOWN_COMMAND")(route)
-
-
-def test_run_(client, reader, eventparams, loop):
+def test_run_(client, reader, loop):
     ''' run delegates to Connection, which triggers events on the Client '''
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []

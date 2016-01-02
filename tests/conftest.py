@@ -43,14 +43,9 @@ def connection(patch_connection, events, loop):
 
 
 @pytest.fixture
-def eventparams():
-    return {}
-
-
-@pytest.fixture
-def events(eventparams, loop):
+def events(loop):
     ''' Return a no-op EventsMixin that tracks triggers '''
-    return MockEvents(lambda e: eventparams[e], loop=loop)
+    return MockEvents(loop=loop)
 
 
 @pytest.fixture
@@ -88,10 +83,15 @@ def patch_connection(reader, writer, monkeypatch):
     return reader, writer
 
 
+@pytest.fixture
+def watch():
+    return Watcher()
+
+
 class MockEvents(EventsMixin):
-    def __init__(self, getparams, *, loop=None):
+    def __init__(self, *, loop=None):
         self.triggered_events = collections.defaultdict(int)
-        super().__init__(getparams, loop=loop)
+        super().__init__(loop=loop)
 
     def trigger(self, event, **kwargs):
         self.triggered_events[event] += 1
@@ -162,3 +162,17 @@ class MockStreamWriter():
         # lines are stored as bytes - encode the string to test
         # and see if that's in written_lines
         return line.encode(self.encoding) in self.written_lines
+
+
+class Watcher():
+    """Exposes `call` function, `calls` attribute, and `called` property.
+    Useful for lambdas that can't += a variable"""
+    def __init__(self):
+        self.calls = 0
+
+    def call(self):
+        self.calls += 1
+
+    @property
+    def called(self):
+        return self.calls > 0

@@ -109,8 +109,7 @@ def test_run_without_message(connection, events, loop):
     assert events.triggered("CLIENT_DISCONNECT")
 
 
-def test_run_trigger_command(connection, reader, events, eventparams, loop):
-    eventparams["PRIVMSG"] = ["nick", "user", "host", "target", "message"]
+def test_run_trigger_command(connection, reader, events, loop):
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []
 

@@ -3,7 +3,6 @@ import asyncio
 from . import connection
 from . import event
 from . import pack
-from . import unpack
 __all__ = ["Client"]
 __version__ = "1.0.0"
 
@@ -14,7 +13,7 @@ class Client(event.EventsMixin):
     def __init__(self, host, port, *, encoding='UTF-8', ssl=True, loop=None):
         if loop is None:
             loop = asyncio.get_event_loop()
-        super().__init__(unpack.parameters, loop=loop)
+        super().__init__(loop=loop)
         self.connection = self.__conn_cls(host, port, self, ssl=ssl,
                                           encoding=encoding, loop=loop)
 
