@@ -20,8 +20,7 @@ def loop():
 def flush(loop):
     """Run loop once, to execute any pending tasks"""
 
-    @asyncio.coroutine
-    def sentinel():
+    async def sentinel():
         pass
 
     def _flush():
@@ -120,8 +119,7 @@ class MockStreamReader():
         self.encoding = encoding
         self.used = False
 
-    @asyncio.coroutine
-    def readline(self):
+    async def readline(self):
         self.used = True
         try:
             line = self.lines.pop(0)
