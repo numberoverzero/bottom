@@ -10,15 +10,14 @@ logger = logging.getLogger(__name__)
 
 
 class Client(event.EventsMixin):
-    __conn_cls__ = connection.Connection
+    __conn_cls = connection.Connection
 
     def __init__(self, host, port, *, encoding='UTF-8', ssl=True, loop=None):
         if loop is None:
             loop = asyncio.get_event_loop()
         super().__init__(unpack.parameters, loop=loop)
-        # trigger events on the client
-        self.connection = self.__conn_cls__(host, port, self, ssl=ssl,
-                                            encoding=encoding, loop=loop)
+        self.connection = self.__conn_cls(host, port, self, ssl=ssl,
+                                          encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
         '''
