@@ -3,7 +3,7 @@ import os
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(HERE, 'README.markdown')).read()
+README = open(os.path.join(HERE, 'README.rst')).read()
 
 REQUIREMENTS = [
     'simplex'
