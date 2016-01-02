@@ -7,6 +7,9 @@ from bottom.pack import pack_command
 
 class Client:
     def __init__(self, host, port, *, encoding="UTF-8", ssl=True, loop=None):
+        self.host = host
+        self.port = port
+        self.encoding = encoding
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
