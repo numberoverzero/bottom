@@ -5,15 +5,14 @@ from bottom.pack import pack_command
 
 
 class Client:
-    __conn_cls = Connection
 
     def __init__(self, host, port, *, encoding='UTF-8', ssl=True, loop=None):
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
         self._handlers = {}
-        self.connection = self.__conn_cls(host, port, self, ssl=ssl,
-                                          encoding=encoding, loop=loop)
+        self.connection = Connection(host, port, self, ssl=ssl,
+                                     encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
         '''
