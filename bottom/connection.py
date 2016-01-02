@@ -19,8 +19,7 @@ class Connection(object):
         self.reader, self.writer = yield from asyncio.open_connection(
             self.host, self.port, ssl=self.ssl, loop=self.loop)
         self._connected = True
-        yield from self.events.trigger(
-            "CLIENT_CONNECT", host=self.host, port=self.port)
+        self.events.trigger("CLIENT_CONNECT", host=self.host, port=self.port)
 
     @asyncio.coroutine
     def disconnect(self):
@@ -30,7 +29,7 @@ class Connection(object):
         self.writer = None
         self.reader = None
         self._connected = False
-        yield from self.events.trigger(
+        self.events.trigger(
             "CLIENT_DISCONNECT", host=self.host, port=self.port)
 
     @property
@@ -48,7 +47,7 @@ class Connection(object):
                 except ValueError:
                     print("PARSE ERROR {}".format(msg))
                 else:
-                    yield from self.events.trigger(event, **kwargs)
+                    self.events.trigger(event, **kwargs)
             else:
                 # Lost connection
                 yield from self.disconnect()

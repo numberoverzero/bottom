@@ -33,7 +33,7 @@ class EventsMixin(object):
     def trigger(self, event, **kwargs):
         partials = self.__partials__[event]
         for func in partials:
-            asyncio.async(func(**kwargs), loop=self.loop)
+            self.loop.create_task(func(**kwargs))
 
     def on(self, event):
         '''

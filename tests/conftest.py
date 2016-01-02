@@ -1,3 +1,4 @@
+from bottom.connection import Connection
 from bottom.event import EventsMixin
 import pytest
 import asyncio
@@ -15,12 +16,29 @@ def loop():
 
 
 @pytest.fixture
-def flush(loop):
+def flush(schedule, loop):
     """Run loop once, to execute any pending tasks"""
+
+    @asyncio.coroutine
+    def sentinel():
+        pass
+
     def _flush():
-        loop.stop()
-        loop.run_forever()
+        loop.run_until_complete(sentinel())
     return _flush
+
+
+@pytest.fixture
+def schedule(loop):
+    def _schedule(coro):
+        loop.create_task(coro)
+    return _schedule
+
+
+@pytest.fixture
+def connection(patch_connection, events, loop):
+    print("connection")
+    return Connection("host", "port", events, "UTF-8", True, loop=loop)
 
 
 @pytest.fixture
@@ -65,7 +83,7 @@ class MockEvents(EventsMixin):
 
     def trigger(self, event, **kwargs):
         self.triggered_events[event] += 1
-        yield from super().trigger(event, **kwargs)
+        super().trigger(event, **kwargs)
 
     def triggered(self, event, n=1):
         '''
