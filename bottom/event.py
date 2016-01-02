@@ -15,8 +15,8 @@ class EventsMixin(object):
         # where event is a string, and list(func) is the list of functions
         # (wrapped and decorated) that will be invoked when the given event
         # is triggered.
-        self.__partials__ = collections.defaultdict(list)
-        self.__getparams__ = getparams
+        self._partials = collections.defaultdict(list)
+        self._getparams = getparams
         self.loop = loop
 
     def _add_event(self, event, func):
@@ -25,13 +25,13 @@ class EventsMixin(object):
         up argument injection.
 
         '''
-        parameters = self.__getparams__(event)
+        parameters = self._getparams(event)
         validate_func(event, func, parameters)
-        self.__partials__[event].append(partial_bind(func))
+        self._partials[event].append(partial_bind(func))
         return func
 
     def trigger(self, event, **kwargs):
-        partials = self.__partials__[event]
+        partials = self._partials[event]
         for func in partials:
             self.loop.create_task(func(**kwargs))
 

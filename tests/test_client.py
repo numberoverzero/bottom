@@ -29,7 +29,7 @@ def test_on(client):
     @client.on('privmsg')
     def route(nick, target, message):
         pass
-    assert len(client.__partials__["PRIVMSG"]) == 1
+    assert len(client._partials["PRIVMSG"]) == 1
 
     with pytest.raises(ValueError):
         client.on("UNKNOWN_COMMAND")(route)
