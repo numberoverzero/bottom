@@ -1,2 +1,2 @@
-include README.markdown
+include README.rst
 recursive-exclude tests *
