@@ -121,4 +121,4 @@ def test_run_trigger_unknown_command(connection, reader, client, schedule):
     schedule(connection.run())
 
     assert reader.has_read("unknown_command")
-    assert client.triggers["unknown_command"] == 0
+    assert client.triggers["UNKNOWN_COMMAND"] == 0

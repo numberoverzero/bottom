@@ -66,7 +66,7 @@ def test_trigger_one_handler(client, watch, flush):
     client.on("f")(lambda: watch.call())
     client.trigger("f")
     flush()
-    assert client.triggers["f"] == 1
+    assert client.triggers["F"] == 1
     assert watch.called
 
 

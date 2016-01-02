@@ -86,6 +86,7 @@ class TrackingClient(Client):
         super().__init__(*args, **kwargs)
 
     def trigger(self, event, **kwargs):
+        event = event.upper()
         self.triggers[event] += 1
         super().trigger(event, **kwargs)
 
