@@ -15,42 +15,41 @@ def test_decorator_returns_original(router):
     assert wrapped_func is original_func
 
 
-def test_handle_no_routes(router, loop, flush):
-    router.handle("nick", "target", "message")
+def test_handle_no_routes(router, flush):
+    router._handle("nick", "target", "message")
     flush()
 
 
-def test_handle_no_matching_route(router, loop, flush):
+def test_handle_no_matching_route(router, flush):
     @router.route("hello, [name]")
     async def handle(nick, target, fields):
         # Should not be called
         assert False
 
-    router.handle("nick", "target", "does not match")
+    router._handle("nick", "target", "does not match")
     flush()
 
 
-def test_handle_with_matching_route(router, loop, flush):
+def test_handle_with_matching_route(router, flush):
     names = []
 
     @router.route("hello, [name]")
     def handle(nick, target, fields):
         names.append(fields['name'])
 
-    router.handle("nick", "target", "hello, jack")
-    router.handle("nick", "target", "hello, hello, recursion")
+    router._handle("nick", "target", "hello, jack")
+    router._handle("nick", "target", "hello, hello, recursion")
     flush()
 
     assert ["jack", "hello, recursion"] == names
 
 
-def test_back_reference(router, loop, flush):
-    actual_fields = {}
+def test_back_reference(router, flush):
+    expected = {"field": "some value here", "tag": "element"}
 
     @router.route("<[tag]>[field]</[:ref(tag)]>")
     def handle(nick, target, fields):
-        actual_fields.update(fields)
+        assert fields == expected
 
-    router.handle("nick", "target", "<element>some value here</element>")
+    router._handle("nick", "target", "<element>some value here</element>")
     flush()
-    assert {"field": "some value here", "tag": "element"} == actual_fields
