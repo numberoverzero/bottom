@@ -51,13 +51,13 @@ class Connection(object):
 
     def send(self, msg):
         if self.writer:
-            self.writer.write((msg.strip() + '\n').encode(self.encoding))
+            self.writer.write((msg.strip() + "\n").encode(self.encoding))
 
     async def read(self):
         if not self.reader:
-            return ''
+            return ""
         try:
             msg = await self.reader.readline()
-            return msg.decode(self.encoding, 'ignore').strip()
+            return msg.decode(self.encoding, "ignore").strip()
         except EOFError:
-            return ''
+            return ""

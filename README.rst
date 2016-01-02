@@ -34,19 +34,19 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
 
 
     @bot.on('CLIENT_CONNECT')
-    def connect():
+    def connect(**kwargs):
         bot.send('NICK', nick=NICK)
         bot.send('USER', user=NICK, realname='Bot using bottom.py')
         bot.send('JOIN', channel=CHANNEL)
 
 
     @bot.on('PING')
-    def keepalive(message):
+    def keepalive(message, **kwargs):
         bot.send('PONG', message=message)
 
 
     @bot.on('PRIVMSG')
-    def message(nick, target, message):
+    def message(nick, target, message, **kwargs):
         ''' Echo all messages '''
 
         # Don't echo ourselves
@@ -84,7 +84,7 @@ Development
 bottom uses ``tox``, ``pytest`` and ``flake8``.  To get everything set up::
 
     # RECOMMENDED: create a virtualenv with:
-    #     mkvirtualenv bottom
+    #     pyenv virtualenv 3.5.0 bottom
     git clone https://github.com/numberoverzero/bottom.git
     pip install tox
     tox
@@ -93,10 +93,10 @@ bottom uses ``tox``, ``pytest`` and ``flake8``.  To get everything set up::
 TODO
 ----
 
-* Better `Client` docstrings
-* Add missing replies/errors to `unpack.py:unpack_command`
+* Better ``Client`` docstrings
+* Add missing replies/errors to ``unpack.py:unpack_command``
 
-  * Add reply/error parameters to `unpack.py:parameters`
+  * Add reply/error parameters to ``unpack.py:parameters``
   * Document supported_events_
 
 
