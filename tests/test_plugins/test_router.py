@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from bottom import Client
 from bottom.plugins.router import Router
@@ -52,7 +53,8 @@ def test_handle_no_routes(router, loop):
 
 def test_handle_no_matching_route(router, loop):
     @router.route("hello, [name]")
-    async def handle(nick, target, fields):
+    @asyncio.coroutine
+    def handle(nick, target, fields):
         # Should not be called
         assert False
 
