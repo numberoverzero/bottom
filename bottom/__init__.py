@@ -1,12 +1,11 @@
 """ asyncio-based rfc2812-compliant IRC Client """
-import logging
 import asyncio
 from . import connection
 from . import event
 from . import pack
 from . import unpack
 __all__ = ["Client"]
-logger = logging.getLogger(__name__)
+__version__ = "1.0.0"
 
 
 class Client(event.EventsMixin):

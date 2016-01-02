@@ -5,6 +5,12 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(HERE, 'README.rst')).read()
 
+def get_version():
+    with open("bottom/__init__.py") as f:
+        for line in f:
+            if line.startswith("__version__"):
+                return eval(line.split("=")[-1])
+
 REQUIREMENTS = [
     'simplex'
 ]
@@ -20,7 +26,7 @@ TEST_REQUIREMENTS = [
 if __name__ == "__main__":
     setup(
         name='bottom',
-        version='0.9.13',
+        version=get_version(),
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[

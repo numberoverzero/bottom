@@ -1,7 +1,6 @@
 """ Simplified support for rfc2812 """
 # https://tools.ietf.org/html/rfc2812
 import re
-missing = object()
 
 RE_IRCLINE = re.compile(
     """

@@ -71,7 +71,7 @@ Versioning  and RFC2812
   * You should not rely on the internal api staying the same between minor versions.
   * Over time, private apis may be raised to become public.  The reverse will never occur.
 
-* There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes section of each command in supported_commands_.
+* There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes above each command in supported_commands_.
 
 Contributing
 ============
@@ -105,6 +105,7 @@ Contributors
 * `fahhem <https://github.com/fahhem>`_
 * `thebigmunch <https://github.com/thebigmunch>`_
 * `tilal6991 <https://github.com/tilal6991>`_
+* `AMorporkian <https://github.com/AMorporkian>`_
 
 API
 ===
@@ -178,14 +179,14 @@ Decorated functions will be invoked asynchronously, and may optionally use the `
 Client.trigger(event, \*\*kwargs)
 -------------------------------
 
-*This is a coroutine.*
-
 Manually inject a command or reply as if it came from the server.  This is useful for invoking other handlers.
+Note that because trigger doesn't block, registered callbacks for the event won't run until
+the event loop yields to them.
 
 ::
 
     # Manually trigger `PRIVMSG` handlers:
-    yield from bot.trigger('privmsg', nick="always_says_no", message="yes")
+    bot.trigger('privmsg', nick="always_says_no", message="yes")
 
 ::
 
@@ -196,15 +197,16 @@ Manually inject a command or reply as if it came from the server.  This is usefu
             bot.send('privmsg', target=nick,
                      message="!commands was renamed to !help in 1.2")
             # Don't make them retype it, just make it happen
-            yield from bot.trigger('privmsg', nick=nick,
-                                   target=target, message="!help")
+            bot.trigger('privmsg', nick=nick,
+                        target=target, message="!help")
 
 ::
 
     # While testing the auto-reconnect module, simulate a disconnect:
     def test_reconnect(bot):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(bot.trigger("client_disconnect"))
+        bot.trigger("client_disconnect")
+        # Clear out the pending callbacks
+        bot.loop.run_until_complete(asyncio.sleep(0, loop=bot.loop))
         assert bot.connected
 
 Client.connect()
