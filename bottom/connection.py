@@ -12,17 +12,15 @@ class Connection(object):
         self.ssl = ssl
         self.loop = loop
 
-    @asyncio.coroutine
-    def connect(self):
+    async def connect(self):
         if self.connected:
             return
-        self.reader, self.writer = yield from asyncio.open_connection(
+        self.reader, self.writer = await asyncio.open_connection(
             self.host, self.port, ssl=self.ssl, loop=self.loop)
         self._connected = True
         self.events.trigger("CLIENT_CONNECT", host=self.host, port=self.port)
 
-    @asyncio.coroutine
-    def disconnect(self):
+    async def disconnect(self):
         if not self.connected:
             return
         self.writer.close()
@@ -36,11 +34,10 @@ class Connection(object):
     def connected(self):
         return self._connected
 
-    @asyncio.coroutine
-    def run(self):
-        yield from self.connect()
+    async def run(self):
+        await self.connect()
         while self.connected:
-            msg = yield from self.read()
+            msg = await self.read()
             if msg:
                 try:
                     event, kwargs = unpack.unpack_command(msg)
@@ -50,18 +47,17 @@ class Connection(object):
                     self.events.trigger(event, **kwargs)
             else:
                 # Lost connection
-                yield from self.disconnect()
+                await self.disconnect()
 
     def send(self, msg):
         if self.writer:
             self.writer.write((msg.strip() + '\n').encode(self.encoding))
 
-    @asyncio.coroutine
-    def read(self):
+    async def read(self):
         if not self.reader:
             return ''
         try:
-            msg = yield from self.reader.readline()
+            msg = await self.reader.readline()
             return msg.decode(self.encoding, 'ignore').strip()
         except EOFError:
             return ''

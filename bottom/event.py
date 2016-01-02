@@ -110,7 +110,7 @@ def validate_func(event, func, parameters):
 
 def partial_bind(func):
     sig = inspect.signature(func)
-    # Wrap non-coroutines so we can always `yield from func(**kw)`
+    # Wrap non-coroutines so we can always `await func(**kw)`
     if not asyncio.iscoroutinefunction(func):
         func = asyncio.coroutine(func)
     base = {}
@@ -122,8 +122,7 @@ def partial_bind(func):
         else:
             base[key] = default
 
-    @asyncio.coroutine
-    def wrapper(**kwargs):
+    async def wrapper(**kwargs):
         unbound = base.copy()
         # Only map params this function expects
         for key in base:
@@ -131,6 +130,6 @@ def partial_bind(func):
             if new_value is not missing:
                 unbound[key] = new_value
         bound = sig.bind(**unbound)
-        yield from func(*bound.args, **bound.kwargs)
+        await func(*bound.args, **bound.kwargs)
 
     return wrapper
