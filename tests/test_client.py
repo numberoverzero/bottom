@@ -1,6 +1,6 @@
 import asyncio
 import pytest
-from bottom import Client
+from bottom.client import Client
 
 
 def test_default_event_loop():

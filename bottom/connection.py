@@ -1,5 +1,5 @@
 import asyncio
-from . import unpack
+from bottom.unpack import unpack_command
 
 
 class Connection(object):
@@ -40,7 +40,7 @@ class Connection(object):
             msg = await self.read()
             if msg:
                 try:
-                    event, kwargs = unpack.unpack_command(msg)
+                    event, kwargs = unpack_command(msg)
                 except ValueError:
                     print("PARSE ERROR {}".format(msg))
                 else:

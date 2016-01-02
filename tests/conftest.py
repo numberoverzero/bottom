@@ -1,4 +1,4 @@
-from bottom import Client
+from bottom.client import Client
 from bottom.connection import Connection
 from bottom.event import EventsMixin
 import pytest
