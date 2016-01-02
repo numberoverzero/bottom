@@ -5,7 +5,7 @@ missing = object()
 
 
 class EventsMixin(object):
-    def __init__(self, getparams, *, loop=None):
+    def __init__(self, getparams, *, loop):
         '''
         getparams is a function that takes a single argument (event) and
         returns a list of parameters for the event.  It should raise on unknown
@@ -17,8 +17,6 @@ class EventsMixin(object):
         # is triggered.
         self.__partials__ = collections.defaultdict(list)
         self.__getparams__ = getparams
-        if loop is None:
-            loop = asyncio.get_event_loop()
         self.loop = loop
 
     def __add_event__(self, event, func):

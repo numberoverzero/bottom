@@ -13,9 +13,8 @@ class Client(event.EventsMixin):
     __conn_cls__ = connection.Connection
 
     def __init__(self, host, port, *, encoding='UTF-8', ssl=True, loop=None):
-        # It's ok that unpack.parameters isn't cached, since it's only
-        # called when adding an event handler (which should __usually__
-        # only occur during setup)
+        if loop is None:
+            loop = asyncio.get_event_loop()
         super().__init__(unpack.parameters, loop=loop)
         # trigger events on the client
         self.connection = self.__conn_cls__(host, port, self, ssl=ssl,

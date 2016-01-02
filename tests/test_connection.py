@@ -5,14 +5,14 @@ import pytest
 @pytest.fixture
 def conn(patch_connection, events, loop):
     ''' Generic connection that is ready to read/send '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     return conn
 
 
 def test_connect(patch_connection, writer, events, loop):
     ''' Connection.Connect opens a writer, triggers CLIENT_CONNECT '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     assert conn.connected
     assert not writer.closed
@@ -21,7 +21,7 @@ def test_connect(patch_connection, writer, events, loop):
 
 def test_connect_already_connected(patch_connection, writer, events, loop):
     ''' Does not trigger CLIENT_CONNECT multiple times '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     loop.run_until_complete(conn.connect())
     assert not writer.closed
@@ -30,7 +30,7 @@ def test_connect_already_connected(patch_connection, writer, events, loop):
 
 def test_disconnect_before_connect(patch_connection, events, loop):
     ''' disconnect before connect does nothing '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.disconnect())
     assert not conn.connected
     assert not events.triggered("CLIENT_CONNECT")
@@ -39,7 +39,7 @@ def test_disconnect_before_connect(patch_connection, events, loop):
 
 def test_disconnect(writer, patch_connection, events, loop):
     ''' Connection.disconnect closes writer, triggers CLIENT_DISCONNECT '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     loop.run_until_complete(conn.disconnect())
     assert not conn.connected
@@ -51,7 +51,7 @@ def test_disconnect(writer, patch_connection, events, loop):
 
 def test_disconnect_already_disconnected(patch_connection, events, loop):
     ''' Does not trigger CLIENT_DISCONNECT multiple times '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     loop.run_until_complete(conn.disconnect())
     loop.run_until_complete(conn.disconnect())
@@ -59,9 +59,9 @@ def test_disconnect_already_disconnected(patch_connection, events, loop):
     assert events.triggered("CLIENT_DISCONNECT")
 
 
-def test_send_before_connected(patch_connection, writer, events):
+def test_send_before_connected(patch_connection, writer, events, loop):
     ''' Nothing happens when sending before connecting '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     assert not conn.connected
     conn.send("test")
     assert not writer.used
@@ -69,7 +69,7 @@ def test_send_before_connected(patch_connection, writer, events):
 
 def test_send_disconnected(patch_connection, writer, events, loop):
     ''' Nothing happens when sending after disconnecting '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     loop.run_until_complete(conn.disconnect())
     conn.send("test")
@@ -85,7 +85,7 @@ def test_send_strips(conn, writer):
 
 def test_read_before_connected(patch_connection, reader, events, loop):
     ''' Nothing happens when reading before connecting '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     value = loop.run_until_complete(conn.read())
     assert not value
     assert not reader.used
@@ -93,7 +93,7 @@ def test_read_before_connected(patch_connection, reader, events, loop):
 
 def test_read_disconnected(patch_connection, reader, events, loop):
     ''' Nothing happens when reading after disconnecting '''
-    conn = Connection("host", "port", events, "UTF-8", True)
+    conn = Connection("host", "port", events, "UTF-8", True, loop=loop)
     loop.run_until_complete(conn.connect())
     loop.run_until_complete(conn.disconnect())
     value = loop.run_until_complete(conn.read())

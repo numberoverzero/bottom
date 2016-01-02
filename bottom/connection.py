@@ -3,15 +3,13 @@ from . import unpack
 
 
 class Connection(object):
-    def __init__(self, host, port, events, encoding, ssl, *, loop=None):
+    def __init__(self, host, port, events, encoding, ssl, *, loop):
         self.events = events
         self._connected = False
         self.host, self.port = host, port
         self.reader, self.writer = None, None
         self.encoding = encoding
         self.ssl = ssl
-        if loop is None:
-            loop = asyncio.get_event_loop()
         self.loop = loop
 
     @asyncio.coroutine
