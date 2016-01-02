@@ -1,3 +1,4 @@
+from bottom import Client
 from bottom.connection import Connection
 from bottom.event import EventsMixin
 import pytest
@@ -16,7 +17,7 @@ def loop():
 
 
 @pytest.fixture
-def flush(schedule, loop):
+def flush(loop):
     """Run loop once, to execute any pending tasks"""
 
     @asyncio.coroutine
@@ -30,8 +31,9 @@ def flush(schedule, loop):
 
 @pytest.fixture
 def schedule(loop):
-    def _schedule(coro):
-        loop.create_task(coro)
+    def _schedule(*coros):
+        for coro in coros:
+            loop.create_task(coro)
     return _schedule
 
 
@@ -60,6 +62,17 @@ def reader():
 @pytest.fixture
 def writer():
     return MockStreamWriter()
+
+
+@pytest.fixture
+def client(patch_connection, loop):
+    '''
+    Return a client with mocked out asyncio.
+
+    Pulling in patch_connection here mocks out asyncio.open_connection,
+    so that we can use reader, writer, run in tests.
+    '''
+    return Client("host", "port", loop=loop)
 
 
 @pytest.fixture

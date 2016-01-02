@@ -194,3 +194,35 @@ def test_bound_method_of_instance(events, flush):
     flush()
     assert params["one"] == 1
     assert params["two"] == "default"
+
+
+# ===================
+# Ordering + Blocking
+# ===================
+
+
+def test_callback_ordering(events, flush, loop):
+    ''' Callbacks for a second event don't queue behind the first event '''
+    second_complete = asyncio.Event(loop=loop)
+    call_order = []
+    complete_order = []
+
+    @asyncio.coroutine
+    def first():
+        call_order.append("first")
+        yield from second_complete.wait()
+        complete_order.append("first")
+
+    @asyncio.coroutine
+    def second():
+        call_order.append("second")
+        complete_order.append("second")
+        second_complete.set()
+
+    events.on("0")(first)
+    events.on("0")(second)
+
+    events.trigger("0")
+    flush()
+    assert call_order == ["first", "second"]
+    assert complete_order == ["second", "first"]

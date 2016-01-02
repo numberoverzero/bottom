@@ -9,8 +9,7 @@ def test_connect(connection, events, writer, schedule, flush):
 
 def test_already_connected(connection, events, writer, schedule, flush):
     ''' Does not trigger CLIENT_CONNECT multiple times '''
-    schedule(connection.connect())
-    schedule(connection.connect())
+    schedule(connection.connect(), connection.connect())
     flush()
     assert not writer.closed
     assert events.triggered("CLIENT_CONNECT")
@@ -28,8 +27,7 @@ def test_disconnect_before_connect(connection, events, schedule, flush):
 def test_disconnect(writer, patch_connection, events, connection,
                     schedule, flush):
     ''' Connection.disconnect closes writer, triggers CLIENT_DISCONNECT '''
-    schedule(connection.connect())
-    schedule(connection.disconnect())
+    schedule(connection.connect(), connection.disconnect())
     flush()
     assert not connection.connected
     assert writer.closed
@@ -40,9 +38,9 @@ def test_disconnect(writer, patch_connection, events, connection,
 
 def test_already_disconnected(connection, events, schedule, flush):
     ''' Does not trigger CLIENT_DISCONNECT multiple times '''
-    schedule(connection.connect())
-    schedule(connection.disconnect())
-    schedule(connection.disconnect())
+    schedule(connection.connect(),
+             connection.disconnect(),
+             connection.disconnect())
     flush()
     assert events.triggered("CLIENT_CONNECT")
     assert events.triggered("CLIENT_DISCONNECT")
@@ -57,8 +55,7 @@ def test_send_before_connected(connection, writer):
 
 def test_send_disconnected(connection, writer, schedule, flush):
     ''' Nothing happens when sending after disconnecting '''
-    schedule(connection.connect())
-    schedule(connection.disconnect())
+    schedule(connection.connect(), connection.disconnect())
     flush()
     connection.send("test")
     assert not writer.used
@@ -81,8 +78,7 @@ def test_read_before_connected(connection, reader, loop):
 
 def test_read_disconnected(connection, reader, schedule, flush, loop):
     ''' Nothing happens when reading after disconnecting '''
-    schedule(connection.connect())
-    schedule(connection.disconnect())
+    schedule(connection.connect(), connection.disconnect())
     flush()
     value = loop.run_until_complete(connection.read())
     assert not value

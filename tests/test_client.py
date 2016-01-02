@@ -1,16 +1,4 @@
-from bottom import Client
 import pytest
-
-
-@pytest.fixture
-def client(patch_connection, loop):
-    '''
-    Return a client with mocked out asyncio.
-
-    Pulling in patch_connection here mocks out asyncio.open_connection,
-    so that we can use reader, writer, run in tests.
-    '''
-    return Client("host", "port", loop=loop)
 
 
 def test_send_unknown_command(client, loop):
