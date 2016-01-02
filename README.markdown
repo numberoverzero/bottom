@@ -1,10 +1,5 @@
-# bottom 0.9.13
-
-[![Build Status]
-(https://travis-ci.org/numberoverzero/bottom.svg?branch=master)]
-(https://travis-ci.org/numberoverzero/bottom)[![Coverage Status]
-(https://coveralls.io/repos/numberoverzero/bottom/badge.png?branch=master)]
-(https://coveralls.io/r/numberoverzero/bottom?branch=master)
+[![Build](https://img.shields.io/travis/numberoverzero/bloop/master.svg?style=flat-square)]()
+[![Coverage](https://img.shields.io/coveralls/numberoverzero/bloop/master.svg?style=flat-square)]()
 
 Downloads https://pypi.python.org/pypi/bottom
 
