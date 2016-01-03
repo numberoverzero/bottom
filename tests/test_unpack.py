@@ -33,7 +33,7 @@ def test_synonym():
     """ numeric -> string """
     # Defined commands
     assert synonym("001") == synonym("RPL_WELCOME") == "RPL_WELCOME"
-    # Unkown, even impossible commands
+    # Unknown, even impossible commands
     assert synonym("!@#test") == synonym("!@#TEST") == "!@#TEST"
 
 
