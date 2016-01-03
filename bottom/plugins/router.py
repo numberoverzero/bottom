@@ -9,6 +9,8 @@
 
     This can be implemented as:
 
+    .. code-block:: python
+
         bot = Client(...)
         router = router.Router(bot)
 
@@ -33,12 +35,20 @@ from bottom import Client
 
 class Router(object):
     def __init__(self, bot: Client) -> None:
+        """
+        :type bot: A client object.
+        """
         self.bot = bot
         self.routes = {}
         bot.on("PRIVMSG")(self.handle)
 
     def handle(self, nick: str, target: str, message: str) -> None:
-        """ bot callback entrance """
+        """
+        Bot callback entrance.
+        :param nick: The nickname of the sending user.
+        :param target: The target of the message.
+        :param message: The message contents.
+        """
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
@@ -47,17 +57,23 @@ class Router(object):
 
     def route(self, pattern: str, **kwargs) -> Callable:
         """
-        decorator for wiring up functions
+        Decorator for wiring up functions
 
-        @router.route("bot, say [words]", ignore_case=True)
-        def handle(nick, target, fields):
-            # PRIVMSG - respond in kind
-            if target==router.bot.NICK:
-                target = nick
-            router.bot.send("PRIVMSG", target=target, message=fields['words'])
+        Example:
+
+        .. code-block:: python
+
+            @router.route("bot, say [words]", ignore_case=True)
+            def handle(nick, target, fields):
+                # PRIVMSG - respond in kind
+                if target==router.bot.NICK:
+                    target = nick
+                router.bot.send("PRIVMSG", target=target, message=fields['words'])
+
+        :param pattern: A regex pattern to match.
         """
 
-        def wrapper(function: Callable[[...], None]) -> Callable[[...], None]:
+        def wrapper(function: Callable) -> Callable:
             wrapped = function
             if not asyncio.iscoroutinefunction(wrapped):
                 wrapped = asyncio.coroutine(wrapped)
