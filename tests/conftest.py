@@ -1,3 +1,5 @@
+from bottom import Client
+from bottom.connection import Connection
 from bottom.event import EventsMixin
 import pytest
 import asyncio
@@ -5,38 +7,39 @@ import collections
 
 
 @pytest.fixture
-def run():
+def loop():
     '''
-    Run a coro until it completes.
-
-    Returns result from coro, if it produces one.
+    Keep things clean by using a new event loop
     '''
-    def run_in_loop(coro):
-        # For more details on what's going on:
-        # https://docs.python.org/3/library/asyncio-task.html\
-        #       #example-future-with-run-until-complete
-        def capture_return(future):
-            ''' Push coro result into future for return '''
-            result = yield from coro
-            future.set_result(result)
-        # Kick off the coro, wrapped in the future above
-        future = asyncio.Future()
-        asyncio.async(capture_return(future))
-
-        # Block until coro completes and dumps return in future
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(future)
-
-        # Hand result back
-        return future.result()
-    return run_in_loop
+    loop = asyncio.new_event_loop()
+    loop.set_debug(True)
+    return loop
 
 
 @pytest.fixture
-def loop():
-    # TODO: fix to use a new event loop.  Because the loop fix will require
-    # touching a lot of code, this is an easy way to get the build green again
-    return asyncio.new_event_loop()
+def flush(loop):
+    """Run loop once, to execute any pending tasks"""
+
+    async def sentinel():
+        pass
+
+    def _flush():
+        loop.run_until_complete(sentinel())
+    return _flush
+
+
+@pytest.fixture
+def schedule(loop):
+    def _schedule(*coros):
+        for coro in coros:
+            loop.create_task(coro)
+    return _schedule
+
+
+@pytest.fixture
+def connection(patch_connection, events, loop):
+    print("connection")
+    return Connection("host", "port", events, "UTF-8", True, loop=loop)
 
 
 @pytest.fixture
@@ -45,9 +48,9 @@ def eventparams():
 
 
 @pytest.fixture
-def events(eventparams):
+def events(eventparams, loop):
     ''' Return a no-op EventsMixin that tracks triggers '''
-    return MockEvents(lambda e: eventparams[e])
+    return MockEvents(lambda e: eventparams[e], loop=loop)
 
 
 @pytest.fixture
@@ -58,6 +61,17 @@ def reader():
 @pytest.fixture
 def writer():
     return MockStreamWriter()
+
+
+@pytest.fixture
+def client(patch_connection, loop):
+    '''
+    Return a client with mocked out asyncio.
+
+    Pulling in patch_connection here mocks out asyncio.open_connection,
+    so that we can use reader, writer, run in tests.
+    '''
+    return Client("host", "port", loop=loop)
 
 
 @pytest.fixture
@@ -75,13 +89,13 @@ def patch_connection(reader, writer, monkeypatch):
 
 
 class MockEvents(EventsMixin):
-    def __init__(self, getparams):
+    def __init__(self, getparams, *, loop=None):
         self.triggered_events = collections.defaultdict(int)
-        super().__init__(getparams)
+        super().__init__(getparams, loop=loop)
 
     def trigger(self, event, **kwargs):
         self.triggered_events[event] += 1
-        yield from super().trigger(event, **kwargs)
+        super().trigger(event, **kwargs)
 
     def triggered(self, event, n=1):
         '''
@@ -105,8 +119,7 @@ class MockStreamReader():
         self.encoding = encoding
         self.used = False
 
-    @asyncio.coroutine
-    def readline(self):
+    async def readline(self):
         self.used = True
         try:
             line = self.lines.pop(0)

@@ -14,14 +14,8 @@ def getparams():
 
 
 @pytest.fixture
-def events(getparams):
-    return event.EventsMixin(getparams)
-
-
-@pytest.fixture
-def run():
-    loop = asyncio.get_event_loop()
-    return lambda coro: loop.run_until_complete(coro)
+def events(getparams, loop):
+    return event.EventsMixin(getparams, loop=loop)
 
 
 @pytest.fixture
@@ -42,7 +36,6 @@ def watch():
 # ==============
 # EventsMixin.on
 # ==============
-
 
 def test_on_subset(events):
     ''' register a handler with a subset of available parameters '''
@@ -90,7 +83,8 @@ def test_defaults(events):
 
 def test_on_coroutine(events):
     ''' coroutines are fine '''
-    handle = asyncio.coroutine(lambda one: None)
+    async def handle(one):
+        pass
     events.on("1")(handle)
 
 
@@ -98,95 +92,84 @@ def test_on_coroutine(events):
 # EventsMixin.trigger
 # ===================
 
-def test_trigger(events, run, watch):
+def test_trigger(events, watch, flush):
     ''' trigger calls registered handler '''
     w = watch()
-    # Register handler - increment call counter when called
     events.on("0")(lambda: w.call())
-    # Trigger handler
-    run(events.trigger("0"))
-    # Make sure we called once
+    events.trigger("0")
+    flush()
     assert w.called
 
 
-def test_trigger_multiple_calls(events, run, watch):
+def test_trigger_multiple_calls(events, watch, flush):
     ''' trigger calls re-registered handler twice '''
     w = watch()
-    # Register handler twice - increment call counter when called
     events.on("0")(lambda: w.call())
     events.on("0")(lambda: w.call())
-    # Trigger handler
-    run(events.trigger("0"))
-    # Make sure we called twice
+    events.trigger("0")
+    flush()
     assert w.calls == 2
 
 
-def test_trigger_multiple_handlers(events, run, watch):
+def test_trigger_multiple_handlers(events, watch, flush):
     ''' trigger calls re-registered handler twice '''
     w1 = watch()
     w2 = watch()
-    # Register two handlers
     events.on("0")(lambda: w1.call())
     events.on("0")(lambda: w2.call())
-    # Trigger handler
-    run(events.trigger("0"))
-    # Make sure we called each once
+    events.trigger("0")
+    flush()
     assert w1.calls == 1
     assert w2.calls == 1
 
 
-def test_trigger_no_handlers(events, run):
+def test_trigger_no_handlers(events, flush):
     ''' trigger an event with no handlers '''
-    run(events.trigger("some event"))
+    events.trigger("some event")
+    flush()
 
 
-def test_trigger_superset_params(events, run):
+def test_trigger_superset_params(events, flush):
     ''' trigger an event with kwarg keys that aren't in event params '''
     params = {}
 
     def func(one, two):
         params["one"] = one
         params["two"] = two
-
     events.on("2")(func)
-
     kwargs = {"one": 1, "two": 2, "unused": "value"}
-    run(events.trigger("2", **kwargs))
-
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] == 2
 
 
-def test_trigger_subset_params(events, run):
+def test_trigger_subset_params(events, flush):
     ''' trigger an event with missing kwargs pads with None '''
     params = {}
 
     def func(one, two):
         params["one"] = one
         params["two"] = two
-
     events.on("2")(func)
-
     kwargs = {"one": 1}
-    run(events.trigger("2", **kwargs))
-
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] is None
 
 
-def test_trigger_subset_params_with_defaults(events, run):
+def test_trigger_subset_params_with_defaults(events, flush):
     ''' trigger an event with missing kwargs uses function defaults '''
     params = {}
 
     def func(one, two="default"):
         params["one"] = one
         params["two"] = two
-
     events.on("2")(func)
-
     kwargs = {"one": 1}
-    run(events.trigger("2", **kwargs))
-
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] == "default"
 
@@ -196,7 +179,7 @@ def test_trigger_subset_params_with_defaults(events, run):
 # ===================
 
 
-def test_bound_method_of_instance(events, run):
+def test_bound_method_of_instance(events, flush):
     ''' verify bound methods are correctly inspected '''
     params = {}
 
@@ -207,9 +190,38 @@ def test_bound_method_of_instance(events, run):
     instance = Class()
     bound_method = instance.method
     events.on("2")(bound_method)
-
     kwargs = {"one": 1}
-    run(events.trigger("2", **kwargs))
-
+    events.trigger("2", **kwargs)
+    flush()
     assert params["one"] == 1
     assert params["two"] == "default"
+
+
+# ===================
+# Ordering + Blocking
+# ===================
+
+
+def test_callback_ordering(events, flush, loop):
+    ''' Callbacks for a second event don't queue behind the first event '''
+    second_complete = asyncio.Event(loop=loop)
+    call_order = []
+    complete_order = []
+
+    async def first():
+        call_order.append("first")
+        await second_complete.wait()
+        complete_order.append("first")
+
+    async def second():
+        call_order.append("second")
+        complete_order.append("second")
+        second_complete.set()
+
+    events.on("0")(first)
+    events.on("0")(second)
+
+    events.trigger("0")
+    flush()
+    assert call_order == ["first", "second"]
+    assert complete_order == ["second", "first"]

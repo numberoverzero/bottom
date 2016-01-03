@@ -1,36 +1,32 @@
-from bottom import Client
+import asyncio
 import pytest
+from bottom import Client
 
 
-@pytest.fixture
-def client(patch_connection, run):
-    '''
-    Return a client with mocked out asyncio.
-
-    Pulling in patch_connection here mocks out asyncio.open_connection,
-    so that we can use reader, writer, run in tests.
-    '''
-    return Client("host", "port")
+def test_default_event_loop():
+    default_loop = asyncio.get_event_loop()
+    client = Client(host="host", port="port")
+    assert client.loop is default_loop
 
 
-def test_send_unknown_command(client, run):
+def test_send_unknown_command(client, loop):
     ''' Sending an unknown command raises '''
-    run(client.connect())
+    loop.run_until_complete(client.connect())
     assert client.connected
     with pytest.raises(ValueError):
         client.send("Unknown_Command")
 
 
-def test_send_before_connected(client, writer, run):
+def test_send_before_connected(client, writer):
     ''' Sending before connected does not invoke writer '''
     client.send("PONG")
     assert not writer.used
 
 
-def test_send_after_disconnected(client, writer, run):
+def test_send_after_disconnected(client, writer, loop):
     ''' Sending after disconnect does not invoke writer '''
-    run(client.connect())
-    run(client.disconnect())
+    loop.run_until_complete(client.connect())
+    loop.run_until_complete(client.disconnect())
     client.send("PONG")
     assert not writer.used
 
@@ -41,13 +37,13 @@ def test_on(client):
     @client.on('privmsg')
     def route(nick, target, message):
         pass
-    assert len(client.__partials__["PRIVMSG"]) == 1
+    assert len(client._partials["PRIVMSG"]) == 1
 
     with pytest.raises(ValueError):
         client.on("UNKNOWN_COMMAND")(route)
 
 
-def test_run_(client, reader, eventparams, run):
+def test_run_(client, reader, eventparams, loop):
     ''' run delegates to Connection, which triggers events on the Client '''
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []
@@ -56,7 +52,7 @@ def test_run_(client, reader, eventparams, run):
     def receive(nick, user, host, target, message):
         received.extend([nick, user, host, target, message])
 
-    run(client.run())
+    loop.run_until_complete(client.run())
 
     assert reader.has_read(":nick!user@host PRIVMSG #target :this is message")
     assert received == ["nick", "user", "host", "#target", "this is message"]

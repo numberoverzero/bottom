@@ -1,25 +1,22 @@
 """ asyncio-based rfc2812-compliant IRC Client """
-import logging
 import asyncio
 from . import connection
 from . import event
 from . import pack
 from . import unpack
 __all__ = ["Client"]
-logger = logging.getLogger(__name__)
+__version__ = "1.0.0"
 
 
 class Client(event.EventsMixin):
-    __conn_cls__ = connection.Connection
+    __conn_cls = connection.Connection
 
-    def __init__(self, host, port, encoding='UTF-8', ssl=True):
-        # It's ok that unpack.parameters isn't cached, since it's only
-        # called when adding an event handler (which should __usually__
-        # only occur during setup)
-        super().__init__(unpack.parameters)
-        # trigger events on the client
-        self.connection = self.__conn_cls__(host, port, self,
-                                            encoding=encoding, ssl=ssl)
+    def __init__(self, host, port, *, encoding='UTF-8', ssl=True, loop=None):
+        if loop is None:
+            loop = asyncio.get_event_loop()
+        super().__init__(unpack.parameters, loop=loop)
+        self.connection = self.__conn_cls(host, port, self, ssl=ssl,
+                                          encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
         '''
@@ -34,22 +31,19 @@ class Client(event.EventsMixin):
         packed_command = pack.pack_command(command, **kwargs)
         self.connection.send(packed_command)
 
-    @asyncio.coroutine
-    def connect(self):
-        yield from self.connection.connect()
+    async def connect(self):
+        await self.connection.connect()
 
-    @asyncio.coroutine
-    def disconnect(self):
-        yield from self.connection.disconnect()
+    async def disconnect(self):
+        await self.connection.disconnect()
 
     @property
     def connected(self):
         return self.connection.connected
 
-    @asyncio.coroutine
-    def run(self, loop=None):
+    async def run(self):
         ''' Run the client until it disconnects (without reconnecting) '''
-        yield from self.connection.run(loop=loop)
+        await self.connection.run()
 
     def on(self, command):
         '''

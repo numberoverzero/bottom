@@ -5,7 +5,7 @@ missing = object()
 
 
 class EventsMixin(object):
-    def __init__(self, getparams):
+    def __init__(self, getparams, *, loop):
         '''
         getparams is a function that takes a single argument (event) and
         returns a list of parameters for the event.  It should raise on unknown
@@ -15,28 +15,25 @@ class EventsMixin(object):
         # where event is a string, and list(func) is the list of functions
         # (wrapped and decorated) that will be invoked when the given event
         # is triggered.
-        self.__partials__ = collections.defaultdict(list)
-        self.__getparams__ = getparams
+        self._partials = collections.defaultdict(list)
+        self._getparams = getparams
+        self.loop = loop
 
-    def __add_event__(self, event, func):
+    def _add_event(self, event, func):
         '''
         Validate the func's signature, then partial_bind the function to speed
         up argument injection.
 
         '''
-        parameters = self.__getparams__(event)
+        parameters = self._getparams(event)
         validate_func(event, func, parameters)
-        self.__partials__[event].append(partial_bind(func))
+        self._partials[event].append(partial_bind(func))
         return func
 
-    @asyncio.coroutine
     def trigger(self, event, **kwargs):
-        ''' This is a coroutine so that we can `yield from` its execution '''
-        partials = self.__partials__[event]
-        tasks = [func(**kwargs) for func in partials]
-        if not tasks:
-            return
-        yield from asyncio.wait(tasks)
+        partials = self._partials[event]
+        for func in partials:
+            self.loop.create_task(func(**kwargs))
 
     def on(self, event):
         '''
@@ -60,12 +57,15 @@ class EventsMixin(object):
         event = 'test'
         kwargs = {'one': 1, 'two': 2, 'arg': 'arg'}
 
+        events.trigger(event, **kwargs)
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(events.trigger(event, **kwargs))
+        # Run all queued events
+        loop.stop()
+        loop.run_forever()
 
         '''
         def wrap_function(func):
-            self.__add_event__(event, func)
+            self._add_event(event, func)
             return func
         return wrap_function
 
@@ -110,7 +110,7 @@ def validate_func(event, func, parameters):
 
 def partial_bind(func):
     sig = inspect.signature(func)
-    # Wrap non-coroutines so we can always `yield from func(**kw)`
+    # Wrap non-coroutines so we can always `await func(**kw)`
     if not asyncio.iscoroutinefunction(func):
         func = asyncio.coroutine(func)
     base = {}
@@ -122,8 +122,7 @@ def partial_bind(func):
         else:
             base[key] = default
 
-    @asyncio.coroutine
-    def wrapper(**kwargs):
+    async def wrapper(**kwargs):
         unbound = base.copy()
         # Only map params this function expects
         for key in base:
@@ -131,6 +130,6 @@ def partial_bind(func):
             if new_value is not missing:
                 unbound[key] = new_value
         bound = sig.bind(**unbound)
-        yield from func(*bound.args, **bound.kwargs)
+        await func(*bound.args, **bound.kwargs)
 
     return wrapper

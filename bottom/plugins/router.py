@@ -33,13 +33,13 @@ class Router(object):
         self.routes = {}
         bot.on("PRIVMSG")(self.handle)
 
-    async def handle(self, nick, target, message):
+    def handle(self, nick, target, message):
         ''' bot callback entrance '''
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
                 fields = match.groupdict()
-                await func(nick, target, fields)
+                self.bot.loop.create_task(func(nick, target, fields))
 
     def route(self, pattern, **kwargs):
         '''
