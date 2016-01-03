@@ -24,16 +24,20 @@
 
 """
 import asyncio
+from typing import Callable
+
 import simplex
+
+from bottom import Client
 
 
 class Router(object):
-    def __init__(self, bot):
+    def __init__(self, bot: Client) -> None:
         self.bot = bot
         self.routes = {}
         bot.on("PRIVMSG")(self.handle)
 
-    def handle(self, nick, target, message):
+    def handle(self, nick: str, target: str, message: str) -> None:
         """ bot callback entrance """
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
@@ -41,7 +45,7 @@ class Router(object):
                 fields = match.groupdict()
                 self.bot.loop.create_task(func(nick, target, fields))
 
-    def route(self, pattern, **kwargs):
+    def route(self, pattern: str, **kwargs) -> Callable:
         """
         decorator for wiring up functions
 
@@ -51,13 +55,14 @@ class Router(object):
             if target==router.bot.NICK:
                 target = nick
             router.bot.send("PRIVMSG", target=target, message=fields['words'])
-
         """
-        def wrapper(function):
+
+        def wrapper(function: Callable[[...], None]) -> Callable[[...], None]:
             wrapped = function
             if not asyncio.iscoroutinefunction(wrapped):
                 wrapped = asyncio.coroutine(wrapped)
             compiled = simplex.compile(pattern)
             self.routes[compiled] = (wrapped, pattern)
             return function
+
         return wrapper
