@@ -171,7 +171,7 @@ def synonym(command):
 
 
 def nickmask(prefix, kwargs):
-    ''' store nick, user, host in kwargs if prefix is correct format '''
+    """ store nick, user, host in kwargs if prefix is correct format """
     if "!" in prefix and "@" in prefix:
         # From a user
         kwargs['nick'], remainder = prefix.split('!', 1)
@@ -186,7 +186,7 @@ def add_nickmask(params):
 
 
 def split_line(msg):
-    ''' Parse message according to rfc 2812 for routing '''
+    """ Parse message according to rfc 2812 for routing """
     match = RE_IRCLINE.match(msg)
     if not match:
         raise ValueError("Invalid line")

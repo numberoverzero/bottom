@@ -47,7 +47,7 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
 
     @bot.on('PRIVMSG')
     def message(nick, target, message):
-        ''' Echo all messages '''
+        """ Echo all messages """
 
         # Don't echo ourselves
         if nick == NICK:
@@ -136,7 +136,7 @@ Not all available arguments need to be used.  For instance, both of the followin
 
     @bot.on('PRIVMSG')
     def event(nick, message, target):
-        ''' Doesn't use user, host.  argument order is different '''
+        """ Doesn't use user, host.  argument order is different """
         # message sent to bot - echo message
         if target == bot.nick:
             bot.send('PRIVMSG', target, message=message)
@@ -147,7 +147,7 @@ Not all available arguments need to be used.  For instance, both of the followin
 
     @bot.on('PRIVMSG')
     def func(message, target):
-        ''' Just waiting for the signal '''
+        """ Just waiting for the signal """
         if message == codeword && target == secret_channel:
             execute_heist()
 

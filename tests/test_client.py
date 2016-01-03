@@ -10,7 +10,7 @@ def test_default_event_loop():
 
 
 def test_send_unknown_command(client, loop):
-    ''' Sending an unknown command raises '''
+    """ Sending an unknown command raises """
     loop.run_until_complete(client.connect())
     assert client.connected
     with pytest.raises(ValueError):
@@ -18,13 +18,13 @@ def test_send_unknown_command(client, loop):
 
 
 def test_send_before_connected(client, writer):
-    ''' Sending before connected does not invoke writer '''
+    """ Sending before connected does not invoke writer """
     client.send("PONG")
     assert not writer.used
 
 
 def test_send_after_disconnected(client, writer, loop):
-    ''' Sending after disconnect does not invoke writer '''
+    """ Sending after disconnect does not invoke writer """
     loop.run_until_complete(client.connect())
     loop.run_until_complete(client.disconnect())
     client.send("PONG")
@@ -32,7 +32,7 @@ def test_send_after_disconnected(client, writer, loop):
 
 
 def test_on(client):
-    ''' Client.on corrects case, throws on unknown events '''
+    """ Client.on corrects case, throws on unknown events """
 
     @client.on('privmsg')
     def route(nick, target, message):
@@ -44,7 +44,7 @@ def test_on(client):
 
 
 def test_run_(client, reader, eventparams, loop):
-    ''' run delegates to Connection, which triggers events on the Client '''
+    """ run delegates to Connection, which triggers events on the Client """
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []
 

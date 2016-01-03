@@ -19,7 +19,7 @@ class Client(event.EventsMixin):
                                           encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
-        '''
+        """
         Send a message to the server.
 
         Examples
@@ -27,7 +27,7 @@ class Client(event.EventsMixin):
         client.send('nick', nick='weatherbot')
         client.send('privmsg', target='#python', message="Hello, World!")
 
-        '''
+        """
         packed_command = pack.pack_command(command, **kwargs)
         self.connection.send(packed_command)
 
@@ -42,11 +42,11 @@ class Client(event.EventsMixin):
         return self.connection.connected
 
     async def run(self):
-        ''' Run the client until it disconnects (without reconnecting) '''
+        """ Run the client until it disconnects (without reconnecting) """
         await self.connection.run()
 
     def on(self, command):
-        '''
+        """
         Decorate a function to be invoked when a :param:`command` occurs.
-        '''
+        """
         return super().on(command.upper())

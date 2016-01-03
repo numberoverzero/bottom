@@ -5,24 +5,24 @@ MISSING = object()
 
 
 def b(field, kwargs, present=MISSING, missing=''):
-    '''
+    """
     Return `present` value (default to `field`) if `field` in `kwargs` and
     Truthy, otherwise return `missing` value
-    '''
+    """
     if bool(kwargs.get(field, False)):
         return field if present is MISSING else str(present)
     return str(missing)
 
 
 def f(field, kwargs, default=MISSING):
-    ''' Alias for more readable command construction '''
+    """ Alias for more readable command construction """
     if default is not MISSING:
         return str(kwargs.get(field, default))
     return str(kwargs[field])
 
 
 def pack(field, kwargs, default=MISSING, sep=","):
-    ''' Util for joining multiple fields with commas '''
+    """ Util for joining multiple fields with commas """
     if default is not MISSING:
         value = kwargs.get(field, default)
     else:
