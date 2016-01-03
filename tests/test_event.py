@@ -38,51 +38,51 @@ def watch():
 # ==============
 
 def test_on_subset(events):
-    ''' register a handler with a subset of available parameters '''
+    """ register a handler with a subset of available parameters """
     for e in ["0", "1", "2"]:
         events.on(e)(lambda: None)
 
 
 def test_on_all(events):
-    ''' register a handler with all available parameters '''
+    """ register a handler with all available parameters """
     events.on("2")(lambda one, two: None)
 
 
 def test_on_superset(events):
-    ''' raise when handler expects unavailable parameters '''
+    """ raise when handler expects unavailable parameters """
     with pytest.raises(ValueError):
         events.on("1")(lambda one, two: None)
 
 
 def test_on_ordering(events):
-    ''' ordering is irrelevant '''
+    """ ordering is irrelevant """
     events.on("2")(lambda two, one: None)
 
 
 def test_with_kwargs(events):
-    ''' kwargs is ok without masking '''
+    """ kwargs is ok without masking """
     events.on("2")(lambda one, **kwargs: None)
 
 
 def test_with_kwargs_masking(events):
-    ''' masking kwargs raise '''
+    """ masking kwargs raise """
     with pytest.raises(ValueError):
         events.on("2")(lambda one, **two: None)
 
 
 def test_var_args(events):
-    ''' *args are never ok '''
+    """ *args are never ok """
     with pytest.raises(ValueError):
         events.on("2")(lambda one, *args: None)
 
 
 def test_defaults(events):
-    ''' defaults are fine '''
+    """ defaults are fine """
     events.on("2")(lambda one="foo", two="bar": None)
 
 
 def test_on_coroutine(events):
-    ''' coroutines are fine '''
+    """ coroutines are fine """
     async def handle(one):
         pass
     events.on("1")(handle)
@@ -93,7 +93,7 @@ def test_on_coroutine(events):
 # ===================
 
 def test_trigger(events, watch, flush):
-    ''' trigger calls registered handler '''
+    """ trigger calls registered handler """
     w = watch()
     events.on("0")(lambda: w.call())
     events.trigger("0")
@@ -102,7 +102,7 @@ def test_trigger(events, watch, flush):
 
 
 def test_trigger_multiple_calls(events, watch, flush):
-    ''' trigger calls re-registered handler twice '''
+    """ trigger calls re-registered handler twice """
     w = watch()
     events.on("0")(lambda: w.call())
     events.on("0")(lambda: w.call())
@@ -112,7 +112,7 @@ def test_trigger_multiple_calls(events, watch, flush):
 
 
 def test_trigger_multiple_handlers(events, watch, flush):
-    ''' trigger calls re-registered handler twice '''
+    """ trigger calls re-registered handler twice """
     w1 = watch()
     w2 = watch()
     events.on("0")(lambda: w1.call())
@@ -124,13 +124,13 @@ def test_trigger_multiple_handlers(events, watch, flush):
 
 
 def test_trigger_no_handlers(events, flush):
-    ''' trigger an event with no handlers '''
+    """ trigger an event with no handlers """
     events.trigger("some event")
     flush()
 
 
 def test_trigger_superset_params(events, flush):
-    ''' trigger an event with kwarg keys that aren't in event params '''
+    """ trigger an event with kwarg keys that aren't in event params """
     params = {}
 
     def func(one, two):
@@ -145,7 +145,7 @@ def test_trigger_superset_params(events, flush):
 
 
 def test_trigger_subset_params(events, flush):
-    ''' trigger an event with missing kwargs pads with None '''
+    """ trigger an event with missing kwargs pads with None """
     params = {}
 
     def func(one, two):
@@ -160,7 +160,7 @@ def test_trigger_subset_params(events, flush):
 
 
 def test_trigger_subset_params_with_defaults(events, flush):
-    ''' trigger an event with missing kwargs uses function defaults '''
+    """ trigger an event with missing kwargs uses function defaults """
     params = {}
 
     def func(one, two="default"):
@@ -180,7 +180,7 @@ def test_trigger_subset_params_with_defaults(events, flush):
 
 
 def test_bound_method_of_instance(events, flush):
-    ''' verify bound methods are correctly inspected '''
+    """ verify bound methods are correctly inspected """
     params = {}
 
     class Class(object):
@@ -203,7 +203,7 @@ def test_bound_method_of_instance(events, flush):
 
 
 def test_callback_ordering(events, flush, loop):
-    ''' Callbacks for a second event don't queue behind the first event '''
+    """ Callbacks for a second event don't queue behind the first event """
     second_complete = asyncio.Event(loop=loop)
     call_order = []
     complete_order = []

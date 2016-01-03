@@ -8,9 +8,9 @@ import collections
 
 @pytest.fixture
 def loop():
-    '''
+    """
     Keep things clean by using a new event loop
-    '''
+    """
     loop = asyncio.new_event_loop()
     loop.set_debug(True)
     return loop
@@ -49,7 +49,7 @@ def eventparams():
 
 @pytest.fixture
 def events(eventparams, loop):
-    ''' Return a no-op EventsMixin that tracks triggers '''
+    """ Return a no-op EventsMixin that tracks triggers """
     return MockEvents(lambda e: eventparams[e], loop=loop)
 
 
@@ -65,22 +65,22 @@ def writer():
 
 @pytest.fixture
 def client(patch_connection, loop):
-    '''
+    """
     Return a client with mocked out asyncio.
 
     Pulling in patch_connection here mocks out asyncio.open_connection,
     so that we can use reader, writer, run in tests.
-    '''
+    """
     return Client("host", "port", loop=loop)
 
 
 @pytest.fixture
 def patch_connection(reader, writer, monkeypatch):
-    '''
+    """
     Patch asyncio.open_connection to return a mock reader, writer.
 
     Returns the reader, writer pair for mocking
-    '''
+    """
     @asyncio.coroutine
     def mock(*args, **kwargs):
         return reader, writer
@@ -98,11 +98,11 @@ class MockEvents(EventsMixin):
         super().trigger(event, **kwargs)
 
     def triggered(self, event, n=1):
-        '''
+        """
         Assert an event was triggered exactly n times (default exactly once)
 
         Pass n <= 0 to assert AT LEAST one call
-        '''
+        """
         t = self.triggered_events[event]
         # Match exact expected call count
         if n > 0:
@@ -112,7 +112,7 @@ class MockEvents(EventsMixin):
 
 
 class MockStreamReader():
-    ''' Set up a reader that uses readline '''
+    """ Set up a reader that uses readline """
     def __init__(self, encoding='UTF-8"'):
         self.lines = []
         self.read_lines = []
@@ -129,16 +129,16 @@ class MockStreamReader():
             raise EOFError
 
     def push(self, line):
-        ''' Push a string to be \n terminated and converted to bytes '''
+        """ Push a string to be \n terminated and converted to bytes """
         self.lines.append(line)
 
     def has_read(self, line):
-        ''' return True if the given string was read '''
+        """ return True if the given string was read """
         return line in self.read_lines
 
 
 class MockStreamWriter():
-    ''' Set up a writer that captures written bytes as lines '''
+    """ Set up a writer that captures written bytes as lines """
     def __init__(self, encoding='UTF-8"'):
         self.written_lines = []
         self.encoding = encoding
@@ -158,7 +158,7 @@ class MockStreamWriter():
         return self._closed
 
     def has_written(self, line):
-        ''' returns True if the given string was written '''
+        """ returns True if the given string was written """
         # lines are stored as bytes - encode the string to test
         # and see if that's in written_lines
         return line.encode(self.encoding) in self.written_lines

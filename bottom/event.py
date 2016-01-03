@@ -6,11 +6,11 @@ missing = object()
 
 class EventsMixin(object):
     def __init__(self, getparams, *, loop):
-        '''
+        """
         getparams is a function that takes a single argument (event) and
         returns a list of parameters for the event.  It should raise on unknown
         events.
-        '''
+        """
         # Dictionary of event : list(func)
         # where event is a string, and list(func) is the list of functions
         # (wrapped and decorated) that will be invoked when the given event
@@ -20,11 +20,11 @@ class EventsMixin(object):
         self.loop = loop
 
     def _add_event(self, event, func):
-        '''
+        """
         Validate the func's signature, then partial_bind the function to speed
         up argument injection.
 
-        '''
+        """
         parameters = self._getparams(event)
         validate_func(event, func, parameters)
         self._partials[event].append(partial_bind(func))
@@ -36,7 +36,7 @@ class EventsMixin(object):
             self.loop.create_task(func(**kwargs))
 
     def on(self, event):
-        '''
+        """
         Decorate a function to be invoked when the given :param:`event` occurs.
         The function may be a coroutine.
 
@@ -63,7 +63,7 @@ class EventsMixin(object):
         loop.stop()
         loop.run_forever()
 
-        '''
+        """
         def wrap_function(func):
             self._add_event(event, func)
             return func

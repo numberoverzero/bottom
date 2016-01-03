@@ -34,7 +34,7 @@ class Router(object):
         bot.on("PRIVMSG")(self.handle)
 
     def handle(self, nick, target, message):
-        ''' bot callback entrance '''
+        """ bot callback entrance """
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
@@ -42,7 +42,7 @@ class Router(object):
                 self.bot.loop.create_task(func(nick, target, fields))
 
     def route(self, pattern, **kwargs):
-        '''
+        """
         decorator for wiring up functions
 
         @router.route("bot, say [words]", ignore_case=True)
@@ -52,7 +52,7 @@ class Router(object):
                 target = nick
             router.bot.send("PRIVMSG", target=target, message=fields['words'])
 
-        '''
+        """
         def wrapper(function):
             wrapped = function
             if not asyncio.iscoroutinefunction(wrapped):
