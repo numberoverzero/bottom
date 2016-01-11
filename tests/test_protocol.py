@@ -1,25 +1,4 @@
 from bottom.protocol import Protocol
-import pytest
-
-
-@pytest.fixture
-def protocol(client):
-    return Protocol(client)
-
-
-@pytest.fixture
-def transport():
-    class Transport:
-        def __init__(self):
-            self.written = []
-            self.closed = False
-
-        def write(self, data):
-            self.written.append(data)
-
-        def close(self):
-            self.closed = True
-    return Transport()
 
 
 def test_connect(protocol, transport, client):

@@ -1,5 +1,6 @@
 from bottom.client import Client
 from bottom.connection import Connection
+from bottom.protocol import Protocol
 import pytest
 import asyncio
 import collections
@@ -42,6 +43,26 @@ def schedule(loop, flush):
 
 
 @pytest.fixture
+def protocol(client):
+    return Protocol(client)
+
+
+@pytest.fixture
+def transport():
+    class Transport:
+        def __init__(self):
+            self.written = []
+            self.closed = False
+
+        def write(self, data):
+            self.written.append(data)
+
+        def close(self):
+            self.closed = True
+    return Transport()
+
+
+@pytest.fixture
 def reader():
     return MockStreamReader()
 
@@ -53,11 +74,11 @@ def writer():
 
 @pytest.fixture
 def patch_connection(reader, writer, monkeypatch):
-    '''
+    """
     Patch asyncio.open_connection to return a mock reader, writer.
 
     Returns the reader, writer pair for mocking
-    '''
+    """
     async def mock(*args, **kwargs):
         return reader, writer
     monkeypatch.setattr(asyncio, 'open_connection', mock)
