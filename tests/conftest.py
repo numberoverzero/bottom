@@ -4,6 +4,7 @@ from bottom.protocol import Protocol
 import pytest
 import asyncio
 import collections
+NOT_CORO = "Can't schedule non-coroutine"
 
 
 @pytest.fixture
@@ -36,6 +37,7 @@ def flush(loop):
 def schedule(loop, flush):
     def _schedule(*coros, immediate=True):
         for coro in coros:
+            assert asyncio.iscoroutine(coro), NOT_CORO
             loop.create_task(coro)
         if immediate:
             flush()
