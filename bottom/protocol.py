@@ -21,18 +21,23 @@ class Protocol(asyncio.Protocol):
 
     def __init__(self, client):
         self.client = client
+        client.protocol = self
         self.transport = None
+        self.connected = False
         self.buffer = b""
 
     def connection_made(self, transport):
         self.transport = transport
+        self.connected = True
         self.client.trigger(
             "client_connect", host=self.client.host, port=self.client.port)
 
     def connection_lost(self, exc):
+        self.connected = False
         self.client.trigger(
             "client_disconnect", host=self.client.host, port=self.client.port)
         self.close()
+
 
     def data_received(self, data):
         self.buffer += data

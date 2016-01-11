@@ -1,7 +1,7 @@
 import asyncio
 import collections
 import functools
-from bottom.connection import Connection
+from bottom.protocol import Protocol
 from bottom.pack import pack_command
 
 
@@ -10,12 +10,12 @@ class Client:
         self.host = host
         self.port = port
         self.encoding = encoding
+        self.protocol = None
+        self.ssl = ssl
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
         self._handlers = collections.defaultdict(list)
-        self.connection = Connection(host, port, self, ssl=ssl,
-                                     encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
         """
@@ -29,19 +29,22 @@ class Client:
         packed_command = pack_command(command, **kwargs)
         self.connection.send(packed_command)
 
-    async def connect(self):
-        await self.connection.connect()
+    def connect(self):
+        if self.connected:
+            return
+        coro = self.loop.create_connection(
+            Protocol.factory(self),
+            host=self.host, port=self.port, ssl=self.ssl)
+        self.loop.create_task(coro)
 
-    async def disconnect(self):
-        await self.connection.disconnect()
+    def disconnect(self):
+        if not self.connected:
+            return
+        self.protocol.close()
 
     @property
     def connected(self):
-        return self.connection.connected
-
-    async def run(self):
-        """Run the client until it disconnects"""
-        await self.connection.run()
+        return (self.protocol is not None) and self.protocol.connected
 
     def trigger(self, event, **kwargs):
         """Trigger all handlers for an event to (asynchronously) execute"""
