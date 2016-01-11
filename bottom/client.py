@@ -1,4 +1,5 @@
 import asyncio
+import collections
 import functools
 from bottom.connection import Connection
 from bottom.pack import pack_command
@@ -9,7 +10,7 @@ class Client:
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
-        self._handlers = {}
+        self._handlers = collections.defaultdict(list)
         self.connection = Connection(host, port, self, ssl=ssl,
                                      encoding=encoding, loop=loop)
 
@@ -39,22 +40,9 @@ class Client:
         """Run the client until it disconnects"""
         await self.connection.run()
 
-    def _add_event(self, event, func):
-        """
-        Validate the func's signature, then partial_bind the function to speed
-        up argument injection.
-        """
-        if not asyncio.iscoroutinefunction(func):
-            func = asyncio.coroutine(func)
-        if event not in self._handlers:
-            self._handlers[event] = list()
-        self._handlers[event].append(func)
-        # Returned func is not necessarily the original
-        return func
-
     def trigger(self, event, **kwargs):
         """Trigger all handlers for an event to (asynchronously) execute"""
-        for func in self._handlers.get(event.upper(), []):
+        for func in self._handlers[event.upper()]:
             self.loop.create_task(func(**kwargs))
 
     def on(self, event, func=None):
@@ -84,5 +72,9 @@ class Client:
         """
         if func is None:
             return functools.partial(self.on, event)
-        self._add_event(event.upper(), func)
+        wrapped = func
+        if not asyncio.iscoroutinefunction(wrapped):
+            wrapped = asyncio.coroutine(wrapped)
+        self._handlers[event.upper()].append(wrapped)
+        # Always return original
         return func
