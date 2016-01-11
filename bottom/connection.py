@@ -1,10 +1,10 @@
 import asyncio
-from . import unpack
+from bottom.unpack import unpack_command
 
 
 class Connection(object):
-    def __init__(self, host, port, events, encoding, ssl, *, loop):
-        self.events = events
+    def __init__(self, host, port, client, encoding, ssl, *, loop):
+        self.client = client
         self._connected = False
         self.host, self.port = host, port
         self.reader, self.writer = None, None
@@ -18,7 +18,7 @@ class Connection(object):
         self.reader, self.writer = await asyncio.open_connection(
             self.host, self.port, ssl=self.ssl, loop=self.loop)
         self._connected = True
-        self.events.trigger("CLIENT_CONNECT", host=self.host, port=self.port)
+        self.client.trigger("CLIENT_CONNECT", host=self.host, port=self.port)
 
     async def disconnect(self):
         if not self.connected:
@@ -27,7 +27,7 @@ class Connection(object):
         self.writer = None
         self.reader = None
         self._connected = False
-        self.events.trigger(
+        self.client.trigger(
             "CLIENT_DISCONNECT", host=self.host, port=self.port)
 
     @property
@@ -40,24 +40,24 @@ class Connection(object):
             msg = await self.read()
             if msg:
                 try:
-                    event, kwargs = unpack.unpack_command(msg)
+                    event, kwargs = unpack_command(msg)
                 except ValueError:
                     print("PARSE ERROR {}".format(msg))
                 else:
-                    self.events.trigger(event, **kwargs)
+                    self.client.trigger(event, **kwargs)
             else:
                 # Lost connection
                 await self.disconnect()
 
     def send(self, msg):
         if self.writer:
-            self.writer.write((msg.strip() + '\n').encode(self.encoding))
+            self.writer.write((msg.strip() + "\n").encode(self.encoding))
 
     async def read(self):
         if not self.reader:
-            return ''
+            return ""
         try:
             msg = await self.reader.readline()
-            return msg.decode(self.encoding, 'ignore').strip()
+            return msg.decode(self.encoding, "ignore").strip()
         except EOFError:
-            return ''
+            return ""

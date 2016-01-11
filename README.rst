@@ -34,19 +34,19 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
 
 
     @bot.on('CLIENT_CONNECT')
-    def connect():
+    def connect(**kwargs):
         bot.send('NICK', nick=NICK)
         bot.send('USER', user=NICK, realname='Bot using bottom.py')
         bot.send('JOIN', channel=CHANNEL)
 
 
     @bot.on('PING')
-    def keepalive(message):
+    def keepalive(message, **kwargs):
         bot.send('PONG', message=message)
 
 
     @bot.on('PRIVMSG')
-    def message(nick, target, message):
+    def message(nick, target, message, **kwargs):
         """ Echo all messages """
 
         # Don't echo ourselves
@@ -84,7 +84,7 @@ Development
 bottom uses ``tox``, ``pytest`` and ``flake8``.  To get everything set up::
 
     # RECOMMENDED: create a virtualenv with:
-    #     mkvirtualenv bottom
+    #     pyenv virtualenv 3.5.0 bottom
     git clone https://github.com/numberoverzero/bottom.git
     pip install tox
     tox
@@ -93,10 +93,10 @@ bottom uses ``tox``, ``pytest`` and ``flake8``.  To get everything set up::
 TODO
 ----
 
-* Better `Client` docstrings
-* Add missing replies/errors to `unpack.py:unpack_command`
+* Better ``Client`` docstrings
+* Add missing replies/errors to ``unpack.py:unpack_command``
 
-  * Add reply/error parameters to `unpack.py:parameters`
+  * Add reply/error parameters to ``unpack.py:parameters``
   * Document supported_events_
 
 
@@ -130,12 +130,13 @@ If you want to call this synchronously (block until it's complete) use the follo
 Client.on(event)(func)
 ----------------------
 
-This ``@decorator`` is the main way you'll interact with a ``Client``.  It takes a string, returning a function wrapper that validates the function and registers it for the given event.  When that event occurs, the function will be called, mapping any arguments the function may expect from the set of available arguments for the event.
+This decorator is the main way you'll interact with a ``Client``.  For a given event name, it registers the decorated function to be invoked when that event occurs.  Your decorated functions should always accept **kwargs, in case unexpected kwargs are included when the event is triggered.
+
 
 Not all available arguments need to be used.  For instance, both of the following are valid::
 
     @bot.on('PRIVMSG')
-    def event(nick, message, target):
+    def event(nick, message, target, **kwargs):
         """ Doesn't use user, host.  argument order is different """
         # message sent to bot - echo message
         if target == bot.nick:
@@ -146,35 +147,22 @@ Not all available arguments need to be used.  For instance, both of the followin
 
 
     @bot.on('PRIVMSG')
-    def func(message, target):
+    def func(message, target, **kwargs):
         """ Just waiting for the signal """
         if message == codeword && target == secret_channel:
             execute_heist()
 
+Handlers do not need to be async functions - non async will be wrapped prior to the bot running.
+For example, both of these are valid::
 
-VAR_KWARGS can be used, as long as the name doesn't mask an actual parameter.  VAR_ARGS may not be used.
-
-::
-
-    # OK - kwargs, no masking
     @bot.on('PRIVMSG')
-    def event(message, **everything_else):
-        logger.log(everything_else['nick'] + " said " + message)
+    def handle(message, **kwargs):
+        print(message)
 
-
-    # NOT OK - kwargs, masking parameter <nick>
     @bot.on('PRIVMSG')
-    def event(message, **nick):
-        logger.log(nick['target'])
+    async def handle(message, **kwargs):
+        await async_logger.log(message)
 
-
-    # NOT OK - uses VAR_ARGS
-    @bot.on('PRIVMSG')
-    def event(message, *args):
-        logger.log(args)
-
-
-Decorated functions will be invoked asynchronously, and may optionally use the ``await`` syntax.  Functions do not need to be wrapped with ``@ayncio.coroutine`` - this is handled as part of the function caching process.
 
 Client.trigger(event, \*\*kwargs)
 -------------------------------
@@ -192,7 +180,7 @@ the event loop yields to them.
 
     # Rename !commands to !help
     @bot.on('privmsg')
-    def parse(nick, target, message):
+    def parse(nick, target, message, **kwargs):
         if message == '!commands':
             bot.send('privmsg', target=nick,
                      message="!commands was renamed to !help in 1.2")
@@ -217,7 +205,7 @@ Client.connect()
 Attempt to reconnect using the client's host, port::
 
     @bot.on('client_disconnect')
-    async def reconnect():
+    async def reconnect(**kwargs):
         # Wait a few seconds
         await asyncio.sleep(3)
         await bot.connect()
@@ -231,7 +219,7 @@ Client.disconnect()
 Disconnect from the server if connected::
 
     @bot.on('privmsg')
-    async def suicide_pill(nick, message):
+    async def suicide_pill(nick, message, **kwargs):
         if nick == "spy_handler" and message == "last stop":
             await bot.disconnect()
 

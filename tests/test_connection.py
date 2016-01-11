@@ -1,49 +1,44 @@
-def test_connect(connection, events, writer, schedule, flush):
+def test_connect(connection, client, writer, schedule):
     """ Connection.Connect opens a writer, triggers CLIENT_CONNECT """
     schedule(connection.connect())
-    flush()
     assert connection.connected
     assert not writer.closed
-    assert events.triggered("CLIENT_CONNECT")
+    assert client.triggers["CLIENT_CONNECT"] == 1
 
 
-def test_already_connected(connection, events, writer, schedule, flush):
+def test_already_connected(connection, client, writer, schedule):
     """ Does not trigger CLIENT_CONNECT multiple times """
     schedule(connection.connect(), connection.connect())
-    flush()
     assert not writer.closed
-    assert events.triggered("CLIENT_CONNECT")
+    assert client.triggers["CLIENT_CONNECT"] == 1
 
 
-def test_disconnect_before_connect(connection, events, schedule, flush):
+def test_disconnect_before_connect(connection, client, schedule):
     """ disconnect before connect does nothing """
     schedule(connection.disconnect())
-    flush()
     assert not connection.connected
-    assert not events.triggered("CLIENT_CONNECT")
-    assert not events.triggered("CLIENT_DISCONNECT")
+    assert not client.triggers["CLIENT_CONNECT"] == 1
+    assert not client.triggers["CLIENT_DISCONNECT"] == 1
 
 
-def test_disconnect(writer, patch_connection, events, connection,
-                    schedule, flush):
+def test_disconnect(writer, patch_connection, client, connection,
+                    schedule):
     """ Connection.disconnect closes writer, triggers CLIENT_DISCONNECT """
     schedule(connection.connect(), connection.disconnect())
-    flush()
     assert not connection.connected
     assert writer.closed
     assert connection.writer is None
-    assert events.triggered("CLIENT_CONNECT")
-    assert events.triggered("CLIENT_DISCONNECT")
+    assert client.triggers["CLIENT_CONNECT"] == 1
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
 
 
-def test_already_disconnected(connection, events, schedule, flush):
+def test_already_disconnected(connection, client, schedule):
     """ Does not trigger CLIENT_DISCONNECT multiple times """
     schedule(connection.connect(),
              connection.disconnect(),
              connection.disconnect())
-    flush()
-    assert events.triggered("CLIENT_CONNECT")
-    assert events.triggered("CLIENT_DISCONNECT")
+    assert client.triggers["CLIENT_CONNECT"] == 1
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
 
 
 def test_send_before_connected(connection, writer):
@@ -53,10 +48,9 @@ def test_send_before_connected(connection, writer):
     assert not writer.used
 
 
-def test_send_disconnected(connection, writer, schedule, flush):
+def test_send_disconnected(connection, writer, schedule):
     """ Nothing happens when sending after disconnecting """
     schedule(connection.connect(), connection.disconnect())
-    flush()
     connection.send("test")
     assert not writer.used
 
@@ -76,10 +70,9 @@ def test_read_before_connected(connection, reader, loop):
     assert not reader.used
 
 
-def test_read_disconnected(connection, reader, schedule, flush, loop):
+def test_read_disconnected(connection, reader, schedule, loop):
     """ Nothing happens when reading after disconnecting """
     schedule(connection.connect(), connection.disconnect())
-    flush()
     value = loop.run_until_complete(connection.read())
     assert not value
     assert not reader.used
@@ -102,31 +95,30 @@ def test_read_strips(connection, reader, loop):
     assert reader.has_read("  a b  c | @#$ d  \n")
 
 
-def test_run_without_message(connection, events, loop):
+def test_run_without_message(connection, client, schedule):
     """ Connection.run should connect, read empty, disconnect, return """
-    loop.run_until_complete(connection.run())
-    assert events.triggered("CLIENT_CONNECT")
-    assert events.triggered("CLIENT_DISCONNECT")
+    schedule(connection.run())
+    assert client.triggers["CLIENT_CONNECT"] == 1
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
 
 
-def test_run_trigger_command(connection, reader, events, eventparams, loop):
-    eventparams["PRIVMSG"] = ["nick", "user", "host", "target", "message"]
+def test_run_trigger_command(connection, reader, client, schedule):
     reader.push(":nick!user@host PRIVMSG #target :this is message")
     received = []
 
-    @events.on("PRIVMSG")
+    @client.on("PRIVMSG")
     def receive(nick, user, host, target, message):
         received.extend([nick, user, host, target, message])
 
-    loop.run_until_complete(connection.run())
+    schedule(connection.run())
     assert reader.has_read(":nick!user@host PRIVMSG #target :this is message")
-    assert events.triggered("PRIVMSG")
+    assert client.triggers["PRIVMSG"] == 1
     assert received == ["nick", "user", "host", "#target", "this is message"]
 
 
-def test_run_trigger_unknown_command(connection, reader, events, loop):
+def test_run_trigger_unknown_command(connection, reader, client, schedule):
     reader.push("unknown_command")
-    loop.run_until_complete(connection.run())
+    schedule(connection.run())
 
     assert reader.has_read("unknown_command")
-    assert not events.triggered("unknown_command")
+    assert client.triggers["unknown_command"] == 0

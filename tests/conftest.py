@@ -1,9 +1,13 @@
-from bottom import Client
+from bottom.client import Client
 from bottom.connection import Connection
-from bottom.event import EventsMixin
 import pytest
 import asyncio
 import collections
+
+
+@pytest.fixture
+def watch():
+    return Watcher()
 
 
 @pytest.fixture
@@ -19,7 +23,6 @@ def loop():
 @pytest.fixture
 def flush(loop):
     """Run loop once, to execute any pending tasks"""
-
     async def sentinel():
         pass
 
@@ -29,28 +32,13 @@ def flush(loop):
 
 
 @pytest.fixture
-def schedule(loop):
-    def _schedule(*coros):
+def schedule(loop, flush):
+    def _schedule(*coros, immediate=True):
         for coro in coros:
             loop.create_task(coro)
+        if immediate:
+            flush()
     return _schedule
-
-
-@pytest.fixture
-def connection(patch_connection, events, loop):
-    print("connection")
-    return Connection("host", "port", events, "UTF-8", True, loop=loop)
-
-
-@pytest.fixture
-def eventparams():
-    return {}
-
-
-@pytest.fixture
-def events(eventparams, loop):
-    """ Return a no-op EventsMixin that tracks triggers """
-    return MockEvents(lambda e: eventparams[e], loop=loop)
 
 
 @pytest.fixture
@@ -64,6 +52,19 @@ def writer():
 
 
 @pytest.fixture
+def patch_connection(reader, writer, monkeypatch):
+    '''
+    Patch asyncio.open_connection to return a mock reader, writer.
+
+    Returns the reader, writer pair for mocking
+    '''
+    async def mock(*args, **kwargs):
+        return reader, writer
+    monkeypatch.setattr(asyncio, 'open_connection', mock)
+    return reader, writer
+
+
+@pytest.fixture
 def client(patch_connection, loop):
     """
     Return a client with mocked out asyncio.
@@ -71,44 +72,22 @@ def client(patch_connection, loop):
     Pulling in patch_connection here mocks out asyncio.open_connection,
     so that we can use reader, writer, run in tests.
     """
-    return Client("host", "port", loop=loop)
+    return TrackingClient("host", "port", loop=loop)
 
 
 @pytest.fixture
-def patch_connection(reader, writer, monkeypatch):
-    """
-    Patch asyncio.open_connection to return a mock reader, writer.
-
-    Returns the reader, writer pair for mocking
-    """
-    @asyncio.coroutine
-    def mock(*args, **kwargs):
-        return reader, writer
-    monkeypatch.setattr(asyncio, 'open_connection', mock)
-    return reader, writer
+def connection(client, loop):
+    return Connection("host", "port", client, "UTF-8", True, loop=loop)
 
 
-class MockEvents(EventsMixin):
-    def __init__(self, getparams, *, loop=None):
-        self.triggered_events = collections.defaultdict(int)
-        super().__init__(getparams, loop=loop)
+class TrackingClient(Client):
+    def __init__(self, *args, **kwargs):
+        self.triggers = collections.defaultdict(int)
+        super().__init__(*args, **kwargs)
 
     def trigger(self, event, **kwargs):
-        self.triggered_events[event] += 1
+        self.triggers[event] += 1
         super().trigger(event, **kwargs)
-
-    def triggered(self, event, n=1):
-        """
-        Assert an event was triggered exactly n times (default exactly once)
-
-        Pass n <= 0 to assert AT LEAST one call
-        """
-        t = self.triggered_events[event]
-        # Match exact expected call count
-        if n > 0:
-            return t == n
-        # Assert at least one trigger
-        return t > 0
 
 
 class MockStreamReader():
@@ -162,3 +141,17 @@ class MockStreamWriter():
         # lines are stored as bytes - encode the string to test
         # and see if that's in written_lines
         return line.encode(self.encoding) in self.written_lines
+
+
+class Watcher():
+    """Exposes `call` function, `calls` attribute, and `called` property.
+    Useful for lambdas that can't += a variable"""
+    def __init__(self):
+        self.calls = 0
+
+    def call(self):
+        self.calls += 1
+
+    @property
+    def called(self):
+        return self.calls > 0
