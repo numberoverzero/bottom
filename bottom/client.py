@@ -29,8 +29,10 @@ class Client:
         client.send("nick", nick="weatherbot")
         client.send("privmsg", target="#python", message="Hello, World!")
         """
-        packed_command = pack_command(command, **kwargs)
-        self.connection.send(packed_command)
+        if not self.protocol:
+            raise RuntimeError("Not connected")
+        packed_command = pack_command(command, **kwargs).strip()
+        self.protocol.write(packed_command)
 
     def connect(self):
         coro = self.loop.create_connection(

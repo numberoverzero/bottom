@@ -1,6 +1,8 @@
 import asyncio
 from bottom.unpack import unpack_command
+# Always write the full \r\n per spec, but accept \n when reading
 DELIM = b"\r\n"
+DELIM_COMPAT = b"\n"
 
 
 class Protocol(asyncio.Protocol):
@@ -21,8 +23,8 @@ class Protocol(asyncio.Protocol):
     def data_received(self, data):
         self.buffer += data
         # All but the last result of split should be pushed into the
-        # client.  The last will be b"" if the buffer ends on b"\r\n"
-        *lines, self.buffer = self.buffer.split(DELIM)
+        # client.  The last will be b"" if the buffer ends on b"\n"
+        *lines, self.buffer = self.buffer.split(DELIM_COMPAT)
         for line in lines:
             message = line.decode(self.client.encoding, "ignore").strip()
             try:
@@ -32,9 +34,8 @@ class Protocol(asyncio.Protocol):
                 print("PARSE ERROR {}".format(message))
 
     def write(self, message):
-        data = message.encode(self.client.encoding)
-        if not data.endswith(DELIM):
-            data += DELIM
+        message = message.strip()
+        data = message.encode(self.client.encoding) + DELIM
         self.transport.write(data)
 
     def close(self):

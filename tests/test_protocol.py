@@ -41,19 +41,21 @@ def test_write(protocol, transport, active_client):
     protocol.write("hello")
     protocol.write("world\r\n")
     protocol.write("\r\nfoo\r\n")
-    assert transport.written == [b"hello\r\n", b"world\r\n", b"\r\nfoo\r\n"]
+    assert transport.written == [b"hello\r\n", b"world\r\n", b"foo\r\n"]
 
 
-def test_partial_line(protocol, transport, active_client):
+def test_partial_line(protocol, transport, active_client, flush):
     """Part of an IRC line is sent across; shouldn't be emitted as an event"""
     protocol.data_received(b":nick!user@host PRIVMSG")
+    flush()
     assert not active_client.triggers["PRIVMSG"]
 
 
-def test_multipart_line(protocol, transport, active_client):
+def test_multipart_line(protocol, transport, active_client, flush):
     """Single line transmitted in multiple parts"""
     protocol.data_received(b":nick!user@host PRIVMSG")
     protocol.data_received(b" #target :this is message\r\n")
+    flush()
     assert active_client.triggers["PRIVMSG"] == 1
 
 
