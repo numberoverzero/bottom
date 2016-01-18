@@ -66,6 +66,17 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
     # Ctrl + C to quit
     bot.loop.run_forever()
 
+The full API consists of 1 class, with 5 methods::
+
+    Client.connect()
+    Client.disconnect()
+
+    Client.send(command, **kwargs)
+
+    @Client.on(event)
+    Client.trigger(event, **kwargs)
+
+
 Versioning  and RFC2812
 =======================
 
