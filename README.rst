@@ -25,7 +25,6 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
 ::
 
     import bottom
-    import asyncio
 
     NICK = 'bottom-bot'
     CHANNEL = '#python'
@@ -52,14 +51,20 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
         # Don't echo ourselves
         if nick == NICK:
             return
-        # Direct message to bot
+        # Respond directly to direct messages
         if target == NICK:
             bot.send("PRIVMSG", target=nick, message=message)
-        # Message in channel
+        # Channel message
         else:
             bot.send("PRIVMSG", target=target, message=message)
 
-    asyncio.get_event_loop().run_until_complete(bot.run())
+    # This schedules a connection to be created when the bot's event loop
+    # is run.  Nothing will happen until the loop starts running to clear
+    # the pending coroutines.
+    bot.connect()
+
+    # Ctrl + C to quit
+    bot.loop.run_forever()
 
 Versioning  and RFC2812
 =======================
@@ -71,7 +76,6 @@ Versioning  and RFC2812
   * You should not rely on the internal api staying the same between minor versions.
   * Over time, private apis may be raised to become public.  The reverse will never occur.
 
-* There are a number of changes from RFC2812 - none should noticeably change how you interact with a standard IRC server.  For specific adjustments, see the notes above each command in supported_commands_.
 
 Contributing
 ============
@@ -110,27 +114,14 @@ Contributors
 API
 ===
 
-Client.run()
-------------
-
-*This is a coroutine.*
-
-Start the magic.  This will connect the client, and then read until it disconnects.  The ``CLIENT_DISCONNECT`` event will fire before the loop exits, allowing you to ``await Client.connect()`` and keep the client running.
-
-If you want to call this synchronously (block until it's complete) use the following::
-
-    import asyncio
-    # ... client is defined somewhere
-
-    loop = asyncio.get_event_loop()
-    task = client.run()
-    loop.run_until_complete(task)
-
 
 Client.on(event)(func)
 ----------------------
 
 This decorator is the main way you'll interact with a ``Client``.  For a given event name, it registers the decorated function to be invoked when that event occurs.  Your decorated functions should always accept **kwargs, in case unexpected kwargs are included when the event is triggered.
+
+The usual IRC commands sent from a server are triggered automatically, or can be manually invoked with ``trigger`` below.  Additionally, you may register handlers for any
+string, making it easy to extend bottom with your own signals.
 
 
 Not all available arguments need to be used.  For instance, both of the following are valid::
@@ -163,6 +154,28 @@ For example, both of these are valid::
     async def handle(message, **kwargs):
         await async_logger.log(message)
 
+Finally, you can create your own events to trigger and handle.  For example,
+let's catch SIGINT and gracefully shut down the event loop::
+
+    import signal
+
+    def handle_sigint(signum, frame):
+        print("SIGINT handler")
+        bot.trigger("my.sigint.event")
+    signal.signal(signal.SIGINT, handle_sigint)
+
+
+    @bot.on("my.sigint.event")
+    def handle(**kwargs):
+        print("SIGINT trigger")
+        # Signal a stop before disconnecting so that any reconnect
+        # coros aren't run by the last run_forever sweep.
+        bot.loop.stop()
+        bot.disconnect()
+
+    bot.connect()
+    bot.run_forever()  # Ctrl + C here
+
 
 Client.trigger(event, \*\*kwargs)
 -------------------------------
@@ -170,6 +183,8 @@ Client.trigger(event, \*\*kwargs)
 Manually inject a command or reply as if it came from the server.  This is useful for invoking other handlers.
 Note that because trigger doesn't block, registered callbacks for the event won't run until
 the event loop yields to them.
+
+Events don't need to be valid irc commands; any string is available.
 
 ::
 
@@ -197,10 +212,41 @@ the event loop yields to them.
         bot.loop.run_until_complete(asyncio.sleep(0, loop=bot.loop))
         assert bot.connected
 
+Because the ``@on`` decorator returns the original function, you can register
+a handler for multiple events.  It's especially important to use ``**kwargs``
+correctly here, to handle different keywords for each event.
+
+::
+
+    # Simple recursive-style countdown
+    @bot.on('privmsg')
+    @bot.on('countdown')
+    async def handle(target, message, remaining=None, **kwargs):
+        # Entry point, verify command and parse from message
+        if remaining is None:
+            if not message.startswith("!countdown"):
+                return
+            # !countdown 10
+            remaining = int(message.split(" ")[-1])
+
+        if remaining == 0:
+            message = "Countdown complete!"
+        else:
+            message = "{}...".format(remaining)
+        # Assume for now that target is always a channel
+        bot.send("privmsg", target=target, message=message)
+
+        if remaining:
+            # After a second trigger another countdown event
+            await asyncio.sleep(1)
+            bot.trigger(
+                'countdown', target=target, remaining=remaining - 1)
+
+
 Client.connect()
 ----------------
 
-*This is a coroutine.*
+Schedule a connection to be created in the event loop.
 
 Attempt to reconnect using the client's host, port::
 
@@ -208,20 +254,20 @@ Attempt to reconnect using the client's host, port::
     async def reconnect(**kwargs):
         # Wait a few seconds
         await asyncio.sleep(3)
-        await bot.connect()
+        bot.connect()
 
 
 Client.disconnect()
 -------------------
 
-*This is a coroutine.*
+Immediately disconnect from the server.
 
 Disconnect from the server if connected::
 
     @bot.on('privmsg')
     async def suicide_pill(nick, message, **kwargs):
         if nick == "spy_handler" and message == "last stop":
-            await bot.disconnect()
+            bot.disconnect()
 
 Client.send(command, \*\*kwargs)
 ------------------------------
@@ -489,8 +535,8 @@ These commands are received from the server, or dispatched using ``Client.trigge
 ::
 
     # Local only events
-    client.trigger('CLIENT_CONNECT', host='localhost', port=6697)
-    client.trigger('CLIENT_DISCONNECT', host='localhost', port=6697)
+    client.trigger('CLIENT_CONNECT')
+    client.trigger('CLIENT_DISCONNECT')
 
 * PING
 * JOIN
