@@ -4,40 +4,19 @@ DELIM = b"\r\n"
 
 
 class Protocol(asyncio.Protocol):
-    @classmethod
-    def factory(cls, client):
-        """Creates a factory method appropriate for create_connection which
-        returns an instance of the protocol bound to the given client.
-
-        Example
-        -------
-        import bottom
-
-        client = bottom.Client(...)
-        protocol_factory = Protocol.factory(client)
-        await client.loop.create_connection(protocol_factory, ...)
-        """
-        return lambda: cls(client)
-
-    def __init__(self, client):
-        self.client = client
-        client.protocol = self
-        self.transport = None
-        self.connected = False
-        self.buffer = b""
+    client = None
+    closed = False
+    transport = None
+    buffer = b""
 
     def connection_made(self, transport):
         self.transport = transport
-        self.connected = True
-        self.client.trigger(
-            "client_connect", host=self.client.host, port=self.client.port)
 
     def connection_lost(self, exc):
-        self.connected = False
-        self.client.trigger(
-            "client_disconnect", host=self.client.host, port=self.client.port)
-        self.close()
-
+        if not self.closed:
+            self.closed = True
+            self.close()
+            self.client._connection_lost(self)
 
     def data_received(self, data):
         self.buffer += data
@@ -59,6 +38,8 @@ class Protocol(asyncio.Protocol):
         self.transport.write(data)
 
     def close(self):
-        if self.transport is not None:
-            self.transport.close()
-            self.transport = None
+        if not self.closed:
+            try:
+                self.transport.close()
+            finally:
+                self.closed = True

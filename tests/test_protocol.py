@@ -1,61 +1,84 @@
-from bottom.protocol import Protocol
+import pytest
 
 
-def test_connect(protocol, transport, client):
+@pytest.fixture
+def active_client(client, flush):
+    """Identical to client, but with protocol and transport wired up"""
+    client.connect()
+    flush()
+    return client
+
+
+def test_connection_made(protocol, transport):
     protocol.connection_made(transport)
+    assert protocol.transport is transport
+
+
+def test_connection_lost(protocol):
+    class MockClient:
+        called = False
+
+        def _connection_lost(self, protocol):
+            self.called = True
+
+    protocol.client = client = MockClient()
+    protocol.connection_lost(exc=None)
+    assert client.called
+
+
+def test_disconnect_after_connect(protocol, transport, client, flush):
+    client.connect()
+    flush()
     assert client.triggers["CLIENT_CONNECT"] == 1
 
-
-def test_disconnect_before_connect(protocol, transport, client):
-    protocol.connection_lost(transport)
+    # Don't need to check transport.closed since this is
+    # only called when the transport is already closed
+    protocol.connection_lost(exc=None)
     assert client.triggers["CLIENT_DISCONNECT"] == 1
 
 
-def test_disconnect_after_connect(protocol, transport, client):
-    protocol.connection_made(transport)
-    protocol.connection_lost(transport)
-    assert client.triggers["CLIENT_CONNECT"] == 1
-    assert client.triggers["CLIENT_DISCONNECT"] == 1
-    assert transport.closed
-
-
-def test_write(protocol, transport):
-    protocol.connection_made(transport)
+def test_write(protocol, transport, active_client):
     protocol.write("hello")
     protocol.write("world\r\n")
     protocol.write("\r\nfoo\r\n")
     assert transport.written == [b"hello\r\n", b"world\r\n", b"\r\nfoo\r\n"]
 
 
-def test_partial_line(protocol, transport, client):
+def test_partial_line(protocol, transport, active_client):
     """Part of an IRC line is sent across; shouldn't be emitted as an event"""
     protocol.data_received(b":nick!user@host PRIVMSG")
-    assert not client.triggers["PRIVMSG"]
+    assert not active_client.triggers["PRIVMSG"]
 
 
-def test_multipart_line(protocol, transport, client):
+def test_multipart_line(protocol, transport, active_client):
     """Single line transmitted in multiple parts"""
     protocol.data_received(b":nick!user@host PRIVMSG")
     protocol.data_received(b" #target :this is message\r\n")
-    assert client.triggers["PRIVMSG"] == 1
+    assert active_client.triggers["PRIVMSG"] == 1
 
 
-def test_multiline_chunk(protocol, transport, client):
+def test_multiline_chunk(protocol, transport, active_client):
     """Multiple IRC lines in a single data_received block"""
     protocol.data_received(
         b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
-    assert client.triggers["PRIVMSG"] == 2
+    assert active_client.triggers["PRIVMSG"] == 2
 
 
-def test_invalid_line(protocol, transport, client):
+def test_invalid_line(protocol, transport, active_client):
     """Well-formatted but invalid line"""
     protocol.data_received(b"blah unknown command\r\n")
-    assert not client.triggers
+    assert list(active_client.triggers.keys()) == ['CLIENT_CONNECT']
 
 
-def test_factory(client):
-    """Protocol.factory returns a function that is
-    suitable for loop.create_connection, with a reference to the client"""
-    factory = Protocol.factory(client)
-    for _ in range(10):
-        assert factory().client is client
+def test_close(protocol, transport, active_client):
+    """Protocol.close triggers connection_lost,
+    client triggers exactly 1 disconnect"""
+    protocol.close()
+    assert active_client.triggers['CLIENT_DISCONNECT'] == 1
+    assert protocol.closed
+
+    protocol.close()
+    assert active_client.triggers['CLIENT_DISCONNECT'] == 1
+
+    transport.close()
+    assert active_client.triggers['CLIENT_DISCONNECT'] == 1

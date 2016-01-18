@@ -6,16 +6,19 @@ from bottom.pack import pack_command
 
 
 class Client:
+    protocol = None
+
     def __init__(self, host, port, *, encoding="UTF-8", ssl=True, loop=None):
+        self._handlers = collections.defaultdict(list)
+
         self.host = host
         self.port = port
-        self.encoding = encoding
-        self.protocol = None
         self.ssl = ssl
+        self.encoding = encoding
+
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
-        self._handlers = collections.defaultdict(list)
 
     def send(self, command, **kwargs):
         """
@@ -30,21 +33,13 @@ class Client:
         self.connection.send(packed_command)
 
     def connect(self):
-        if self.connected:
-            return
         coro = self.loop.create_connection(
-            Protocol.factory(self),
-            host=self.host, port=self.port, ssl=self.ssl)
-        self.loop.create_task(coro)
+            Protocol, host=self.host, port=self.port, ssl=self.ssl)
+        self.loop.create_task(coro).add_done_callback(self._connection_made)
 
     def disconnect(self):
-        if not self.connected:
-            return
-        self.protocol.close()
-
-    @property
-    def connected(self):
-        return (self.protocol is not None) and self.protocol.connected
+        if self.protocol:
+            self.protocol.close()
 
     def trigger(self, event, **kwargs):
         """Trigger all handlers for an event to (asynchronously) execute"""
@@ -84,3 +79,18 @@ class Client:
         self._handlers[event.upper()].append(wrapped)
         # Always return original
         return func
+
+    def _connection_made(self, future):
+        transport, protocol = future.result()
+        # Close connections that opened before this task finished
+        if self.protocol:
+            self.protocol.close()
+        self.protocol = protocol
+        protocol.client = self
+        self.trigger("client_connect")
+
+    def _connection_lost(self, protocol):
+        # Ignore connection_lost for old connections
+        if protocol is self.protocol:
+            self.trigger("client_disconnect")
+            self.protocol = None
