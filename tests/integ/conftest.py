@@ -65,7 +65,6 @@ def client(loop, host, port, ssl, connected):
             super().__init__(*args, **kwargs)
 
         def trigger(self, event, **kwargs):
-            print("trigger " + event)
             event = event.upper()
             self.triggers[event] += 1
             super().trigger(event, **kwargs)
@@ -120,6 +119,10 @@ def protocol(client, loop):
             # Assume a non-compliant server that only writes \n
             data = outgoing.encode(client.encoding) + b"\n"
             self.transport.write(data)
+
+        def close(self):
+            self.transport.close()
+
     return Protocol
 
 
@@ -138,6 +141,7 @@ def server(protocol, loop, host, port, ssl):
 
         def close(self):
             self._server.close()
+            loop.run_until_complete(self._server.wait_closed())
 
         def expect(self, incoming, response=None):
             self.expected[incoming] = response
