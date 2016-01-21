@@ -5,6 +5,7 @@ from setuptools import setup, find_packages
 HERE = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(HERE, 'README.rst')).read()
 
+
 def get_version():
     with open("bottom/__init__.py") as f:
         for line in f:
@@ -48,7 +49,7 @@ if __name__ == "__main__":
         keywords='irc bot asnycio client',
         platforms='any',
         include_package_data=True,
-        packages=find_packages(exclude=('tests',)),
+        packages=find_packages(exclude=('tests', 'examples')),
         install_requires=REQUIREMENTS,
         tests_require=REQUIREMENTS + TEST_REQUIREMENTS,
     )

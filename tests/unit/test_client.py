@@ -9,39 +9,77 @@ def test_default_event_loop():
     assert client.loop is default_loop
 
 
-def test_send_unknown_command(client, schedule):
+def test_send_unknown_command(client, protocol, schedule, flush):
     """ Sending an unknown command raises """
-    schedule(client.connect())
-    assert client.connected
+    client.connect()
+    flush()
+    assert client.protocol is protocol
     with pytest.raises(ValueError):
-        client.send("Unknown_Command")
+        client.send("Unknown Command")
 
 
-def test_send_before_connected(client, writer):
-    """ Sending before connected does not invoke writer """
-    client.send("PONG")
-    assert not writer.used
+def test_send_before_connected(client):
+    """ Sending before connected raises """
+    with pytest.raises(RuntimeError):
+        client.send("PONG")
 
 
-def test_send_after_disconnected(client, writer, schedule):
+def test_disconnect_before_connected(client):
+    """ Disconnecting a client that's not connected is a no-op """
+    assert client.protocol is None
+    client.disconnect()
+    assert client.protocol is None
+
+
+def test_send_after_disconnected(client, transport, flush):
     """ Sending after disconnect does not invoke writer """
-    schedule(client.connect(), client.disconnect())
+    client.connect()
+    flush()
     client.send("PONG")
-    assert not writer.used
+    client.disconnect()
+    with pytest.raises(RuntimeError):
+        client.send("QUIT")
+    assert transport.written == [b"PONG\r\n"]
 
 
-def test_run_(client, reader, schedule):
-    """ run delegates to Connection, which triggers events on the Client """
-    reader.push(":nick!user@host PRIVMSG #target :this is message")
+def test_old_connection_lost(client, protocol, flush):
+    """ An old connection closing is a no-op """
+    client.connect()
+    flush()
+    assert client.protocol is protocol
+    old_conn = object()
+    client._connection_lost(old_conn)
+    assert client.protocol is protocol
+
+
+def test_multiple_connect(client, protocol, flush):
+    """Establishing a second connection should close the first"""
+    client.connect()
+    flush()
+    assert client.protocol is protocol
+    client.connect()
+    flush()
+    # Because of how we've mocked create_connection, the same protocol
+    # instance is always returned.  Regardless, we'll still close it as
+    # part of cleaning up the 'previous' connection
+    assert client.protocol is protocol
+    assert protocol.closed
+
+
+def test_unpack_triggers_client(client, protocol, flush):
+    """ protocol pushes messages to the client """
     received = []
 
     @client.on("PRIVMSG")
     async def receive(nick, user, host, target, message):
+        print("success")
         received.extend([nick, user, host, target, message])
 
-    schedule(client.run())
-
-    assert reader.has_read(":nick!user@host PRIVMSG #target :this is message")
+    client.connect()
+    flush()
+    protocol.data_received(
+        b":nick!user@host PRIVMSG #target :this is message\n")
+    flush()
     assert received == ["nick", "user", "host", "#target", "this is message"]
 
 
@@ -66,7 +104,7 @@ def test_trigger_one_handler(client, watch, flush):
     client.on("f")(lambda: watch.call())
     client.trigger("f")
     flush()
-    assert client.triggers["f"] == 1
+    assert client.triggers["F"] == 1
     assert watch.called
 
 

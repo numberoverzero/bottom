@@ -39,10 +39,7 @@ def pack_command(command, **kwargs):
     """ Pack a command to send to an IRC server """
     if not command:
         raise ValueError("Must provide a command")
-    try:
-        command = command.upper()
-    except AttributeError:
-        raise ValueError("Command must be a str")
+    command = str(command).upper()
 
     # ========================================================================
     # For each command, provide:

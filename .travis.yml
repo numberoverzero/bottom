@@ -2,6 +2,7 @@ language: python
 python: 3.5
 env:
   - TOX_ENV=py35
+  - TOX_ENV=integ
 install: pip install tox coveralls
 script: tox -e $TOX_ENV
 after_success:

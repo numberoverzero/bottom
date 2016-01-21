@@ -1,18 +1,24 @@
 import asyncio
 import collections
 import functools
-from bottom.connection import Connection
+from bottom.protocol import Protocol
 from bottom.pack import pack_command
 
 
 class Client:
+    protocol = None
+
     def __init__(self, host, port, *, encoding="UTF-8", ssl=True, loop=None):
+        self._handlers = collections.defaultdict(list)
+
+        self.host = host
+        self.port = port
+        self.ssl = ssl
+        self.encoding = encoding
+
         if loop is None:
             loop = asyncio.get_event_loop()
         self.loop = loop
-        self._handlers = collections.defaultdict(list)
-        self.connection = Connection(host, port, self, ssl=ssl,
-                                     encoding=encoding, loop=loop)
 
     def send(self, command, **kwargs):
         """
@@ -23,22 +29,19 @@ class Client:
         client.send("nick", nick="weatherbot")
         client.send("privmsg", target="#python", message="Hello, World!")
         """
-        packed_command = pack_command(command, **kwargs)
-        self.connection.send(packed_command)
+        if not self.protocol:
+            raise RuntimeError("Not connected")
+        packed_command = pack_command(command, **kwargs).strip()
+        self.protocol.write(packed_command)
 
-    async def connect(self):
-        await self.connection.connect()
+    def connect(self):
+        coro = self.loop.create_connection(
+            Protocol, host=self.host, port=self.port, ssl=self.ssl)
+        self.loop.create_task(coro).add_done_callback(self._connection_made)
 
-    async def disconnect(self):
-        await self.connection.disconnect()
-
-    @property
-    def connected(self):
-        return self.connection.connected
-
-    async def run(self):
-        """Run the client until it disconnects"""
-        await self.connection.run()
+    def disconnect(self):
+        if self.protocol:
+            self.protocol.close()
 
     def trigger(self, event, **kwargs):
         """Trigger all handlers for an event to (asynchronously) execute"""
@@ -78,3 +81,18 @@ class Client:
         self._handlers[event.upper()].append(wrapped)
         # Always return original
         return func
+
+    def _connection_made(self, future):
+        transport, protocol = future.result()
+        # Close connections that opened before this task finished
+        if self.protocol:
+            self.protocol.close()
+        self.protocol = protocol
+        protocol.client = self
+        self.trigger("client_connect")
+
+    def _connection_lost(self, protocol):
+        # Ignore connection_lost for old connections
+        if protocol is self.protocol:
+            self.trigger("client_disconnect")
+            self.protocol = None
