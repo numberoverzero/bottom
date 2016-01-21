@@ -9,7 +9,7 @@ RE_IRCLINE = re.compile(
                                  # Prefix matches all non-space characters
                                  # Must start with a ':' character
 
-    (?P<command>[^:\s]+)          # Command is required (JOIN, 001, 403)
+    (?P<command>[^:\s]+)         # Command is required (JOIN, 001, 403)
                                  # Command matches all non-space characters
 
     (?P<params>(\s+[^:][^\s]*)*) # Optional params after command
