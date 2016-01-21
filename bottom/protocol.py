@@ -1,8 +1,10 @@
 import asyncio
+import logging
 from bottom.unpack import unpack_command
 # Always write the full \r\n per spec, but accept \n when reading
 DELIM = b"\r\n"
 DELIM_COMPAT = b"\n"
+log = logging.getLogger('bottom')
 
 
 class Protocol(asyncio.Protocol):
@@ -31,7 +33,7 @@ class Protocol(asyncio.Protocol):
                 event, kwargs = unpack_command(message)
                 self.client.trigger(event, **kwargs)
             except ValueError:
-                print("PARSE ERROR {}".format(message))
+                log.debug("Failed to parse line >>> {}".format(message))
 
     def write(self, message):
         message = message.strip()
