@@ -34,12 +34,16 @@ class Client:
         packed_command = pack_command(command, **kwargs).strip()
         self.protocol.write(packed_command)
 
-    def connect(self):
-        coro = self.loop.create_connection(
+    async def connect(self):
+        transport, protocol = await self.loop.create_connection(
             Protocol, host=self.host, port=self.port, ssl=self.ssl)
-        self.loop.create_task(coro).add_done_callback(self._connection_made)
+        if self.protocol:
+            self.protocol.close()
+        self.protocol = protocol
+        protocol.client = self
+        self.trigger("client_connect")
 
-    def disconnect(self):
+    async def disconnect(self):
         if self.protocol:
             self.protocol.close()
 
@@ -81,15 +85,6 @@ class Client:
         self._handlers[event.upper()].append(wrapped)
         # Always return original
         return func
-
-    def _connection_made(self, future):
-        transport, protocol = future.result()
-        # Close connections that opened before this task finished
-        if self.protocol:
-            self.protocol.close()
-        self.protocol = protocol
-        protocol.client = self
-        self.trigger("client_connect")
 
     def _connection_lost(self, protocol):
         # Ignore connection_lost for old connections
