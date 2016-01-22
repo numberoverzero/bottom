@@ -58,7 +58,7 @@ def waiter(loop):
 
 
 @pytest.fixture
-def client(loop, host, port, ssl, connected):
+def client(loop, host, port, ssl):
     class TrackingClient(bottom.Client):
         def __init__(self, *args, **kwargs):
             self.triggers = collections.defaultdict(int)
@@ -69,21 +69,7 @@ def client(loop, host, port, ssl, connected):
             self.triggers[event] += 1
             super().trigger(event, **kwargs)
 
-        def _connection_made(self, future):
-            super()._connection_made(future)
-            connected.set()
-
     return TrackingClient(host=host, port=port, loop=loop, ssl=ssl)
-
-
-@pytest.fixture
-def connected(loop):
-    """
-    The connection process doesn't complete in 1 (or 2, or 3...)
-    iterations of the event loop, so we use a signal that gets set when the
-    client sees the connection created.
-    """
-    return asyncio.Event(loop=loop)
 
 
 @pytest.fixture
@@ -134,10 +120,9 @@ def server(protocol, loop, host, port, ssl):
             self.received = []
             self.sent = []
 
-        def start(self):
-            coro = loop.create_server(
+        async def start(self):
+            self._server = await loop.create_server(
                 protocol.factory(self), host, port, ssl=ssl)
-            self._server = loop.run_until_complete(coro)
 
         def close(self):
             self._server.close()
@@ -161,9 +146,8 @@ def server(protocol, loop, host, port, ssl):
 
 
 @pytest.fixture
-def connect(server, client, loop, connected):
+def connect(server, client, loop):
     def _connect():
-        server.start()
-        client.connect()
-        loop.run_until_complete(connected.wait())
+        loop.run_until_complete(server.start())
+        loop.run_until_complete(client.connect())
     return _connect
