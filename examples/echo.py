@@ -40,7 +40,7 @@ def message(nick, target, message, **kwargs):
 # This schedules a connection to be created when the bot's event loop
 # is run.  Nothing will happen until the loop starts running to clear
 # the pending coroutines.
-bot.connect()
+bot.loop.create_task(bot.connect())
 
 # Ctrl + C to quit
 bot.loop.run_forever()

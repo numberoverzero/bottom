@@ -61,19 +61,21 @@ bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with
     # This schedules a connection to be created when the bot's event loop
     # is run.  Nothing will happen until the loop starts running to clear
     # the pending coroutines.
-    bot.connect()
+    bot.loop.create_task(bot.connect())
 
     # Ctrl + C to quit
     bot.loop.run_forever()
 
 The full API consists of 1 class, with 5 methods::
 
-    Client.connect()
-    Client.disconnect()
+    async Client.connect()
+
+    async Client.disconnect()
 
     Client.send(command, **kwargs)
 
     @Client.on(event)
+
     Client.trigger(event, **kwargs)
 
 
@@ -177,15 +179,17 @@ let's catch SIGINT and gracefully shut down the event loop::
 
 
     @bot.on("my.sigint.event")
-    def handle(**kwargs):
+    async def handle(**kwargs):
         print("SIGINT trigger")
+        await bot.disconnect()
+
         # Signal a stop before disconnecting so that any reconnect
         # coros aren't run by the last run_forever sweep.
         bot.loop.stop()
-        bot.disconnect()
 
-    bot.connect()
-    bot.run_forever()  # Ctrl + C here
+
+    bot.loop.create_task(bot.connect())
+    bot.loop.run_forever()  # Ctrl + C here
 
 
 Client.trigger(event, \*\*kwargs)
@@ -210,18 +214,10 @@ Events don't need to be valid irc commands; any string is available.
         if message == '!commands':
             bot.send('privmsg', target=nick,
                      message="!commands was renamed to !help in 1.2")
-            # Don't make them retype it, just make it happen
+            # Don't make them retype it, trigger the correct command
             bot.trigger('privmsg', nick=nick,
                         target=target, message="!help")
 
-::
-
-    # While testing the auto-reconnect module, simulate a disconnect:
-    def test_reconnect(bot):
-        bot.trigger("client_disconnect")
-        # Clear out the pending callbacks
-        bot.loop.run_until_complete(asyncio.sleep(0, loop=bot.loop))
-        assert bot.connected
 
 Because the ``@on`` decorator returns the original function, you can register
 a handler for multiple events.  It's especially important to use ``**kwargs``
@@ -259,19 +255,42 @@ correctly here, to handle different keywords for each event.
 Client.connect()
 ----------------
 
-Schedule a connection to be created in the event loop.
+** This is a coroutine. **
+
+Connect to the client's host, port::
 
 Attempt to reconnect using the client's host, port::
 
     @bot.on('client_disconnect')
     async def reconnect(**kwargs):
         # Wait a few seconds
-        await asyncio.sleep(3)
-        bot.connect()
+        await asyncio.sleep(3, loop=bot.loop)
+        await bot.connect()
+        # Now that we're connected, let everyone know
+        bot.send('privmsg', target=bot.channel, message="I'm back.")
 
+
+You can schedule a connect without blocking by using the client's event loop::
+
+
+    @bot.on('client_disconnect')
+    def reconnect(**kwargs):
+        # Wait a few seconds
+
+        # Note that we're not in a coroutine, so we don't have access
+        # to await and asyncio.sleep
+        time.sleep(3)
+
+        # After this line we won't necessarily be connected.
+        # We've simply scheduled the connect to happen in the future
+        bot.loop.create_task(bot.connect())
+
+        print("Reconnect scheduled.")
 
 Client.disconnect()
 -------------------
+
+** This is a coroutine. **
 
 Immediately disconnect from the server.
 
@@ -280,7 +299,14 @@ Disconnect from the server if connected::
     @bot.on('privmsg')
     async def suicide_pill(nick, message, **kwargs):
         if nick == "spy_handler" and message == "last stop":
-            bot.disconnect()
+            await bot.disconnect()
+
+
+Like ``Client.connect``, we can use the bot's event loop to schedule a
+disconnect::
+
+    bot.loop.create_task(bot.disconnect())
+
 
 Client.send(command, \*\*kwargs)
 ------------------------------
