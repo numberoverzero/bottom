@@ -7,6 +7,29 @@ def router(client):
     return Router(client)
 
 
+def test_router_registers_callback(router, client, flush):
+    called = False
+    name = "foo"
+    message = "test {}".format(name)
+    expected_nick = "nick"
+    expected_target = "target"
+
+    @router.route("test [name]")
+    def handle(nick, target, fields):
+        assert nick == expected_nick
+        assert target == expected_target
+        assert fields["name"] == name
+
+        nonlocal called
+        called = True
+
+    client.trigger("privmsg", nick=expected_nick,
+                   target=expected_target, message=message)
+    flush()
+
+    assert called
+
+
 def test_decorator_returns_original(router):
     def original_func(nick, target, fields):
         pass
