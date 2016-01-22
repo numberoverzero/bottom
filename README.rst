@@ -249,9 +249,11 @@ correctly here, to handle different keywords for each event.
 
         if remaining:
             # After a second trigger another countdown event
-            await asyncio.sleep(1)
-            bot.trigger(
-                'countdown', target=target, remaining=remaining - 1)
+            await asyncio.sleep(1, loop=bot.loop)
+            bot.trigger('countdown',
+                        target=target,
+                        message=message,
+                        remaining=remaining - 1)
 
 
 Client.connect()
