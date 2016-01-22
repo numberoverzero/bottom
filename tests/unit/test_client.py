@@ -9,10 +9,9 @@ def test_default_event_loop():
     assert client.loop is default_loop
 
 
-def test_send_unknown_command(client, protocol, schedule, flush):
+def test_send_unknown_command(client, protocol, schedule):
     """ Sending an unknown command raises """
-    client.connect()
-    flush()
+    schedule(client.connect())
     assert client.protocol is protocol
     with pytest.raises(ValueError):
         client.send("Unknown Command")
@@ -24,41 +23,38 @@ def test_send_before_connected(client):
         client.send("PONG")
 
 
-def test_disconnect_before_connected(client):
+def test_disconnect_before_connected(client, schedule):
     """ Disconnecting a client that's not connected is a no-op """
     assert client.protocol is None
-    client.disconnect()
+    schedule(client.disconnect())
     assert client.protocol is None
 
 
-def test_send_after_disconnected(client, transport, flush):
+def test_send_after_disconnected(client, transport, schedule):
     """ Sending after disconnect does not invoke writer """
-    client.connect()
-    flush()
+    schedule(client.connect())
     client.send("PONG")
-    client.disconnect()
+    schedule(client.disconnect())
     with pytest.raises(RuntimeError):
         client.send("QUIT")
     assert transport.written == [b"PONG\r\n"]
 
 
-def test_old_connection_lost(client, protocol, flush):
+def test_old_connection_lost(client, protocol, schedule):
     """ An old connection closing is a no-op """
-    client.connect()
-    flush()
+    schedule(client.connect())
     assert client.protocol is protocol
     old_conn = object()
     client._connection_lost(old_conn)
     assert client.protocol is protocol
 
 
-def test_multiple_connect(client, protocol, flush):
+def test_multiple_connect(client, protocol, schedule):
     """Establishing a second connection should close the first"""
-    client.connect()
-    flush()
+    schedule(client.connect())
     assert client.protocol is protocol
-    client.connect()
-    flush()
+    schedule(client.connect())
+
     # Because of how we've mocked create_connection, the same protocol
     # instance is always returned.  Regardless, we'll still close it as
     # part of cleaning up the 'previous' connection
@@ -66,7 +62,7 @@ def test_multiple_connect(client, protocol, flush):
     assert protocol.closed
 
 
-def test_unpack_triggers_client(client, protocol, flush):
+def test_unpack_triggers_client(client, protocol, flush, schedule):
     """ protocol pushes messages to the client """
     received = []
 
@@ -75,8 +71,7 @@ def test_unpack_triggers_client(client, protocol, flush):
         print("success")
         received.extend([nick, user, host, target, message])
 
-    client.connect()
-    flush()
+    schedule(client.connect())
     protocol.data_received(
         b":nick!user@host PRIVMSG #target :this is message\n")
     flush()
