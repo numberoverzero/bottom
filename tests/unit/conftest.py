@@ -12,7 +12,12 @@ def watch():
 
 
 @pytest.fixture
-def loop(transport, protocol):
+def connection_info():
+    return {"created": 0}
+
+
+@pytest.fixture
+def loop(transport, protocol, connection_info):
     """
     Keep things clean by using a new event loop
     """
@@ -21,6 +26,7 @@ def loop(transport, protocol):
 
     async def create_connection(protocol_factory, *args, **kwargs):
         protocol.connection_made(transport)
+        connection_info["created"] += 1
         return transport, protocol
     loop.create_connection = create_connection
 
@@ -76,6 +82,13 @@ def client(loop):
     Return a client that tracks triggers and connects to reader/writer.
     """
     return TrackingClient("host", "port", loop=loop)
+
+
+@pytest.fixture
+def active_client(client, schedule):
+    """Identical to client, but with protocol and transport wired up"""
+    schedule(client.connect())
+    return client
 
 
 class TrackingClient(Client):

@@ -1,14 +1,3 @@
-import pytest
-
-
-@pytest.fixture
-def active_client(client, flush):
-    """Identical to client, but with protocol and transport wired up"""
-    client.connect()
-    flush()
-    return client
-
-
 def test_connection_made(protocol, transport):
     protocol.connection_made(transport)
     assert protocol.transport is transport
@@ -26,15 +15,13 @@ def test_connection_lost(protocol):
     assert client.called
 
 
-def test_disconnect_after_connect(protocol, transport, client, flush):
-    client.connect()
-    flush()
-    assert client.triggers["CLIENT_CONNECT"] == 1
+def test_disconnect_after_connect(protocol, transport, active_client):
+    assert active_client.triggers["CLIENT_CONNECT"] == 1
 
     # Don't need to check transport.closed since this is
     # only called when the transport is already closed
     protocol.connection_lost(exc=None)
-    assert client.triggers["CLIENT_DISCONNECT"] == 1
+    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
 
 
 def test_write(protocol, transport, active_client):

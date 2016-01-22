@@ -9,12 +9,11 @@ def test_default_event_loop():
     assert client.loop is default_loop
 
 
-def test_send_unknown_command(client, protocol, schedule):
+def test_send_unknown_command(active_client, protocol):
     """ Sending an unknown command raises """
-    schedule(client.connect())
-    assert client.protocol is protocol
+    assert active_client.protocol is protocol
     with pytest.raises(ValueError):
-        client.send("Unknown Command")
+        active_client.send("Unknown Command")
 
 
 def test_send_before_connected(client):
@@ -40,38 +39,34 @@ def test_send_after_disconnected(client, transport, schedule):
     assert transport.written == [b"PONG\r\n"]
 
 
-def test_old_connection_lost(client, protocol, schedule):
+def test_old_connection_lost(active_client, protocol):
     """ An old connection closing is a no-op """
-    schedule(client.connect())
-    assert client.protocol is protocol
+    assert active_client.protocol is protocol
     old_conn = object()
-    client._connection_lost(old_conn)
-    assert client.protocol is protocol
+    active_client._connection_lost(old_conn)
+    assert active_client.protocol is protocol
 
 
-def test_multiple_connect(client, protocol, schedule):
+def test_multiple_connect(client, protocol, schedule, connection_info):
     """Establishing a second connection should close the first"""
     schedule(client.connect())
     assert client.protocol is protocol
+    assert connection_info["created"] == 1
+
     schedule(client.connect())
-
-    # Because of how we've mocked create_connection, the same protocol
-    # instance is always returned.  Regardless, we'll still close it as
-    # part of cleaning up the 'previous' connection
     assert client.protocol is protocol
-    assert protocol.closed
+    assert connection_info["created"] == 2
 
 
-def test_unpack_triggers_client(client, protocol, flush, schedule):
+def test_unpack_triggers_client(active_client, protocol, flush):
     """ protocol pushes messages to the client """
     received = []
 
-    @client.on("PRIVMSG")
+    @active_client.on("PRIVMSG")
     async def receive(nick, user, host, target, message):
         print("success")
         received.extend([nick, user, host, target, message])
 
-    schedule(client.connect())
     protocol.data_received(
         b":nick!user@host PRIVMSG #target :this is message\n")
     flush()
