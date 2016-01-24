@@ -17,11 +17,12 @@ REQUIREMENTS = [
 ]
 
 TEST_REQUIREMENTS = [
-    'tox',
-    'pytest',
-    'pytest-cov',
+    'alabaster',
     'coverage',
-    'flake8'
+    'flake8',
+    'pytest',
+    'sphinx',
+    'tox',
 ]
 
 if __name__ == "__main__":
