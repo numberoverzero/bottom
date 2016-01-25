@@ -22,9 +22,9 @@ Installation
 Getting Started
 ===============
 
-bottom isn't a kitchen-sink library.  Instead, it provides a consistent API with a small surface area, tuned for performance and ease of extension.  Similar to the routing style of bottle.py, hooking into events is one line.
-
-::
+bottom isn't a kitchen-sink library.  Instead, it provides a consistent API
+with a small surface area, tuned for performance and ease of extension.
+Similar to the routing style of bottle.py, hooking into events is one line::
 
     import bottom
 
@@ -87,15 +87,21 @@ Versioning  and RFC2812
 * Bottom follows semver for its **public** API.
 
   * Currently, ``Client`` is the only public member of bottom.
-  * IRC replies/codes which are not yet implemented may be added at any time, and will correspond to a patch - the function contract of ``@on`` method does not change.
-  * You should not rely on the internal api staying the same between minor versions.
-  * Over time, private apis may be raised to become public.  The reverse will never occur.
+  * IRC replies/codes which are not yet implemented may be added at any time,
+    and will correspond to a patch - the function contract of ``@on`` method
+    does not change.
+  * You should not rely on the internal api staying the same between minor
+    versions.
+  * Over time, private apis may be raised to become public.  The reverse will
+    never occur.
 
 
 Contributing
 ============
 
-Contributions welcome!  When reporting issues, please provide enough detail to reproduce the bug - sample code is ideal.  When submitting a PR, please make sure ``tox`` passes (including flake8).
+Contributions welcome!  When reporting issues, please provide enough detail to
+reproduce the bug - sample code is ideal.  When submitting a PR, please make
+sure ``tox`` passes (including flake8).
 
 Development
 -----------
@@ -133,13 +139,18 @@ API
 Client.on(event)(func)
 ----------------------
 
-This decorator is the main way you'll interact with a ``Client``.  For a given event name, it registers the decorated function to be invoked when that event occurs.  Your decorated functions should always accept **kwargs, in case unexpected kwargs are included when the event is triggered.
+This decorator is the main way you'll interact with a ``Client``.  For a given
+event name, it registers the decorated function to be invoked when that event
+occurs.  Your decorated functions should always accept **kwargs, in case
+unexpected kwargs are included when the event is triggered.
 
-The usual IRC commands sent from a server are triggered automatically, or can be manually invoked with ``trigger`` below.  Additionally, you may register handlers for any
-string, making it easy to extend bottom with your own signals.
+The usual IRC commands sent from a server are triggered automatically, or can
+be manually invoked with ``trigger`` below.  Additionally, you may register
+handlers for any string, making it easy to extend bottom with your own signals.
 
 
-Not all available arguments need to be used.  For instance, both of the following are valid::
+Not all available arguments need to be used.  For instance, both of the
+following are valid::
 
     @bot.on('PRIVMSG')
     def event(nick, message, target, **kwargs):
@@ -158,8 +169,8 @@ Not all available arguments need to be used.  For instance, both of the followin
         if message == codeword && target == secret_channel:
             execute_heist()
 
-Handlers do not need to be async functions - non async will be wrapped prior to the bot running.
-For example, both of these are valid::
+Handlers do not need to be async functions - non async will be wrapped prior to
+the bot running.  For example, both of these are valid::
 
     @bot.on('PRIVMSG')
     def handle(message, **kwargs):
@@ -197,9 +208,10 @@ let's catch SIGINT and gracefully shut down the event loop::
 Client.trigger(event, \*\*kwargs)
 -------------------------------
 
-Manually inject a command or reply as if it came from the server.  This is useful for invoking other handlers.
-Note that because trigger doesn't block, registered callbacks for the event won't run until
-the event loop yields to them.
+Manually inject a command or reply as if it came from the server.  This is
+useful for invoking other handlers. Note that because trigger doesn't block,
+registered callbacks for the event won't run until the event loop yields to
+them.
 
 Events don't need to be valid irc commands; any string is available.
 
@@ -571,7 +583,8 @@ Supported Commands
 Supported Events
 ================
 
-These commands are received from the server, or dispatched using ``Client.trigger(...)``.
+These commands are received from the server, or dispatched using
+``Client.trigger(...)``.
 
 ::
 
