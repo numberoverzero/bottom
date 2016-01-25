@@ -31,6 +31,17 @@ def loop():
 
 
 @pytest.fixture
+def flush(loop):
+    """Run loop once, to execute any pending tasks"""
+    async def sentinel():
+        pass
+
+    def _flush():
+        loop.run_until_complete(sentinel())
+    return _flush
+
+
+@pytest.fixture
 def waiter(loop):
     """Return a pair of functions for marking and waiting on an async event,
     in a synchronous call.

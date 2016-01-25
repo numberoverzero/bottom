@@ -9,8 +9,6 @@ class Client:
     protocol = None
 
     def __init__(self, host, port, *, encoding="UTF-8", ssl=True, loop=None):
-        self._handlers = collections.defaultdict(list)
-
         self.host = host
         self.port = port
         self.ssl = ssl
@@ -20,21 +18,25 @@ class Client:
             loop = asyncio.get_event_loop()
         self.loop = loop
 
+        self._handlers = collections.defaultdict(list)
         self._events = collections.defaultdict(
             lambda: asyncio.Event(loop=self.loop))
 
     def send(self, command, **kwargs):
         """
-        Send a message to the server.
+        Schedule a message to be sent to the server.
 
         Examples
         --------
         client.send("nick", nick="weatherbot")
         client.send("privmsg", target="#python", message="Hello, World!")
         """
+        packed_command = pack_command(command, **kwargs).strip()
+        self.loop.create_task(self._send(packed_command))
+
+    async def _send(self, packed_command):
         if not self.protocol:
             raise RuntimeError("Not connected")
-        packed_command = pack_command(command, **kwargs).strip()
         self.protocol.write(packed_command)
 
     async def connect(self):
@@ -52,17 +54,18 @@ class Client:
 
     def trigger(self, event, **kwargs):
         """Trigger all handlers for an event to (asynchronously) execute"""
-        for func in self._handlers[event.upper()]:
+        event = event.upper()
+        for func in self._handlers[event]:
             self.loop.create_task(func(**kwargs))
-        asyncio_event = self._events[event]
         # This will unblock anyone that is awaiting on the next loop update,
         # while still ensuring the next `await client.wait(event)` doesn't
         # immediately fire.
-        asyncio_event.set()
-        asyncio_event.clear()
+        async_event = self._events[event]
+        async_event.set()
+        async_event.clear()
 
     async def wait(self, event):
-        await self._events[event]
+        await self._events[event.upper()].wait()
 
     def on(self, event, func=None):
         """
