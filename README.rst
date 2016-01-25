@@ -1,5 +1,5 @@
 .. image:: https://readthedocs.org/projects/bottom/badge?style=flat-square
-    :target: http://bottom.readthedocs.org/
+    :target: http://bottomdocs.readthedocs.org/
 .. image:: https://img.shields.io/travis/numberoverzero/bottom/master.svg?style=flat-square
     :target: https://travis-ci.org/numberoverzero/bottom
 .. image:: https://img.shields.io/coveralls/numberoverzero/bottom/master.svg?style=flat-square
