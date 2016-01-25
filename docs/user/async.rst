@@ -5,9 +5,9 @@ It's easy to do async wrong.  Check out some of bottom's `past issues`_ for an
 example of just how easy it is to use the ``async`` and ``await`` constructs
 and still get things wrong.
 
-To simplify things a bit, bottom allows us to pass both synchronous and async
-functions as callbacks.  Both of these are valid handlers for the ``privmsg``
-event::
+So to simplify things a bit, bottom allows us to pass both synchronous and
+async functions as callbacks.  Both of these are valid handlers for the
+``privmsg`` event::
 
     @client.on('privmsg')
     def synchronous_handler(**kwargs):

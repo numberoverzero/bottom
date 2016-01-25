@@ -35,8 +35,9 @@ Returning new objects
 
 Aside from subclassing ``bottom.Client``, we can use a class to expose
 additional behavior around a client.  This can be useful in cases where we're
-worried about other plugins assigning different meaning to the same attributes
-::
+worried about other plugins assigning different meaning to the same
+attributes::
+
     # irc_logging.py
     class Logger:
         def __init__(self, client, local_logger):
@@ -50,7 +51,8 @@ worried about other plugins assigning different meaning to the same attributes
             catch RuntimeError:
                 self.local.warning("Failed to log to remote")
 
-                # Get the local logger's method by name ex. `self.local.info`
+                # Get the local logger's method by name
+                # ex. `self.local.info`
                 method = getattr(self.local, level.lower())
                 method(message)
 
