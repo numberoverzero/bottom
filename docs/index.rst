@@ -1,12 +1,13 @@
 lightweight asyncio IRC client
-=================================================
+==============================
 
 With a very small API, bottom_ lets you wrap an IRC connection and handle
 events how you want.  There are no assumptions about reconnecting, rate
 limiting, or even when to respond to PINGs.
 
-Easy to `start <user/quickstart>`, easy to `extend <user/extension>`,
-no import or naming magic for plugins.
+Explicit is better than implicit: no magic importing or naming to remember for
+plugins.  `Extend <user/extension.html>`_ the client with the same ``@on``
+decorators you're already using.
 
 ----
 
@@ -69,7 +70,6 @@ Finally, connect and run the bot forever::
     :maxdepth: 2
 
     user/installation
-    user/quickstart
     user/async
     user/events
     user/extension
