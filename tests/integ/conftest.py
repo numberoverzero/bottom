@@ -42,33 +42,6 @@ def flush(loop):
 
 
 @pytest.fixture
-def waiter(loop):
-    """Return a pair of functions for marking and waiting on an async event,
-    in a synchronous call.
-
-    Example
-    =======
-    def test_ping(client, server, connect, waiter):
-        mark, wait = waiter()
-
-        @client.on("ping")
-        def handle(**kw):
-            client.send("pong")
-            mark()
-        connect()
-        server.send("PING :msg")
-        wait()
-        assert client.triggers["PING"] == 1
-    """
-    def _waiter():
-        event = asyncio.Event(loop=loop)
-        return (
-            lambda: event.set(),
-            lambda: loop.run_until_complete(event.wait()))
-    return _waiter
-
-
-@pytest.fixture
 def client(loop, host, port, ssl):
     class TrackingClient(bottom.Client):
         def __init__(self, *args, **kwargs):

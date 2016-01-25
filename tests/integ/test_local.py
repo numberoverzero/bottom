@@ -4,7 +4,7 @@ def test_connect(client, connect):
     assert client.triggers['CLIENT_CONNECT'] == 1
 
 
-def test_ping_pong(client, server, connect, waiter, flush):
+def test_ping_pong(client, server, connect, flush):
     connect()
     server.write("PING :ping-message")
     client.send("PONG")
