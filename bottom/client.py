@@ -20,6 +20,9 @@ class Client:
             loop = asyncio.get_event_loop()
         self.loop = loop
 
+        self._events = collections.defaultdict(
+            lambda: asyncio.Event(loop=self.loop))
+
     def send(self, command, **kwargs):
         """
         Send a message to the server.
@@ -51,6 +54,15 @@ class Client:
         """Trigger all handlers for an event to (asynchronously) execute"""
         for func in self._handlers[event.upper()]:
             self.loop.create_task(func(**kwargs))
+        asyncio_event = self._events[event]
+        # This will unblock anyone that is awaiting on the next loop update,
+        # while still ensuring the next `await client.wait(event)` doesn't
+        # immediately fire.
+        asyncio_event.set()
+        asyncio_event.clear()
+
+    async def wait(self, event):
+        await self._events[event]
 
     def on(self, event, func=None):
         """
