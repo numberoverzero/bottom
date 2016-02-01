@@ -16,11 +16,16 @@ class Client:
 
         if loop is None:
             loop = asyncio.get_event_loop()
-        self.loop = loop
+        self._loop = loop
 
         self._handlers = collections.defaultdict(list)
         self._events = collections.defaultdict(
             lambda: asyncio.Event(loop=self.loop))
+
+    @property
+    def loop(self):
+        """Do not change the event loop for a client"""
+        return self._loop
 
     def send(self, command, **kwargs):
         """
