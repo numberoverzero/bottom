@@ -29,7 +29,7 @@ class Client:
 
     def send(self, command, **kwargs):
         """
-        Schedule a message to be sent to the server.
+        Send a message to the server.
 
         Examples
         --------
@@ -37,9 +37,6 @@ class Client:
         client.send("privmsg", target="#python", message="Hello, World!")
         """
         packed_command = pack_command(command, **kwargs).strip()
-        self.loop.create_task(self._send(packed_command))
-
-    async def _send(self, packed_command):
         if not self.protocol:
             raise RuntimeError("Not connected")
         self.protocol.write(packed_command)

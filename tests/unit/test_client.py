@@ -16,10 +16,10 @@ def test_send_unknown_command(active_client, protocol):
         active_client.send("Unknown Command")
 
 
-def test_send_before_connected(client, flush, transport):
+def test_send_before_connected(client, transport):
     """ Sending before connected raises """
-    client.send("PONG")
-    flush()
+    with pytest.raises(RuntimeError):
+        client.send("PONG")
     assert not transport.written
 
 
@@ -30,17 +30,16 @@ def test_disconnect_before_connected(client, schedule):
     assert client.protocol is None
 
 
-def test_send_after_disconnected(client, transport, schedule, flush):
+def test_send_after_disconnected(client, transport, schedule):
     """ Sending after disconnect does not invoke writer """
     schedule(client.connect())
     # Written while connected
     client.send("PONG")
-    flush()
 
     schedule(client.disconnect())
     # Written while disconnected - not sent
-    client.send("QUIT")
-    flush()
+    with pytest.raises(RuntimeError):
+        client.send("QUIT")
 
     assert transport.written == [b"PONG\r\n"]
 
