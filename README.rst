@@ -13,6 +13,10 @@
 
 asyncio-based rfc2812-compliant IRC Client (3.5+)
 
+bottom isn't a kitchen-sink library.  Instead, it provides a consistent API
+with a small surface area, tuned for performance and ease of extension.
+Similar to the routing style of bottle.py, hooking into events is one line.
+
 Installation
 ============
 ::
@@ -22,29 +26,38 @@ Installation
 Getting Started
 ===============
 
-bottom isn't a kitchen-sink library.  Instead, it provides a consistent API
-with a small surface area, tuned for performance and ease of extension.
-Similar to the routing style of bottle.py, hooking into events is one line::
+Create an instance::
 
     import bottom
 
-    NICK = 'bottom-bot'
-    CHANNEL = '#python'
+    host = 'chat.freenode.net'
+    port = 6697
+    ssl = True
 
-    bot = bottom.Client('localhost', 6697)
+    NICK = "bottom-bot"
+    CHANNEL = "#bottom-dev"
 
+    bot = bottom.Client(host=host, port=port, ssl=ssl)
+
+
+Send nick/user/join when connection is established::
 
     @bot.on('CLIENT_CONNECT')
     def connect(**kwargs):
         bot.send('NICK', nick=NICK)
-        bot.send('USER', user=NICK, realname='Bot using bottom.py')
+        bot.send('USER', user=NICK,
+                 realname='https://github.com/numberoverzero/bottom')
         bot.send('JOIN', channel=CHANNEL)
 
+
+Respond to ping::
 
     @bot.on('PING')
     def keepalive(message, **kwargs):
         bot.send('PONG', message=message)
 
+
+Echo messages (channel and direct messages)::
 
     @bot.on('PRIVMSG')
     def message(nick, target, message, **kwargs):
@@ -60,15 +73,16 @@ Similar to the routing style of bottle.py, hooking into events is one line::
         else:
             bot.send("PRIVMSG", target=target, message=message)
 
-    # This schedules a connection to be created when the bot's event loop
-    # is run.  Nothing will happen until the loop starts running to clear
-    # the pending coroutines.
-    bot.loop.create_task(bot.connect())
 
-    # Ctrl + C to quit
+Finally, connect and run the bot forever::
+
+    bot.loop.create_task(bot.connect())
     bot.loop.run_forever()
 
-The full API consists of 1 class, with 5 methods::
+API
+===
+
+The full API consists of 1 class, with 6 methods::
 
     async Client.connect()
 
@@ -77,6 +91,8 @@ The full API consists of 1 class, with 5 methods::
     Client.send(command, **kwargs)
 
     @Client.on(event)
+
+    async Client.wait(event)
 
     Client.trigger(event, **kwargs)
 
@@ -122,7 +138,7 @@ TODO
 * Add missing replies/errors to ``unpack.py:unpack_command``
 
   * Add reply/error parameters to ``unpack.py:parameters``
-  * Document supported_events_
+  * Document events, client.send
 
 
 Contributors
@@ -264,6 +280,27 @@ correctly here, to handle different keywords for each event.
                         target=target,
                         message=message,
                         remaining=remaining - 1)
+
+
+Client.wait(event)
+------------------
+
+** This is a coroutine. **
+
+Wait for an event to trigger::
+
+    @bot.on("client_disconnect")
+    async def reconnect(**kwargs):
+        # Trigger an event that may cascade to a client_connect.
+        # Don't continue until a client_connect occurs, which may be never.
+
+        bot.trigger("some.plugin.connection.lost")
+
+        await client.wait("client_connect")
+
+        # If we get here, one of the plugins handled connection lost by
+        # reconnecting, and we're back.  Send some messages, etc.
+        client.send("privmsg", target=bot.CHANNEL, message="Happy Birthday!")
 
 
 Client.connect()

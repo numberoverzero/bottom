@@ -76,7 +76,7 @@ we're back.  We need to wait (``await``) for the connection before sending
 anything::
 
     @client.on('client_disconnect')
-    def reconnect(**kwargs):
+    async def reconnect(**kwargs):
         # Wait a second so we don't flood
         await asyncio.sleep(2, loop=client.loop)
 
@@ -95,7 +95,7 @@ Instead of notifying the room, let's log the reconnect time and return::
 
 
     @client.on('client_disconnect')
-    def reconnect(**kwargs):
+    async def reconnect(**kwargs):
         # Wait a second so we don't flood
         await asyncio.sleep(2, loop=client.loop)
 
@@ -106,6 +106,22 @@ Instead of notifying the room, let's log the reconnect time and return::
         now = arrow.now()
         logger.info("Reconnect started at " + now.isoformat())
 
+We can also wait for the ``client_connect`` event to trigger, which is slightly
+different than waiting for client.connect to complete::
+
+    @client.on('client_disconnect')
+    async def reconnect(**kwargs):
+        # Wait a second so we don't flood
+        await asyncio.sleep(2, loop=client.loop)
+
+        # Schedule a connection when the loop's next available
+        client.loop.create_task(client.connect())
+
+        # Wait until client_connect has triggered
+        await client.wait("client_connect")
+
+        # Notify the room
+        client.send('privmsg', target='#bottom-dev', message='I'm baaack!'')
 
 Existing Event Loops
 --------------------

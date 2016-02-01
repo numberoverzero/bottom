@@ -72,6 +72,7 @@ Finally, connect and run the bot forever::
     user/installation
     user/async
     user/events
+    user/client
     user/extension
     dev/contributing
 
