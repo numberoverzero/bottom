@@ -9,8 +9,6 @@ class Client:
     protocol = None
 
     def __init__(self, host, port, *, encoding="UTF-8", ssl=True, loop=None):
-        self._handlers = collections.defaultdict(list)
-
         self.host = host
         self.port = port
         self.ssl = ssl
@@ -18,7 +16,16 @@ class Client:
 
         if loop is None:
             loop = asyncio.get_event_loop()
-        self.loop = loop
+        self._loop = loop
+
+        self._handlers = collections.defaultdict(list)
+        self._events = collections.defaultdict(
+            lambda: asyncio.Event(loop=self.loop))
+
+    @property
+    def loop(self):
+        """Do not change the event loop for a client"""
+        return self._loop
 
     def send(self, command, **kwargs):
         """
@@ -29,9 +36,9 @@ class Client:
         client.send("nick", nick="weatherbot")
         client.send("privmsg", target="#python", message="Hello, World!")
         """
+        packed_command = pack_command(command, **kwargs).strip()
         if not self.protocol:
             raise RuntimeError("Not connected")
-        packed_command = pack_command(command, **kwargs).strip()
         self.protocol.write(packed_command)
 
     async def connect(self):
@@ -49,8 +56,18 @@ class Client:
 
     def trigger(self, event, **kwargs):
         """Trigger all handlers for an event to (asynchronously) execute"""
-        for func in self._handlers[event.upper()]:
+        event = event.upper()
+        for func in self._handlers[event]:
             self.loop.create_task(func(**kwargs))
+        # This will unblock anyone that is awaiting on the next loop update,
+        # while still ensuring the next `await client.wait(event)` doesn't
+        # immediately fire.
+        async_event = self._events[event]
+        async_event.set()
+        async_event.clear()
+
+    async def wait(self, event):
+        await self._events[event.upper()].wait()
 
     def on(self, event, func=None):
         """

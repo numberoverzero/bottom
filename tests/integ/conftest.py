@@ -31,30 +31,14 @@ def loop():
 
 
 @pytest.fixture
-def waiter(loop):
-    """Return a pair of functions for marking and waiting on an async event,
-    in a synchronous call.
+def flush(loop):
+    """Run loop once, to execute any pending tasks"""
+    async def sentinel():
+        pass
 
-    Example
-    =======
-    def test_ping(client, server, connect, waiter):
-        mark, wait = waiter()
-
-        @client.on("ping")
-        def handle(**kw):
-            client.send("pong")
-            mark()
-        connect()
-        server.send("PING :msg")
-        wait()
-        assert client.triggers["PING"] == 1
-    """
-    def _waiter():
-        event = asyncio.Event(loop=loop)
-        return (
-            lambda: event.set(),
-            lambda: loop.run_until_complete(event.wait()))
-    return _waiter
+    def _flush():
+        loop.run_until_complete(sentinel())
+    return _flush
 
 
 @pytest.fixture

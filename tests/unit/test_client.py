@@ -16,10 +16,11 @@ def test_send_unknown_command(active_client, protocol):
         active_client.send("Unknown Command")
 
 
-def test_send_before_connected(client):
+def test_send_before_connected(client, transport):
     """ Sending before connected raises """
     with pytest.raises(RuntimeError):
         client.send("PONG")
+    assert not transport.written
 
 
 def test_disconnect_before_connected(client, schedule):
@@ -32,10 +33,14 @@ def test_disconnect_before_connected(client, schedule):
 def test_send_after_disconnected(client, transport, schedule):
     """ Sending after disconnect does not invoke writer """
     schedule(client.connect())
+    # Written while connected
     client.send("PONG")
+
     schedule(client.disconnect())
+    # Written while disconnected - not sent
     with pytest.raises(RuntimeError):
         client.send("QUIT")
+
     assert transport.written == [b"PONG\r\n"]
 
 
@@ -64,7 +69,6 @@ def test_unpack_triggers_client(active_client, protocol, flush):
 
     @active_client.on("PRIVMSG")
     async def receive(nick, user, host, target, message):
-        print("success")
         received.extend([nick, user, host, target, message])
 
     protocol.data_received(
@@ -148,9 +152,9 @@ def test_bound_method_of_instance(client, flush):
     flush()
 
 
-def test_callback_ordering(client, flush, loop):
+def test_callback_ordering(client, flush):
     """ Callbacks for a second event don't queue behind the first event """
-    second_complete = asyncio.Event(loop=loop)
+    second_complete = asyncio.Event(loop=client.loop)
     call_order = []
     complete_order = []
 
@@ -171,3 +175,22 @@ def test_callback_ordering(client, flush, loop):
     flush()
     assert call_order == ["first", "second"]
     assert complete_order == ["second", "first"]
+
+
+def test_wait_ordering(client, flush):
+    """ Handlers are enqueued before trigger waits """
+    invoked = []
+
+    @client.on("some.trigger")
+    def handle(**kwargs):
+        invoked.append("handler")
+
+    async def waiter():
+        await client.wait("some.trigger")
+        invoked.append("waiter")
+
+    client.loop.create_task(waiter())
+    flush()
+    client.trigger("some.trigger")
+    flush()
+    assert invoked == ["handler", "waiter"]
