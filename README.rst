@@ -157,7 +157,7 @@ Client.on(event)(func)
 
 This decorator is the main way you'll interact with a ``Client``.  For a given
 event name, it registers the decorated function to be invoked when that event
-occurs.  Your decorated functions should always accept **kwargs, in case
+occurs.  Your decorated functions should always accept \*\*kwargs, in case
 unexpected kwargs are included when the event is triggered.
 
 The usual IRC commands sent from a server are triggered automatically, or can
@@ -222,7 +222,7 @@ let's catch SIGINT and gracefully shut down the event loop::
 
 
 Client.trigger(event, \*\*kwargs)
--------------------------------
+---------------------------------
 
 Manually inject a command or reply as if it came from the server.  This is
 useful for invoking other handlers. Note that because trigger doesn't block,
@@ -308,7 +308,7 @@ Client.connect()
 
 ** This is a coroutine. **
 
-Connect to the client's host, port::
+Connect to the client's host, port.
 
 Attempt to reconnect using the client's host, port::
 
@@ -360,7 +360,7 @@ disconnect::
 
 
 Client.send(command, \*\*kwargs)
-------------------------------
+--------------------------------
 
 Send a command to the server.
 
