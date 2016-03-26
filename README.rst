@@ -147,6 +147,7 @@ Contributors
 * `thebigmunch <https://github.com/thebigmunch>`_
 * `tilal6991 <https://github.com/tilal6991>`_
 * `AMorporkian <https://github.com/AMorporkian>`_
+* `nedbat <https://github.com/nedbat>`_
 
 API
 ===
