@@ -207,6 +207,8 @@ def unpack_command(msg):
     command = synonym(command)
     kwargs = {}
 
+    print('UNPACK(%s, %s, %s)' % (prefix, command, params))
+
     if command in ["PING", "ERR_NOMOTD"]:
         kwargs["message"] = params[-1]
 
@@ -218,6 +220,12 @@ def unpack_command(msg):
     elif command in ["JOIN"]:
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
+
+    elif command in ['RPL_NAMREPLY']:
+        kwargs["target"] = params[0]
+        kwargs["channel_type"] = params[1]  # == '@' '*' or '=' (public channel)
+        kwargs["channel"] = params[2]
+        kwargs["users"] = params[-1].split(' ')
 
     elif command in ["QUIT"]:
         nickmask(prefix, kwargs)
@@ -245,7 +253,7 @@ def unpack_command(msg):
 
     elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
                      "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
-                     "RPL_LUSERCLIENT", "RPL_LUSERME"]:
+                     "RPL_LUSERCLIENT", "RPL_LUSERME", "RPL_ENDOFNAMES"]:
         kwargs["message"] = params[-1]
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
