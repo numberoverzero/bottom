@@ -55,7 +55,7 @@ for numeric, string in [
     ("348", "RPL_EXCEPTLIST"),
     ("349", "RPL_ENDOFEXCEPTLIST"),
     ("351", "RPL_VERSION"),
-    ("352", "RPL_WHOREPLY"),
+    ("352", "WHOREPLY"),
     ("315", "RPL_ENDOFWHO"),
     ("353", "RPL_NAMREPLY"),
     ("366", "RPL_ENDOFNAMES"),
@@ -207,8 +207,6 @@ def unpack_command(msg):
     command = synonym(command)
     kwargs = {}
 
-    print('UNPACK(%s, %s, %s)' % (prefix, command, params))
-
     if command in ["PING", "ERR_NOMOTD"]:
         kwargs["message"] = params[-1]
 
@@ -221,11 +219,22 @@ def unpack_command(msg):
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
 
-    elif command in ['RPL_NAMREPLY']:
+    elif command == 'RPL_NAMREPLY':
         kwargs["target"] = params[0]
         kwargs["channel_type"] = params[1]  # == '@' '*' or '=' (public channel)
         kwargs["channel"] = params[2]
         kwargs["users"] = params[-1].split(' ')
+
+    elif command == 'WHOREPLY':
+        '''352    RPL_WHOREPLY
+              <channel> <user> <host> <server> <nick>
+              ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
+              :<hopcount> <real name>"
+        '''
+        kwargs["channel"], kwargs["user"], kwargs["host"], kwargs["server"], kwargs["nick"] = params[1:6]
+        # H/G/* @ + that I don't understand
+        hc, kwargs['real_name'] = params[-1].split(' ', 1)
+        kwargs["hopcount"] = int(hc)
 
     elif command in ["QUIT"]:
         nickmask(prefix, kwargs)
@@ -247,7 +256,7 @@ def unpack_command(msg):
         kwargs["target"] = params[0]
         kwargs["channel"] = params[1]
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "RPL_ENDOFWHO"]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
 
@@ -297,7 +306,7 @@ def parameters(command):
         add_nickmask(params)
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "RPL_ENDOFWHO"]:
         params.append("channel")
         params.append("message")
 
