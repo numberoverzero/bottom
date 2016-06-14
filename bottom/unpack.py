@@ -233,7 +233,7 @@ def unpack_command(msg):
               :<hopcount> <real name>"
         '''
         (kwargs["channel"], kwargs["user"],
-            kwargs["host"], kwargs["server"], kwargs["nick"] = params[1:6]
+            kwargs["host"], kwargs["server"], kwargs["nick"]) = params[1:6]
         # H/G/*/@/+ ... that I don't understand, so omit
         hc, kwargs['real_name'] = params[-1].split(' ', 1)
         kwargs["hopcount"] = int(hc)
