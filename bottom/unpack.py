@@ -222,7 +222,7 @@ def unpack_command(msg):
     elif command == 'RPL_NAMREPLY':
         kwargs["target"] = params[0]
         # == '@' '*' or '=' (public channel)
-        kwargs["channel_type"] = params[1]  
+        kwargs["channel_type"] = params[1]
         kwargs["channel"] = params[2]
         kwargs["users"] = params[-1].split(' ')
 
