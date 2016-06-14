@@ -221,7 +221,8 @@ def unpack_command(msg):
 
     elif command == 'RPL_NAMREPLY':
         kwargs["target"] = params[0]
-        kwargs["channel_type"] = params[1]  # == '@' '*' or '=' (public channel)
+        # == '@' '*' or '=' (public channel)
+        kwargs["channel_type"] = params[1]  
         kwargs["channel"] = params[2]
         kwargs["users"] = params[-1].split(' ')
 
@@ -231,8 +232,9 @@ def unpack_command(msg):
               ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
               :<hopcount> <real name>"
         '''
-        kwargs["channel"], kwargs["user"], kwargs["host"], kwargs["server"], kwargs["nick"] = params[1:6]
-        # H/G/* @ + that I don't understand
+        (kwargs["channel"], kwargs["user"],
+            kwargs["host"], kwargs["server"], kwargs["nick"] = params[1:6]
+        # H/G/*/@/+ ... that I don't understand, so omit
         hc, kwargs['real_name'] = params[-1].split(' ', 1)
         kwargs["hopcount"] = int(hc)
 
@@ -256,7 +258,8 @@ def unpack_command(msg):
         kwargs["target"] = params[0]
         kwargs["channel"] = params[1]
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "RPL_ENDOFWHO"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES",
+                     "RPL_ENDOFWHO"]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
 
@@ -306,7 +309,8 @@ def parameters(command):
         add_nickmask(params)
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "RPL_ENDOFWHO"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES",
+                     "RPL_ENDOFWHO"]:
         params.append("channel")
         params.append("message")
 
