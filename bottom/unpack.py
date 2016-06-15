@@ -231,13 +231,13 @@ def unpack_command(msg):
               ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
               :<hopcount> <real name>"
         '''
-        (   kwargs["target"],
-            kwargs["channel"],
-            kwargs["user"],
-            kwargs["host"],
-            kwargs["server"],
-            kwargs["nick"],
-            kwargs["hg_code"] ) = params[0:7]
+        (kwargs["target"],
+         kwargs["channel"],
+         kwargs["user"],
+         kwargs["host"],
+         kwargs["server"],
+         kwargs["nick"],
+         kwargs["hg_code"]) = params[0:7]
         hc, kwargs["real_name"] = params[-1].split(' ', 1)
         kwargs["hopcount"] = int(hc)
 
@@ -271,7 +271,7 @@ def unpack_command(msg):
 
     elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
                      "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
-                     "RPL_LUSERCLIENT", "RPL_LUSERME" ]:
+                     "RPL_LUSERCLIENT", "RPL_LUSERME"]:
         kwargs["message"] = params[-1]
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
@@ -336,7 +336,7 @@ def parameters(command):
         params.append("name")
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES" ]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         params.append("channel")
         params.append("message")
 

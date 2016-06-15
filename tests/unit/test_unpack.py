@@ -155,21 +155,23 @@ def test_invite():
 
 def test_channel_message_commands():
     """ channel and message commands """
-    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES" ]
+    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]
     expected_kwargs = {"channel": "#ch", "message": "m"}
     for command in cmds:
         message = command + " nick #ch :m"
         validate(command, message, expected_kwargs)
 
+
 def test_who_reply():
     """ WHO response """
     command = 'WHOREPLY'
-    expected_kwargs = { "target": "#t", "channel": "#ch", "server": "srv",
-                        "real_name": "rn", "host": "hst", 
-                        "nick": "nck", "hg_code":"H",
-                        "hopcount": 27, "user": "usr" }
+    expected_kwargs = {"target": "#t", "channel": "#ch", "server": "srv",
+                       "real_name": "rn", "host": "hst",
+                       "nick": "nck", "hg_code": "H",
+                       "hopcount": 27, "user": "usr"}
     message = command + " #t #ch usr hst srv nck H :27 rn"
     validate(command, message, expected_kwargs)
+
 
 def test_end_of_who_reply():
     command = "RPL_ENDOFWHO"
@@ -177,21 +179,24 @@ def test_end_of_who_reply():
     message = command + " #nm :m"
     validate(command, message, expected_kwargs)
 
+
 def test_name_reply():
     command = "RPL_NAMREPLY"
     expected_kwargs = {"channel": "#ch", "target": "#t",
-                            "users": ['aa', 'bb', 'cc'],
-                            "channel_type":None}
+                       "users": ['aa', 'bb', 'cc'],
+                       "channel_type": None}
     message = command + " #t #ch :aa bb cc"
     validate(command, message, expected_kwargs)
+
 
 def test_name_reply_longer():
     command = "RPL_NAMREPLY"
     expected_kwargs = {"channel": "#ch", "target": "#t",
-                            "users": ['aa', 'bb', 'cc'],
-                            "channel_type":"="}
+                       "users": ['aa', 'bb', 'cc'],
+                       "channel_type": "="}
     message = command + " #t = #ch :aa bb cc"
     validate(command, message, expected_kwargs)
+
 
 def test_message_commands():
     """ message-only commands """
