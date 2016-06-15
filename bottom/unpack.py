@@ -232,11 +232,19 @@ def unpack_command(msg):
               ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
               :<hopcount> <real name>"
         '''
-        (kwargs["channel"], kwargs["user"],
-            kwargs["host"], kwargs["server"], kwargs["nick"]) = params[1:6]
-        # H/G/*/@/+ ... that I don't understand, so omit
-        hc, kwargs['real_name'] = params[-1].split(' ', 1)
+        (   kwargs["target"],
+            kwargs["channel"],
+            kwargs["user"],
+            kwargs["host"],
+            kwargs["server"],
+            kwargs["nick"],
+            kwargs["hg_code"] ) = params[0:7]
+        hc, kwargs["real_name"] = params[-1].split(' ', 1)
         kwargs["hopcount"] = int(hc)
+
+    elif command == "RPL_ENDOFWHO":
+        kwargs["name"] = params[0]
+        kwargs["message"] = params[1]
 
     elif command in ["QUIT"]:
         nickmask(prefix, kwargs)
@@ -258,8 +266,7 @@ def unpack_command(msg):
         kwargs["target"] = params[0]
         kwargs["channel"] = params[1]
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES",
-                     "RPL_ENDOFWHO"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
 
@@ -309,8 +316,22 @@ def parameters(command):
         add_nickmask(params)
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES",
-                     "RPL_ENDOFWHO"]:
+    elif command in ["WHOREPLY"]:
+        params.append("target")
+        params.append("channel")
+        params.append("user")
+        params.append("host")
+        params.append("server")
+        params.append("nick")
+        params.append("hg_code")
+        params.append("hopcount")
+        params.append("real_name")
+
+    elif command in ["RPL_ENDOFWHO"]:
+        params.append("name")
+        params.append("message")
+
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES" ]:
         params.append("channel")
         params.append("message")
 
