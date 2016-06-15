@@ -177,6 +177,21 @@ def test_end_of_who_reply():
     message = command + " #nm :m"
     validate(command, message, expected_kwargs)
 
+def test_name_reply():
+    command = "RPL_NAMREPLY"
+    expected_kwargs = {"channel": "#ch", "target": "#t",
+                            "users": ['aa', 'bb', 'cc'],
+                            "channel_type":None}
+    message = command + " #t #ch :aa bb cc"
+    validate(command, message, expected_kwargs)
+
+def test_name_reply_longer():
+    command = "RPL_NAMREPLY"
+    expected_kwargs = {"channel": "#ch", "target": "#t",
+                            "users": ['aa', 'bb', 'cc'],
+                            "channel_type":"="}
+    message = command + " #t = #ch :aa bb cc"
+    validate(command, message, expected_kwargs)
 
 def test_message_commands():
     """ message-only commands """

@@ -221,9 +221,8 @@ def unpack_command(msg):
 
     elif command == 'RPL_NAMREPLY':
         kwargs["target"] = params[0]
-        # == '@' '*' or '=' (public channel)
-        kwargs["channel_type"] = params[1]
-        kwargs["channel"] = params[2]
+        kwargs["channel_type"] = params[1] if len(params) > 3 else None
+        kwargs["channel"] = params[-2]
         kwargs["users"] = params[-1].split(' ')
 
     elif command == 'WHOREPLY':
@@ -326,6 +325,12 @@ def parameters(command):
         params.append("hg_code")
         params.append("hopcount")
         params.append("real_name")
+
+    elif command in ["RPL_NAMREPLY"]:
+        params.append("target")
+        params.append("channel_type")
+        params.append("channel")
+        params.append("users")
 
     elif command in ["RPL_ENDOFWHO"]:
         params.append("name")
