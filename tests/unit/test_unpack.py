@@ -155,11 +155,27 @@ def test_invite():
 
 def test_channel_message_commands():
     """ channel and message commands """
-    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]
+    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES" ]
     expected_kwargs = {"channel": "#ch", "message": "m"}
     for command in cmds:
         message = command + " nick #ch :m"
         validate(command, message, expected_kwargs)
+
+def test_who_reply():
+    """ WHO response """
+    command = 'WHOREPLY'
+    expected_kwargs = { "target": "#t", "channel": "#ch", "server": "srv",
+                        "real_name": "rn", "host": "hst", 
+                        "nick": "nck", "hg_code":"H",
+                        "hopcount": 27, "user": "usr" }
+    message = command + " #t #ch usr hst srv nck H :27 rn"
+    validate(command, message, expected_kwargs)
+
+def test_end_of_who_reply():
+    command = "RPL_ENDOFWHO"
+    expected_kwargs = {"name": "#nm", "message": "m"}
+    message = command + " #nm :m"
+    validate(command, message, expected_kwargs)
 
 
 def test_message_commands():
