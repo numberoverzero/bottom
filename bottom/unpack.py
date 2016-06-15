@@ -265,7 +265,7 @@ def unpack_command(msg):
 
     elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
                      "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
-                     "RPL_LUSERCLIENT", "RPL_LUSERME", "RPL_ENDOFNAMES"]:
+                     "RPL_LUSERCLIENT", "RPL_LUSERME" ]:
         kwargs["message"] = params[-1]
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
