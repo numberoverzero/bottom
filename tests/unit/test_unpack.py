@@ -162,6 +162,42 @@ def test_channel_message_commands():
         validate(command, message, expected_kwargs)
 
 
+def test_who_reply():
+    """ WHO response """
+    command = 'RPL_WHOREPLY'
+    expected_kwargs = {"target": "#t", "channel": "#ch", "server": "srv",
+                       "real_name": "rn", "host": "hst",
+                       "nick": "nck", "hg_code": "H",
+                       "hopcount": 27, "user": "usr"}
+    message = command + " #t #ch usr hst srv nck H :27 rn"
+    validate(command, message, expected_kwargs)
+
+
+def test_end_of_who_reply():
+    command = "RPL_ENDOFWHO"
+    expected_kwargs = {"name": "#nm", "message": "m"}
+    message = command + " #nm :m"
+    validate(command, message, expected_kwargs)
+
+
+def test_name_reply():
+    command = "RPL_NAMREPLY"
+    expected_kwargs = {"channel": "#ch", "target": "#t",
+                       "users": ['aa', 'bb', 'cc'],
+                       "channel_type": None}
+    message = command + " #t #ch :aa bb cc"
+    validate(command, message, expected_kwargs)
+
+
+def test_name_reply_longer():
+    command = "RPL_NAMREPLY"
+    expected_kwargs = {"channel": "#ch", "target": "#t",
+                       "users": ['aa', 'bb', 'cc'],
+                       "channel_type": "="}
+    message = command + " #t = #ch :aa bb cc"
+    validate(command, message, expected_kwargs)
+
+
 def test_message_commands():
     """ message-only commands """
     cmds = ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD", "RPL_WELCOME",

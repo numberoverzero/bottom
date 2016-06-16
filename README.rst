@@ -148,6 +148,7 @@ Contributors
 * `tilal6991 <https://github.com/tilal6991>`_
 * `AMorporkian <https://github.com/AMorporkian>`_
 * `nedbat <https://github.com/nedbat>`_
+* `Coinkite Inc <https://github.com/coinkite>`_
 
 API
 ===

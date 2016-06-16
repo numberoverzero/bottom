@@ -219,6 +219,32 @@ def unpack_command(msg):
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
 
+    elif command == 'RPL_NAMREPLY':
+        kwargs["target"] = params[0]
+        kwargs["channel_type"] = params[1] if len(params) > 3 else None
+        kwargs["channel"] = params[-2]
+        kwargs["users"] = params[-1].split(' ')
+
+    elif command == 'RPL_WHOREPLY':
+        '''352    RPL_WHOREPLY
+              <channel> <user> <host> <server> <nick>
+              ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
+              :<hopcount> <real name>"
+        '''
+        (kwargs["target"],
+         kwargs["channel"],
+         kwargs["user"],
+         kwargs["host"],
+         kwargs["server"],
+         kwargs["nick"],
+         kwargs["hg_code"]) = params[0:7]
+        hc, kwargs["real_name"] = params[-1].split(' ', 1)
+        kwargs["hopcount"] = int(hc)
+
+    elif command == "RPL_ENDOFWHO":
+        kwargs["name"] = params[0]
+        kwargs["message"] = params[1]
+
     elif command in ["QUIT"]:
         nickmask(prefix, kwargs)
         if params:
@@ -287,6 +313,27 @@ def parameters(command):
 
     elif command in ["QUIT"]:
         add_nickmask(params)
+        params.append("message")
+
+    elif command in ["RPL_WHOREPLY"]:
+        params.append("target")
+        params.append("channel")
+        params.append("user")
+        params.append("host")
+        params.append("server")
+        params.append("nick")
+        params.append("hg_code")
+        params.append("hopcount")
+        params.append("real_name")
+
+    elif command in ["RPL_NAMREPLY"]:
+        params.append("target")
+        params.append("channel_type")
+        params.append("channel")
+        params.append("users")
+
+    elif command in ["RPL_ENDOFWHO"]:
+        params.append("name")
         params.append("message")
 
     elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
