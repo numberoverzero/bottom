@@ -55,7 +55,7 @@ for numeric, string in [
     ("348", "RPL_EXCEPTLIST"),
     ("349", "RPL_ENDOFEXCEPTLIST"),
     ("351", "RPL_VERSION"),
-    ("352", "WHOREPLY"),
+    ("352", "RPL_WHOREPLY"),
     ("315", "RPL_ENDOFWHO"),
     ("353", "RPL_NAMREPLY"),
     ("366", "RPL_ENDOFNAMES"),
@@ -225,7 +225,7 @@ def unpack_command(msg):
         kwargs["channel"] = params[-2]
         kwargs["users"] = params[-1].split(' ')
 
-    elif command == 'WHOREPLY':
+    elif command == 'RPL_WHOREPLY':
         '''352    RPL_WHOREPLY
               <channel> <user> <host> <server> <nick>
               ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
@@ -315,7 +315,7 @@ def parameters(command):
         add_nickmask(params)
         params.append("message")
 
-    elif command in ["WHOREPLY"]:
+    elif command in ["RPL_WHOREPLY"]:
         params.append("target")
         params.append("channel")
         params.append("user")

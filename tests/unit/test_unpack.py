@@ -164,7 +164,7 @@ def test_channel_message_commands():
 
 def test_who_reply():
     """ WHO response """
-    command = 'WHOREPLY'
+    command = 'RPL_WHOREPLY'
     expected_kwargs = {"target": "#t", "channel": "#ch", "server": "srv",
                        "real_name": "rn", "host": "hst",
                        "nick": "nck", "hg_code": "H",
