@@ -108,6 +108,15 @@ def test_join():
     validate(command, message, expected_kwargs)
 
 
+def test_nick():
+    """ NICK command """
+    command = "NICK"
+    message = ":n!u@h NICK new_user_nick"
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
+                       "new_nick": "new_user_nick"}
+    validate(command, message, expected_kwargs)
+
+
 def test_quit():
     """ QUIT command """
     command = "QUIT"

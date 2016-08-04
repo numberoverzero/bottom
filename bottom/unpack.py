@@ -219,6 +219,10 @@ def unpack_command(msg):
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
 
+    elif command in ["NICK"]:
+        nickmask(prefix, kwargs)
+        kwargs["new_nick"] = params[0]
+
     elif command == 'RPL_NAMREPLY':
         kwargs["target"] = params[0]
         kwargs["channel_type"] = params[1] if len(params) > 3 else None
@@ -310,6 +314,10 @@ def parameters(command):
     elif command in ["JOIN"]:
         add_nickmask(params)
         params.append("channel")
+
+    elif command in ["NICK"]:
+        add_nickmask(params)
+        params.append("new_nick")
 
     elif command in ["QUIT"]:
         add_nickmask(params)
