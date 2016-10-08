@@ -15,6 +15,7 @@ Create an instance:
 
 .. code-block:: python
 
+    import asyncio
     import bottom
 
     host = 'chat.freenode.net'
@@ -32,10 +33,24 @@ Send nick/user/join when connection is established:
 .. code-block:: python
 
     @bot.on('CLIENT_CONNECT')
-    def connect(**kwargs):
+    async def connect(**kwargs):
         bot.send('NICK', nick=NICK)
         bot.send('USER', user=NICK,
                  realname='https://github.com/numberoverzero/bottom')
+
+        # Don't try to join channels until the server has
+        # sent the MOTD, or signaled that there's no MOTD.
+        done, pending = await asyncio.wait(
+            [bot.wait("RPL_ENDOFMOTD"),
+             bot.wait("ERR_NOMOTD")],
+            loop=bot.loop,
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        # Cancel whichever waiter's event didn't come in.
+        for future in pending:
+            future.cancel()
+
         bot.send('JOIN', channel=CHANNEL)
 
 
