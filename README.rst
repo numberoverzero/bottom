@@ -26,7 +26,9 @@ Installation
 Getting Started
 ===============
 
-Create an instance::
+Create an instance:
+
+.. code-block:: python
 
     import bottom
 
@@ -40,7 +42,9 @@ Create an instance::
     bot = bottom.Client(host=host, port=port, ssl=ssl)
 
 
-Send nick/user/join when connection is established::
+Send nick/user/join when connection is established:
+
+.. code-block:: python
 
     @bot.on('CLIENT_CONNECT')
     def connect(**kwargs):
@@ -50,14 +54,18 @@ Send nick/user/join when connection is established::
         bot.send('JOIN', channel=CHANNEL)
 
 
-Respond to ping::
+Respond to ping:
+
+.. code-block:: python
 
     @bot.on('PING')
     def keepalive(message, **kwargs):
         bot.send('PONG', message=message)
 
 
-Echo messages (channel and direct messages)::
+Echo messages (channel and direct messages):
+
+.. code-block:: python
 
     @bot.on('PRIVMSG')
     def message(nick, target, message, **kwargs):
@@ -74,7 +82,9 @@ Echo messages (channel and direct messages)::
             bot.send("PRIVMSG", target=target, message=message)
 
 
-Finally, connect and run the bot forever::
+Finally, connect and run the bot forever:
+
+.. code-block:: python
 
     bot.loop.create_task(bot.connect())
     bot.loop.run_forever()
@@ -82,7 +92,9 @@ Finally, connect and run the bot forever::
 API
 ===
 
-The full API consists of 1 class, with 6 methods::
+The full API consists of 1 class, with 6 methods:
+
+.. code-block:: python
 
     async Client.connect()
 
@@ -96,6 +108,20 @@ The full API consists of 1 class, with 6 methods::
 
     Client.trigger(event, **kwargs)
 
+
+Debugging
+=========
+
+You can get more asyncio debugging info by setting up an event loop with debugging enabled,
+and pass that loop to `bottom.Client`:
+
+.. code-block:: python
+
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loop.set_debug(True)
+
+    bot = bottom.Client(..., loop=loop)
 
 Versioning  and RFC2812
 =======================
@@ -168,7 +194,9 @@ handlers for any string, making it easy to extend bottom with your own signals.
 
 
 Not all available arguments need to be used.  For instance, both of the
-following are valid::
+following are valid:
+
+.. code-block:: python
 
     @bot.on('PRIVMSG')
     def event(nick, message, target, **kwargs):
@@ -188,7 +216,9 @@ following are valid::
             execute_heist()
 
 Handlers do not need to be async functions - non async will be wrapped prior to
-the bot running.  For example, both of these are valid::
+the bot running.  For example, both of these are valid:
+
+.. code-block:: python
 
     @bot.on('PRIVMSG')
     def handle(message, **kwargs):
@@ -199,7 +229,9 @@ the bot running.  For example, both of these are valid::
         await async_logger.log(message)
 
 Finally, you can create your own events to trigger and handle.  For example,
-let's catch SIGINT and gracefully shut down the event loop::
+let's catch SIGINT and gracefully shut down the event loop:
+
+.. code-block:: python
 
     import signal
 
@@ -233,12 +265,12 @@ them.
 
 Events don't need to be valid irc commands; any string is available.
 
-::
+.. code-block:: python
 
     # Manually trigger `PRIVMSG` handlers:
     bot.trigger('privmsg', nick="always_says_no", message="yes")
 
-::
+.. code-block:: python
 
     # Rename !commands to !help
     @bot.on('privmsg')
@@ -255,7 +287,7 @@ Because the ``@on`` decorator returns the original function, you can register
 a handler for multiple events.  It's especially important to use ``**kwargs``
 correctly here, to handle different keywords for each event.
 
-::
+.. code-block:: python
 
     # Simple recursive-style countdown
     @bot.on('privmsg')
@@ -287,9 +319,11 @@ correctly here, to handle different keywords for each event.
 Client.wait(event)
 ------------------
 
-** This is a coroutine. **
+**This is a coroutine.**
 
-Wait for an event to trigger::
+Wait for an event to trigger:
+
+.. code-block:: python
 
     @bot.on("client_disconnect")
     async def reconnect(**kwargs):
@@ -308,11 +342,13 @@ Wait for an event to trigger::
 Client.connect()
 ----------------
 
-** This is a coroutine. **
+**This is a coroutine.**
 
 Connect to the client's host, port.
 
-Attempt to reconnect using the client's host, port::
+Attempt to reconnect using the client's host, port:
+
+.. code-block:: python
 
     @bot.on('client_disconnect')
     async def reconnect(**kwargs):
@@ -323,8 +359,9 @@ Attempt to reconnect using the client's host, port::
         bot.send('privmsg', target=bot.channel, message="I'm back.")
 
 
-You can schedule a connect without blocking by using the client's event loop::
+You can schedule a connect without blocking by using the client's event loop:
 
+.. code-block:: python
 
     @bot.on('client_disconnect')
     def reconnect(**kwargs):
@@ -343,11 +380,13 @@ You can schedule a connect without blocking by using the client's event loop::
 Client.disconnect()
 -------------------
 
-** This is a coroutine. **
+**This is a coroutine.**
 
 Immediately disconnect from the server.
 
-Disconnect from the server if connected::
+Disconnect from the server if connected:
+
+.. code-block:: python
 
     @bot.on('privmsg')
     async def suicide_pill(nick, message, **kwargs):
@@ -356,7 +395,9 @@ Disconnect from the server if connected::
 
 
 Like ``Client.connect``, we can use the bot's event loop to schedule a
-disconnect::
+disconnect:
+
+.. code-block:: python
 
     bot.loop.create_task(bot.disconnect())
 
@@ -371,46 +412,46 @@ Send a command to the server.
 Supported Commands
 ==================
 
-::
+.. code-block:: python
 
     client.send('PASS', password='hunter2')
 
-::
+.. code-block:: python
 
     client.send('NICK', nick='WiZ')
 
-::
+.. code-block:: python
 
     # mode is optional, default is 0
     client.send('USER', user='WiZ-user', realname='Ronnie')
     client.send('USER', user='WiZ-user', mode='8', realname='Ronnie')
 
-::
+.. code-block:: python
 
     client.send('OPER', user='WiZ', password='hunter2')
 
-::
+.. code-block:: python
 
     # Renamed from MODE
     client.send('USERMODE', nick='WiZ')
     client.send('USERMODE', nick='WiZ', modes='+io')
 
-::
+.. code-block:: python
 
     client.send('SERVICE', nick='CHANSERV', distribution='*.en',
                 type='0', info='manages channels')
 
-::
+.. code-block:: python
 
     client.send('QUIT')
     client.send('QUIT', message='Gone to Lunch')
 
-::
+.. code-block:: python
 
     client.send('SQUIT', server='tolsun.oulu.fi')
     client.send('SQUIT', server='tolsun.oulu.fi', message='Bad Link')
 
-::
+.. code-block:: python
 
     # If channel has n > 1 values, key MUST have 1 or n values
     client.send('JOIN', channel='0')  # send PART to all joined channels
@@ -419,25 +460,25 @@ Supported Commands
     client.send('JOIN', channel=['#foo-chan', '#other'], key='key-for-both')
     client.send('JOIN', channel=['#foo-chan', '#other'], key=['foo-key', 'other-key'])
 
-::
+.. code-block:: python
 
     client.send('PART', channel='#foo-chan')
     client.send('PART', channel=['#foo-chan', '#other'])
     client.send('PART', channel='#foo-chan', message='I lost')
 
-::
+.. code-block:: python
 
     # Renamed from MODE
     client.send('CHANNELMODE', channel='#foo-chan', modes='+b')
     client.send('CHANNELMODE', channel='#foo-chan', modes='+l', params='10')
 
-::
+.. code-block:: python
 
     client.send('TOPIC', channel='#foo-chan')
     client.send('TOPIC', channel='#foo-chan', message='')  # Clear channel message
     client.send('TOPIC', channel='#foo-chan', message='Yes, this is dog')
 
-::
+.. code-block:: python
 
     # target requires channel
     client.send('NAMES')
@@ -445,7 +486,7 @@ Supported Commands
     client.send('NAMES', channel=['#foo-chan', '#other'])
     client.send('NAMES', channel=['#foo-chan', '#other'], target='remote.*.edu')
 
-::
+.. code-block:: python
 
     # target requires channel
     client.send('LIST')
@@ -453,11 +494,11 @@ Supported Commands
     client.send('LIST', channel=['#foo-chan', '#other'])
     client.send('LIST', channel=['#foo-chan', '#other'], target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
 
-::
+.. code-block:: python
 
     # nick and channel must have the same number of elements
     client.send('KICK', channel='#foo-chan', nick='WiZ')
@@ -465,90 +506,90 @@ Supported Commands
     client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend'])
     client.send('KICK', channel=['#foo', '#bar'], nick=['WiZ', 'WiZ-friend'])
 
-::
+.. code-block:: python
 
     client.send('PRIVMSG', target='WiZ-friend', message='Hello, friend!')
 
-::
+.. code-block:: python
 
     client.send('NOTICE', target='#foo-chan', message='Maintenance in 5 mins')
 
-::
+.. code-block:: python
 
     client.send('MOTD')
     client.send('MOTD', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('LUSERS')
     client.send('LUSERS', mask='*.edu')
     client.send('LUSERS', mask='*.edu', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('VERSION')
 
-::
+.. code-block:: python
 
     # target requires query
     client.send('STATS')
     client.send('STATS', query='m')
     client.send('STATS', query='m', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     # remote requires mask
     client.send('LINKS')
     client.send('LINKS', mask='*.bu.edu')
     client.send('LINKS', remote='*.edu', mask='*.bu.edu')
 
-::
+.. code-block:: python
 
     client.send('TIME')
     client.send('TIME', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('CONNECT', target='tolsun.oulu.fi', port=6667)
     client.send('CONNECT', target='tolsun.oulu.fi', port=6667, remote='*.edu')
 
-::
+.. code-block:: python
 
     client.send('TRACE')
     client.send('TRACE', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('ADMIN')
     client.send('ADMIN', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('INFO')
     client.send('INFO', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     # type requires mask
     client.send('SERVLIST', mask='*SERV')
     client.send('SERVLIST', mask='*SERV', type=3)
 
-::
+.. code-block:: python
 
     client.send('SQUERY', target='irchelp', message='HELP privmsg')
 
-::
+.. code-block:: python
 
     client.send('WHO')
     client.send('WHO', mask='*.fi')
     client.send('WHO', mask='*.fi', o=True)
 
-::
+.. code-block:: python
 
     client.send('WHOIS', mask='*.fi')
     client.send('WHOIS', mask=['*.fi', '*.edu'], target='remote.*.edu')
 
-::
+.. code-block:: python
 
     # target requires count
     client.send('WHOWAS', nick='WiZ')
@@ -556,63 +597,63 @@ Supported Commands
     client.send('WHOWAS', nick=['WiZ', 'WiZ-friend'], count=10)
     client.send('WHOWAS', nick='WiZ', count=10, target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('KILL', nick='WiZ', message='Spamming Joins')
 
-::
+.. code-block:: python
 
     # server2 requires server1
     client.send('PING', message='Test..')
     client.send('PING', server2='tolsun.oulu.fi')
     client.send('PING', server1='WiZ', server2='tolsun.oulu.fi')
 
-::
+.. code-block:: python
 
     # server2 requires server1
     client.send('PONG', message='Test..')
     client.send('PONG', server2='tolsun.oulu.fi')
     client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi')
 
-::
+.. code-block:: python
 
     client.send('AWAY')
     client.send('AWAY', message='Gone to Lunch')
 
-::
+.. code-block:: python
 
     client.send('REHASH')
 
-::
+.. code-block:: python
 
     client.send('DIE')
 
-::
+.. code-block:: python
 
     client.send('RESTART')
 
-::
+.. code-block:: python
 
     # target requires channel
     client.send('SUMMON', nick='WiZ')
     client.send('SUMMON', nick='WiZ', target='remote.*.edu')
     client.send('SUMMON', nick='WiZ', target='remote.*.edu', channel='#foo-chan')
 
-::
+.. code-block:: python
 
     client.send('USERS')
     client.send('USERS', target='remote.*.edu')
 
-::
+.. code-block:: python
 
     client.send('WALLOPS', message='Maintenance in 5 minutes')
 
-::
+.. code-block:: python
 
     client.send('USERHOST', nick='WiZ')
     client.send('USERHOST', nick=['WiZ', 'WiZ-friend'])
 
-::
+.. code-block:: python
 
     client.send('ISON', nick='WiZ')
     client.send('ISON', nick=['WiZ', 'WiZ-friend'])
@@ -625,7 +666,7 @@ Supported Events
 These commands are received from the server, or dispatched using
 ``Client.trigger(...)``.
 
-::
+.. code-block:: python
 
     # Local only events
     client.trigger('CLIENT_CONNECT')
