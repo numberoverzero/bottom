@@ -1,3 +1,20 @@
+Development
+^^^^^^^^^^^
+
+Versioning  and RFC2812
+=======================
+
+* Bottom follows semver for its **public** API.
+
+  * Currently, ``Client`` is the only public member of bottom.
+  * IRC replies/codes which are not yet implemented may be added at any time,
+    and will correspond to a patch - the function contract of ``@on`` method
+    does not change.
+  * You should not rely on the internal api staying the same between minor
+    versions.
+  * Over time, private apis may be raised to become public.  The reverse will
+    never occur.
+
 Contributing
 ============
 
@@ -9,9 +26,7 @@ Pull requests that decrease coverage will not be merged.
 Development
 -----------
 bottom uses ``tox``, ``pytest``, ``coverage``, and ``flake8``.  To get
-everything set up with pyenv_:
-
-.. code-block:: python
+everything set up with pyenv_::
 
     git clone https://github.com/numberoverzero/bottom.git
     cd bottom
@@ -30,3 +45,12 @@ probably also confused, and may have suggestions to improve the same area.
 .. _pyenv: https://github.com/yyuu/pyenv
 .. _pull request: https://github.com/numberoverzero/bottom/pulls
 .. _open an issue: https://github.com/numberoverzero/bottom/issues/new
+
+TODO
+====
+
+* Better ``Client`` docstrings
+* Add missing replies/errors to ``unpack.py:unpack_command``
+
+  * Add reply/error parameters to ``unpack.py:parameters``
+  * Document events, client.send

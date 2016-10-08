@@ -1,13 +1,15 @@
-An Async Model
-=====================
+Using Async
+===========
 
 It's easy to do async wrong.  Check out some of bottom's `past issues`_ for an
-example of just how easy it is to use the ``async`` and ``await`` constructs
-and still get things wrong.
+example of how easy it is to use the ``async`` and ``await`` constructs
+incorrectly.
 
-So to simplify things a bit, bottom allows us to pass both synchronous and
+To simplify things, bottom lets us to pass both synchronous and
 async functions as callbacks.  Both of these are valid handlers for the
-``privmsg`` event::
+``privmsg`` event:
+
+.. code-block:: python
 
     @client.on('privmsg')
     def synchronous_handler(**kwargs):
@@ -28,7 +30,9 @@ If none is provided, ``Client`` will use the default event loop.  This is fine
 if we're only running the client by itself, but it's recommended to still
 parameterize any async calls that have a loop parameter.
 
-Here's an easy way to hang the client forever::
+Here's an easy way to hang the client forever:
+
+.. code-block:: python
 
     import asyncio
     import bottom
@@ -49,14 +53,15 @@ Here's an easy way to hang the client forever::
 
 See the bug? Try running it.
 
-In the second line of ``handle``, ``asyncio.sleep`` takes an
-*optional* loop kwarg, which is the event loop to run on.  When none is
-provided, it uses the default ``asyncio.get_event_loop``.  However, we're
-running the client on ``client.loop``.
+In the second line of ``handle``, ``asyncio.sleep`` takes an **optional**
+loop kwarg, which is the event loop to run on.  This defaults to
+``asyncio.get_event_loop``.  However, we're running the client on
+``client.loop``.  Since the default loop never runs, the code will
+wait forever.
 
-So, the default event loop never runs, and simply has the ``asyncio.sleep``
-coroutine object enqueued.  Our handle function will wait forever.  Here's the
-corrected handle::
+Here's the correct handle:
+
+.. code-block:: python
 
     @client.on('client_connect')
     async def handle(**kwargs):
@@ -72,8 +77,9 @@ their completion before performing more actions in a handler.  However, we
 don't always want to wait for the action to complete.  How can we do both?
 
 Let's say that on disconnect we want to reconnect, then notify the room that
-we're back.  We need to wait (``await``) for the connection before sending
-anything::
+we're back.  We need to ``await`` for the connection before sending anything:
+
+.. code-block:: python
 
     @client.on('client_disconnect')
     async def reconnect(**kwargs):
@@ -84,10 +90,13 @@ anything::
         await client.connect()
 
         # Notify the room
-        client.send('privmsg', target='#bottom-dev', message='I'm baaack!'')
+        client.send('privmsg', target='#bottom-dev',
+                    message="I'm baaack!")
 
 What about a handler that doesn't need an established connection to finish?
-Instead of notifying the room, let's log the reconnect time and return::
+Instead of notifying the room, let's log the reconnect time and return:
+
+.. code-block:: python
 
     import arrow
     import logging
@@ -107,7 +116,9 @@ Instead of notifying the room, let's log the reconnect time and return::
         logger.info("Reconnect started at " + now.isoformat())
 
 We can also wait for the ``client_connect`` event to trigger, which is slightly
-different than waiting for client.connect to complete::
+different than waiting for client.connect to complete:
+
+.. code-block:: python
 
     @client.on('client_disconnect')
     async def reconnect(**kwargs):
@@ -121,35 +132,28 @@ different than waiting for client.connect to complete::
         await client.wait("client_connect")
 
         # Notify the room
-        client.send('privmsg', target='#bottom-dev', message='I'm baaack!'')
+        client.send('privmsg', target='#bottom-dev',
+                    message="I'm baaack!")
 
-Existing Event Loops
---------------------
+Existing Event Loop
+-------------------
 
-We can always run the client on an existing event loop::
+We can specify an event loop that the client will run on:
+
+.. code-block:: python
 
     client = bottom.Client(..., loop=my_existing_event_loop)
 
-If we need to change the client's event loop at any point, simply set the
-``loop`` attribute::
+Debugging
+---------
 
-    client.loop = some_other_event_loop
+You can get more asyncio debugging info by setting up an event loop with debugging enabled,
+and pass that loop to ``bottom.Client``:
 
-We should probably empty the existing loop's queue before changing them,
-as well as disconnecting and reconnecting the client so that the connection
-lives on the new event loop::
+.. code-block:: python
 
-    # Untested
-    def update_loop(client, new_loop):
+    import asyncio
+    loop = asyncio.get_event_loop()
+    loop.set_debug(True)
 
-        # clear out any tasks remaining in the queue.  If a task is enqueued
-        # after `stop, it won't be executed by this run_forever.
-        old_loop = client.loop
-        old_loop.run_forever()
-        old_loop.stop()
-
-        client.loop = new_loop
-        client.loop.run_until_complete(client.disconnect())
-
-        # Not needed if a handler for `client_disconnect` calls connect.
-        client.loop.run_until_complete(client.connect())
+    bot = bottom.Client(..., loop=loop)
