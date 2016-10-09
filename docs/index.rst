@@ -7,12 +7,15 @@ limiting, or even when to respond to PINGs.
 
 Explicit is better than implicit: no magic importing or naming to remember for
 plugins.  `Extend <user/extension.html>`_ the client with the same ``@on``
-decorators you're already using.
+decorator.
 
 ----
 
-Create an instance::
+Create an instance:
 
+.. code-block:: python
+
+    import asyncio
     import bottom
 
     host = 'chat.freenode.net'
@@ -25,24 +28,44 @@ Create an instance::
     bot = bottom.Client(host=host, port=port, ssl=ssl)
 
 
-Send nick/user/join when connection is established::
+Send nick/user/join when connection is established:
+
+.. code-block:: python
 
     @bot.on('CLIENT_CONNECT')
-    def connect(**kwargs):
+    async def connect(**kwargs):
         bot.send('NICK', nick=NICK)
         bot.send('USER', user=NICK,
                  realname='https://github.com/numberoverzero/bottom')
+
+        # Don't try to join channels until the server has
+        # sent the MOTD, or signaled that there's no MOTD.
+        done, pending = await asyncio.wait(
+            [bot.wait("RPL_ENDOFMOTD"),
+             bot.wait("ERR_NOMOTD")],
+            loop=bot.loop,
+            return_when=asyncio.FIRST_COMPLETED
+        )
+
+        # Cancel whichever waiter's event didn't come in.
+        for future in pending:
+            future.cancel()
+
         bot.send('JOIN', channel=CHANNEL)
 
 
-Respond to ping::
+Respond to ping:
+
+.. code-block:: python
 
     @bot.on('PING')
     def keepalive(message, **kwargs):
         bot.send('PONG', message=message)
 
 
-Echo messages (channel and direct messages)::
+Echo messages (channel and direct messages):
+
+.. code-block:: python
 
     @bot.on('PRIVMSG')
     def message(nick, target, message, **kwargs):
@@ -59,7 +82,9 @@ Echo messages (channel and direct messages)::
             bot.send("PRIVMSG", target=target, message=message)
 
 
-Finally, connect and run the bot forever::
+Connect and run the bot forever:
+
+.. code-block:: python
 
     bot.loop.create_task(bot.connect())
     bot.loop.run_forever()
@@ -71,9 +96,10 @@ Finally, connect and run the bot forever::
 
     user/installation
     user/async
+    user/api
     user/events
-    user/client
+    user/commands
     user/extension
-    dev/contributing
+    dev/development
 
 .. _bottom: https://github.com/numberoverzero/bottom

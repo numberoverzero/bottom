@@ -41,15 +41,21 @@ pygments_style = 'sphinx'
 html_theme = 'alabaster'
 
 html_theme_options = {
+    'github_button': True,
     'github_user': 'numberoverzero',
     'github_repo': 'bottom',
     'github_banner': True,
-    'travis_button': True,
+
+    'github_type': 'star',
+    'github_count': True,
+
+    'fixed_sidebar': True,
+
     'show_powered_by': False,
     'analytics_id': 'UA-65843067-2'
 }
 html_theme_path = [alabaster.get_path()]
-html_static_path = []
+html_static_path = ['_static']
 html_sidebars = {
     '**': [
         'about.html',

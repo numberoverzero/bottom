@@ -3,16 +3,14 @@ Extensions
 
 bottom doesn't have any clever import hooks to identify plugins based on name,
 shape, or other significant denomination.  Instead, we can create extensions
-by using functions or classes that take an instance of the client as an
-argument, and hooking up other functions to that client through ``client.on``.
-
+by using ``client.on`` on a ``Client`` instance.
 
 Keepalive
 ---------
 
-Instead of remembering to respond to ``PING`` in a timely fashion every time we
-write a new client, let's write a reusable plugin that we can apply to every
-client::
+Instead of writing the same ``PING`` handler everywhere, a reusable plugin:
+
+.. code-block:: python
 
     # my_plugin.py
     def keepalive(client):
@@ -21,7 +19,9 @@ client::
             message = message or ""
             client.send("pong", message=message)
 
-That's it!  And to use it::
+That's it!  And to use it:
+
+.. code-block:: python
 
     import bottom
     from my_plugin import keepalive
@@ -34,9 +34,10 @@ Returning new objects
 ---------------------
 
 Aside from subclassing ``bottom.Client``, we can use a class to expose
-additional behavior around a client.  This can be useful in cases where we're
-worried about other plugins assigning different meaning to the same
-attributes::
+additional behavior around a client.  This can be useful when we're worried
+about other plugins assigning different meaning to the same attributes:
+
+.. code-block:: python
 
     # irc_logging.py
     class Logger:
@@ -66,7 +67,9 @@ attributes::
         # Same for info, warning, ...
         ...
 
-And it's usage::
+And its usage:
+
+.. code-block:: python
 
     import bottom
     import logging
@@ -90,8 +93,9 @@ client.  This keeps the namespace clean, and reduces the attribute contention
 that can occur when multiple plugins store their information directly on the
 client instance.
 
-Second, we've attached a handler to the client as part of creating the Logger
-instance::
+This line hooked the logger's disconnect handler to the client:
+
+.. code-block:: python
 
     def __init__(self, client, ...):
         ...
