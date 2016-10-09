@@ -125,7 +125,7 @@ The full API consists of 1 class, with 6 methods:
 
 `Visit the docs`__ for more details and examples.
 
-__ http://bottomdocs.readthedocs.org/user/api.html
+__ http://bottomdocs.readthedocs.io/en/latest/user/api.html
 
 Contributors
 ============
