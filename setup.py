@@ -20,6 +20,7 @@ TEST_REQUIREMENTS = [
     'alabaster',
     'coverage',
     'flake8',
+    'mypy',
     'pytest',
     'sphinx',
     'tox',
