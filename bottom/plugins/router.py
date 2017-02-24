@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 class Router:
-    routes = None  # type: Dict[Pattern, Tuple[Callable, str]]
+    routes = None  # type: Dict[Pattern[str], Tuple[Callable, str]]
 
     def __init__(self, client: 'Client') -> None:
         self.client = client
