@@ -18,8 +18,8 @@ class Protocol(asyncio.Protocol):
     transport = None  # type: asyncio.Transport
     buffer = b""  # type: bytes
 
-    def connection_made(self, transport: asyncio.Transport  # type: ignore
-                        ) -> None:
+    def connection_made(self, transport: asyncio.BaseTransport) -> None:
+        assert isinstance(transport, asyncio.Transport)
         self.transport = transport
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
