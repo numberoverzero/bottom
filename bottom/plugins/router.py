@@ -23,16 +23,23 @@
 """
 import asyncio
 import functools
+from typing import Callable, Dict, Pattern, Tuple, TYPE_CHECKING  # noqa
+
 import simplex
 
+if TYPE_CHECKING:
+    from bottom.client import Client  # noqa
 
-class Router(object):
-    def __init__(self, client):
+
+class Router:
+    routes = None  # type: Dict[Pattern, Tuple[Callable, str]]
+
+    def __init__(self, client: 'Client') -> None:
         self.client = client
         self.routes = {}
         client.on("PRIVMSG")(self._handle)
 
-    def _handle(self, nick, target, message):
+    def _handle(self, nick: str, target: str, message: str) -> None:
         """ client callback entrance """
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
@@ -40,7 +47,7 @@ class Router(object):
                 fields = match.groupdict()
                 self.client.loop.create_task(func(nick, target, fields))
 
-    def route(self, pattern, func=None, **kwargs):
+    def route(self, pattern: str, func: Callable = None) -> Callable:
         """Register a callback for a given pattern
 
         @router.route("client, say [words]")
@@ -53,7 +60,7 @@ class Router(object):
 
         """
         if func is None:
-            return functools.partial(self.route, pattern)
+            return functools.partial(self.route, pattern)  # type: ignore
 
         # Decorator should always return the original function
         wrapped = func

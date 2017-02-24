@@ -1,0 +1,3 @@
+from typing import AnyStr, Pattern
+
+def compile(string: AnyStr) -> Pattern[AnyStr]: ...
