@@ -42,11 +42,17 @@ class Client:
         self.protocol.write(packed_command)
 
     async def connect(self):
+        def protocol_factory():
+            return Protocol(client=self)
+
         transport, protocol = await self.loop.create_connection(
-            Protocol, host=self.host, port=self.port, ssl=self.ssl)
+            protocol_factory, host=self.host, port=self.port, ssl=self.ssl)
         if self.protocol:
             self.protocol.close()
         self.protocol = protocol
+        # TODO: Delete the following code line. It is currently kept in order
+        # to not break the current existing codebase. Removing it requires a
+        # heavy change in the test codebase.
         protocol.client = self
         self.trigger("client_connect")
 

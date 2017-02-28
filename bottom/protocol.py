@@ -8,10 +8,11 @@ log = logging.getLogger('bottom')
 
 
 class Protocol(asyncio.Protocol):
-    client = None
-    closed = False
-    transport = None
-    buffer = b""
+    def __init__(self, client=None):
+        self.client = client
+        self.closed = False
+        self.transport = None
+        self.buffer = b""
 
     def connection_made(self, transport):
         self.transport = transport
