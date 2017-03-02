@@ -33,7 +33,7 @@ class Router(object):
 
 if __name__ == "__main__":
     # Common client setup for all examples
-    from .common import NICK, client, run
+    from common import NICK, client, run
     router = Router(client)
 
 
