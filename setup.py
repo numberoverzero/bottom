@@ -12,9 +12,7 @@ def get_version():
             if line.startswith("__version__"):
                 return eval(line.split("=")[-1])
 
-REQUIREMENTS = [
-    'simplex'
-]
+REQUIREMENTS = []
 
 TEST_REQUIREMENTS = [
     'alabaster',
@@ -47,7 +45,7 @@ if __name__ == "__main__":
         author_email='joe.mcross@gmail.com',
         url='https://github.com/numberoverzero/bottom',
         license='MIT',
-        keywords='irc bot asnycio client',
+        keywords='irc bot asyncio client',
         platforms='any',
         include_package_data=True,
         packages=find_packages(exclude=('tests', 'examples')),
