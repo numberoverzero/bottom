@@ -48,11 +48,18 @@ class Client:
         self.protocol.write(packed_command)
 
     async def connect(self) -> None:
+        def protocol_factory() -> Protocol:
+            return Protocol(client=self)
+
+        # See https://github.com/python/typeshed/issues/953
         _, protocol = await self.loop.create_connection(  # type: ignore
-            Protocol, host=self.host, port=self.port, ssl=self.ssl)
+            protocol_factory, host=self.host, port=self.port, ssl=self.ssl)
         if self.protocol:
             self.protocol.close()
         self.protocol = protocol
+        # TODO: Delete the following code line. It is currently kept in order
+        # to not break the current existing codebase. Removing it requires a
+        # heavy change in the test codebase.
         protocol.client = self
         self.trigger("client_connect")
 

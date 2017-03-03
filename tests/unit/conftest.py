@@ -62,7 +62,7 @@ def protocol():
 
 @pytest.fixture
 def transport(protocol):
-    class Transport(asyncio.Transport):
+    class Transport(asyncio.WriteTransport):
         def __init__(self):
             self.written = []
             self.closed = False

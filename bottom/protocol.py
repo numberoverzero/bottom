@@ -14,12 +14,16 @@ log = logging.getLogger('bottom')
 
 class Protocol(asyncio.Protocol):
     client = None  # type: Client
-    closed = False  # type: bool
-    transport = None  # type: asyncio.Transport
-    buffer = b""  # type: bytes
+    transport = None  # type: asyncio.WriteTransport
+
+    def __init__(self, client: 'Optional[Client]' = None) -> None:
+        if client is not None:
+            self.client = client
+        self.closed = False  # type: bool
+        self.buffer = b""  # type: bytes
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
-        assert isinstance(transport, asyncio.Transport)
+        assert isinstance(transport, asyncio.WriteTransport)
         self.transport = transport
 
     def connection_lost(self, exc: Optional[Exception]) -> None:

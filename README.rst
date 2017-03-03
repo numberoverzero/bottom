@@ -85,16 +85,11 @@ Echo messages (channel and direct):
     @bot.on('PRIVMSG')
     def message(nick, target, message, **kwargs):
         """ Echo all messages """
-
-        # Don't echo ourselves
-        if nick == NICK:
-            return
-        # Respond directly to direct messages
-        if target == NICK:
-            bot.send("PRIVMSG", target=nick, message=message)
-        # Channel message
-        else:
-            bot.send("PRIVMSG", target=target, message=message)
+        # don't echo self
+        if nick == NICK: return
+        # respond directly
+        if target == NICK: target = nick
+        bot.send("PRIVMSG", target=target, message=message)
 
 
 Connect and run the bot forever:
@@ -123,9 +118,6 @@ The full API consists of 1 class, with 6 methods:
 
     Client.trigger(event, **kwargs)
 
-`Visit the docs`__ for more details and examples.
-
-__ http://bottom-docs.readthedocs.io/en/latest/user/api.html
 
 Contributors
 ============
@@ -136,3 +128,4 @@ Contributors
 * `AMorporkian <https://github.com/AMorporkian>`_
 * `nedbat <https://github.com/nedbat>`_
 * `Coinkite Inc <https://github.com/coinkite>`_
+* `Johan Lorenzo <https://github.com/JohanLorenzo>`_
