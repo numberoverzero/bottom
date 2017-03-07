@@ -1,7 +1,7 @@
 import asyncio
 import collections
 import functools
-from typing import Any, Callable, DefaultDict, List, Optional  # noqa
+from typing import Any, Callable, Dict, List, Optional  # noqa
 from bottom.protocol import Protocol
 from bottom.pack import pack_command
 
@@ -9,8 +9,8 @@ from bottom.pack import pack_command
 class Client:
     protocol = None  # type: Optional[Protocol]
 
-    _handlers = None  # type: DefaultDict[str, List[Callable]]
-    _events = None  # type: DefaultDict[str, asyncio.Event]
+    _handlers = None  # type: Dict[str, List[Callable]]
+    _events = None  # type: Dict[str, asyncio.Event]
 
     def __init__(self, host: str, port: int, *,
                  encoding: str = "UTF-8", ssl: bool = True,
