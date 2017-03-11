@@ -2,8 +2,8 @@
     :target: http://bottom-docs.readthedocs.org/
 .. image:: https://img.shields.io/travis/numberoverzero/bottom/master.svg?style=flat-square
     :target: https://travis-ci.org/numberoverzero/bottom
-.. image:: https://img.shields.io/coveralls/numberoverzero/bottom/master.svg?style=flat-square
-    :target: https://coveralls.io/github/numberoverzero/bottom
+.. image:: https://img.shields.io/codecov/c/github/numberoverzero/bottom/master.svg?style=flat-square
+    :target: https://codecov.io/gh/numberoverzero/bottom/branch/master
 .. image:: https://img.shields.io/pypi/v/bottom.svg?style=flat-square
     :target: https://pypi.python.org/pypi/bottom
 .. image:: https://img.shields.io/github/issues-raw/numberoverzero/bottom.svg?style=flat-square
