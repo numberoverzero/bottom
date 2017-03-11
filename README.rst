@@ -129,3 +129,4 @@ Contributors
 * `nedbat <https://github.com/nedbat>`_
 * `Coinkite Inc <https://github.com/coinkite>`_
 * `Johan Lorenzo <https://github.com/JohanLorenzo>`_
+* `Dominik Miedziński <https://github.com/miedzinski>`_
