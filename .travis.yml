@@ -4,7 +4,7 @@ env:
   - TOX_ENV=py35
   - TOX_ENV=integ
   - TOX_ENV=mypy
-install: pip install tox coveralls
+install: pip install tox codecov
 script: tox -e $TOX_ENV
 after_success:
-  - coveralls
+  - codecov
