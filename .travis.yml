@@ -3,6 +3,7 @@ python: 3.5
 env:
   - TOX_ENV=py35
   - TOX_ENV=integ
+  - TOX_ENV=mypy
 install: pip install tox coveralls
 script: tox -e $TOX_ENV
 after_success:

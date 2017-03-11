@@ -1,6 +1,7 @@
 """ Simplified support for rfc2812 """
 # https://tools.ietf.org/html/rfc2812
 import re
+from typing import Any, Dict, List, Pattern, Tuple  # noqa
 
 RE_IRCLINE = re.compile(
     """
@@ -19,9 +20,9 @@ RE_IRCLINE = re.compile(
     (?:\s+:(?P<message>.*))?     # Optional message starts after first ':'
                                  # Must have at least one leading space
     $
-    """, re.VERBOSE)
+    """, re.VERBOSE)  # type: Pattern[str]
 
-_2812_synonyms = {}
+_2812_synonyms = {}  # type: Dict[str, str]
 for numeric, string in [
     ("001", "RPL_WELCOME"),
     ("002", "RPL_YOURHOST"),
@@ -165,12 +166,12 @@ for numeric, string in [
     _2812_synonyms[numeric] = string
 
 
-def synonym(command):
+def synonym(command: str) -> str:
     command = command.upper()
     return _2812_synonyms.get(command, command)
 
 
-def nickmask(prefix, kwargs):
+def nickmask(prefix: str, kwargs: Dict[str, Any]) -> None:
     """ store nick, user, host in kwargs if prefix is correct format """
     if "!" in prefix and "@" in prefix:
         # From a user
@@ -181,11 +182,11 @@ def nickmask(prefix, kwargs):
         kwargs['host'] = prefix
 
 
-def add_nickmask(params):
+def add_nickmask(params: List[str]) -> None:
     params.extend(["nick", "user", "host"])
 
 
-def split_line(msg):
+def split_line(msg: str) -> Tuple[str, str, List[str]]:
     """ Parse message according to rfc 2812 for routing """
     match = RE_IRCLINE.match(msg)
     if not match:
@@ -202,10 +203,10 @@ def split_line(msg):
     return prefix, command, params
 
 
-def unpack_command(msg):
+def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
     prefix, command, params = split_line(msg.strip())
     command = synonym(command)
-    kwargs = {}
+    kwargs = {}  # type: Dict[str, Any]
 
     if command in ["PING", "ERR_NOMOTD"]:
         kwargs["message"] = params[-1]
@@ -295,7 +296,7 @@ def unpack_command(msg):
     return command, kwargs
 
 
-def parameters(command):
+def parameters(command: str) -> List[str]:
     command = synonym(command)
     params = []
 

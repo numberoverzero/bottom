@@ -1,29 +1,32 @@
 """ Simplified support for rfc2812 """
 # https://tools.ietf.org/html/rfc2812
 import collections.abc
-MISSING = object()
+from typing import Any, Dict, Optional
 
 
-def b(field, kwargs, present=MISSING, missing=''):
+def b(field: str, kwargs: Dict[str, Any],
+      present: Optional[Any] = None, missing: Any = '') -> str:
     """
     Return `present` value (default to `field`) if `field` in `kwargs` and
     Truthy, otherwise return `missing` value
     """
-    if bool(kwargs.get(field, False)):
-        return field if present is MISSING else str(present)
+    if kwargs.get(field):
+        return field if present is None else str(present)
     return str(missing)
 
 
-def f(field, kwargs, default=MISSING):
+def f(field: str, kwargs: Dict[str, Any],
+      default: Optional[Any] = None) -> str:
     """ Alias for more readable command construction """
-    if default is not MISSING:
+    if default is not None:
         return str(kwargs.get(field, default))
     return str(kwargs[field])
 
 
-def pack(field, kwargs, default=MISSING, sep=","):
+def pack(field: str, kwargs: Dict[str, Any],
+         default: Optional[Any] = None, sep: str=',') -> str:
     """ Util for joining multiple fields with commas """
-    if default is not MISSING:
+    if default is not None:
         value = kwargs.get(field, default)
     else:
         value = kwargs[field]
@@ -35,11 +38,13 @@ def pack(field, kwargs, default=MISSING, sep=","):
         return str(value)
 
 
-def pack_command(command, **kwargs):
+def pack_command(command: str, **kwargs: Any) -> str:
     """ Pack a command to send to an IRC server """
     if not command:
         raise ValueError("Must provide a command")
-    command = str(command).upper()
+    if not isinstance(command, str):
+        raise ValueError("Command must be a string")
+    command = command.upper()
 
     # ========================================================================
     # For each command, provide:

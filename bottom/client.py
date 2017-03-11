@@ -1,14 +1,20 @@
 import asyncio
 import collections
 import functools
+from typing import Any, Callable, Dict, List, Optional  # noqa
 from bottom.protocol import Protocol
 from bottom.pack import pack_command
 
 
 class Client:
-    protocol = None
+    protocol = None  # type: Optional[Protocol]
 
-    def __init__(self, host, port, *, encoding="UTF-8", ssl=True, loop=None):
+    _handlers = None  # type: Dict[str, List[Callable]]
+    _events = None  # type: Dict[str, asyncio.Event]
+
+    def __init__(self, host: str, port: int, *,
+                 encoding: str = "UTF-8", ssl: bool = True,
+                 loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         self.host = host
         self.port = port
         self.ssl = ssl
@@ -23,11 +29,11 @@ class Client:
             lambda: asyncio.Event(loop=self.loop))
 
     @property
-    def loop(self):
+    def loop(self) -> asyncio.AbstractEventLoop:
         """Do not change the event loop for a client"""
         return self._loop
 
-    def send(self, command, **kwargs):
+    def send(self, command: str, **kwargs: Any) -> None:
         """
         Send a message to the server.
 
@@ -41,11 +47,12 @@ class Client:
             raise RuntimeError("Not connected")
         self.protocol.write(packed_command)
 
-    async def connect(self):
-        def protocol_factory():
+    async def connect(self) -> None:
+        def protocol_factory() -> Protocol:
             return Protocol(client=self)
 
-        transport, protocol = await self.loop.create_connection(
+        # See https://github.com/python/typeshed/issues/953
+        _, protocol = await self.loop.create_connection(  # type: ignore
             protocol_factory, host=self.host, port=self.port, ssl=self.ssl)
         if self.protocol:
             self.protocol.close()
@@ -56,11 +63,11 @@ class Client:
         protocol.client = self
         self.trigger("client_connect")
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         if self.protocol:
             self.protocol.close()
 
-    def trigger(self, event, **kwargs):
+    def trigger(self, event: str, **kwargs: Any) -> None:
         """Trigger all handlers for an event to (asynchronously) execute"""
         event = event.upper()
         for func in self._handlers[event]:
@@ -72,10 +79,10 @@ class Client:
         async_event.set()
         async_event.clear()
 
-    async def wait(self, event):
+    async def wait(self, event: str) -> None:
         await self._events[event.upper()].wait()
 
-    def on(self, event, func=None):
+    def on(self, event: str, func: Optional[Callable] = None) -> Callable:
         """
         Decorate a function to be invoked when the given event occurs.
 
@@ -101,7 +108,7 @@ class Client:
         loop.run_forever()
         """
         if func is None:
-            return functools.partial(self.on, event)
+            return functools.partial(self.on, event)  # type: ignore
         wrapped = func
         if not asyncio.iscoroutinefunction(wrapped):
             wrapped = asyncio.coroutine(wrapped)
@@ -109,7 +116,7 @@ class Client:
         # Always return original
         return func
 
-    def _connection_lost(self, protocol):
+    def _connection_lost(self, protocol: asyncio.Protocol) -> None:
         # Ignore connection_lost for old connections
         if protocol is self.protocol:
             self.trigger("client_disconnect")
