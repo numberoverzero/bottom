@@ -15,12 +15,10 @@ def get_version():
 REQUIREMENTS = []
 
 TEST_REQUIREMENTS = [
-    'alabaster',
     'coverage',
     'flake8',
     'mypy',
     'pytest',
-    'sphinx',
     'tox',
 ]
 
