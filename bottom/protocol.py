@@ -1,9 +1,10 @@
 import asyncio
 import logging
 from bottom.unpack import unpack_command
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
-if TYPE_CHECKING:
+MYPY = False
+if MYPY:
     from bottom.client import Client  # noqa
 
 # Always write the full \r\n per spec, but accept \n when reading
