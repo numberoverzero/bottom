@@ -208,3 +208,162 @@ To use in the CLIENT_CONNECT process:
         await wait_for('RPL_ENDOFMOTD', 'ERR_NOMOTD')
 
         client.send('join', ...)
+
+Send and trigger raw messages
+-----------------------------
+
+.. versionadded:: 2.1.0
+
+Extensions do not need to strictly conform to rfc 2812.
+You can send or trigger custom messages with ``Client.send_raw`` and
+``Client.handle_raw``.  For example, the following can be used to request
+Twitch.tv's `Membership capability`__ using IRC v3's capabilities registration:
+
+.. code-block:: python
+
+    client = MyTwitchClient(...)
+    client.send_raw("CAP REQ :twitch.tv/membership")
+
+Just as ``Client.trigger`` can be used to manually invoke handlers for a specific
+event, ``Client.handle_raw`` can be called to manually invoke raw handlers for a
+given message.  For the above example, you can ensure you handle the response from
+Twitch.tv with the following:
+
+.. code-block:: python
+
+    response = ":tmi.twitch.tv CAP * ACK :twitch.tv/membership"
+    client = MyTwitchClient(...)
+    client.handle_raw(response)
+
+
+__ https://dev.twitch.tv/docs/v5/guides/irc#twitch-specific-irc-capabilities
+
+
+Raw handlers
+------------
+
+.. versionadded:: 2.1.0
+
+Clients can extend or replace the default message handler by
+modifying the ``Client.raw_handlers`` list.  This is a list of async
+functions that take a ``(next_handler, message)`` tuple.  To allow
+the next handler to process a message, call ``next_handler(message)``
+within your handler.  You may also send a different message to the subsequent
+handler, or not invoke it at all.
+
+The following listens for responses from twitch.tv about capabilities and
+logs them.  Otherwise, it passes the message on to the next handler.
+
+.. code-block:: python
+
+    import re
+    CAPABILITY_RESPONSE_PATTERN = re.compile(
+        "^:tmi\.twitch\.tv CAP \* ACK :twitch\.tv/\w+$")
+
+
+    async def capability_handler(next_handler, message):
+        if CAPABILITY_RESPONSE_PATTERN.match(message):
+            print("Capability granted: " + message)
+        else:
+            await next_handler(message)
+
+
+And to ensure it runs before the default handler:
+
+.. code-block:: python
+
+    client = Client(...)
+    client.raw_handlers.insert(0, capability_handler)
+
+Unlike ``Client.on``, raw handlers must be async functions.
+
+
+Handlers may send a different message than they receive.  The following
+can be used to forward messages from one chat room to another:
+
+.. code-block:: python
+
+    from bottom.pack import pack_command
+    from bottom.unpack import unpack_command
+
+
+    def forward(old_room, new_room):
+        async def handle(next_handler, message):
+            try:
+                event, kwargs = unpack_command(message)
+            except ValueError:
+                # pass message unchanged
+                pass
+            else:
+                if event.lower() == "privmsg":
+                    if kwargs["target"].lower() == old_room.lower():
+                        kwargs["target"] = new_room
+                        message = pack_command("privmsg", **kwargs)
+            await next_handler(message)
+        return handle
+
+And its usage:
+
+
+.. code-block:: python
+
+    client = Client(...)
+
+    forwarding = forward("bottom-legacy", "bottom-dev")
+    client.raw_handlers.insert(0, forwarding)
+
+Full message encryption
+-----------------------
+
+This is a more complex example of a raw handler where messages are encrypted
+and then base64 encoded.  On the wire their only similarity with the IRC protocol
+is a newline terminating character.  This is enough to build an extension to
+transparently encrypt data.
+
+Assume you have implemented a class with the following interface:
+
+.. code-block:: python
+
+    class EncryptionContext:
+        def encrypt(self, data: bytes) -> bytes:
+            ...
+
+        def decrypt(self, data: bytes) -> bytes:
+            ...
+
+the following extension can be written:
+
+.. code-block:: python
+
+    import base64
+
+    def encryption_handler(context: EncryptionContext):
+        async def handle_decrypt(next_handler, message):
+            message = context.decrypt(
+                base64.b64decode(
+                    message.encode("utf-8")
+                )
+            ).decode("utf-8")
+            await next_handler(message)
+        return handle_decrypt
+
+to encrypt messages as they are sent, the class can override
+``Client.send_raw``.  Adding in the encryption handler above:
+
+
+.. code-block:: python
+
+    class EncryptedClient(Client):
+        def __init__(self, encryption_context, **kwargs):
+            super().__init__(**kwargs)
+            self.raw_handlers.append(
+                encryption_handler(encryption_context))
+            self.context = encryption_context
+
+        def send_raw(self, message: str) -> None:
+            message = base64.b64encode(
+                self.context.encrypt(
+                    message.encode("utf-8")
+                )
+            ).decode("utf-8")
+            super().send_raw(message)
