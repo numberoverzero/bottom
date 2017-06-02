@@ -211,17 +211,17 @@ You can schedule a non-blocking connect with the client's event loop:
 
 .. code-block:: python
 
-    await client.connect()
+    await client.disconnect()
 
 Immediately disconnect from the server.
 
 .. code-block:: python
 
     @bot.on('privmsg')
-    async def suicide_pill(nick, message, **kwargs):
-        if nick == "spy_handler" and message == "last stop":
+    async def disconnect_bot(nick, message, **kwargs):
+        if nick == "myNick" and message == "disconnect:hunter2":
             await bot.disconnect()
-            logger.log("cleaned up spy.")
+            logger.log("disconnected bot.")
 
 
 Like ``connect``, use the bot's event loop to schedule a disconnect:
@@ -239,3 +239,37 @@ Like ``connect``, use the bot's event loop to schedule a disconnect:
     client.send(command, **kwargs)
 
 Send a command to the server.  See `Commands <user/commands.html>`_.
+
+
+``Client.handle_raw``
+=====================
+
+.. versionadded:: 2.1.0
+
+.. code-block:: python
+
+    client.handle_raw(message)
+
+Manually inject a raw command.  The client's ``raw_handlers`` will process
+the message.  By default, every ``Client`` is configured with a ``rfc2812_handler``
+which unpacks a conforming rfc 2812 message into an event and calls ``client.trigger``.
+
+You can disable this functionality by removing the handler:
+
+.. code-block:: python
+
+    client = Client(host="localhost", port=443)
+    client.raw_handlers.clear()
+
+
+``Client.send_raw``
+===================
+
+.. versionadded:: 2.1.0
+
+.. code-block:: python
+
+    client.send_raw(message)
+
+Send a complete IRC line without the Client reconstructing or modifying the message.
+To easily send an rfc 2812 message, you should instead consider ``Client.send``.

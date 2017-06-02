@@ -1,15 +1,37 @@
 import asyncio
 import collections
 import functools
+import logging
 from typing import Any, Callable, Dict, List, Optional  # noqa
 from bottom.protocol import Protocol
 from bottom.pack import pack_command
+from bottom.unpack import unpack_command
 
 
-class Client:
+async def process(handlers: List[Callable], message: str) -> None:
+    if not handlers:
+        return
+
+    # noinspection PyShadowingNames
+    async def noop_handler(next_handler: Callable, message: str) -> None:
+        assert not handler_queue
+
+    handler_queue = collections.deque([*handlers, noop_handler])
+
+    # noinspection PyShadowingNames
+    async def next_handler(message: str) -> None:
+        handler = handler_queue.popleft()  # type: Any
+        assert asyncio.iscoroutinefunction(handler)
+        await handler(next_handler, message)
+
+    await next_handler(message)
+
+
+class RawClient:
     protocol = None  # type: Optional[Protocol]
+    raw_handlers = None  # type: List[Callable]
 
-    _handlers = None  # type: Dict[str, List[Callable]]
+    _event_handlers = None  # type: Dict[str, List[Callable]]
     _events = None  # type: Dict[str, asyncio.Event]
 
     def __init__(self, host: str, port: int, *,
@@ -19,12 +41,13 @@ class Client:
         self.port = port
         self.ssl = ssl
         self.encoding = encoding
+        self.raw_handlers = []
 
         if loop is None:
             loop = asyncio.get_event_loop()
         self._loop = loop
 
-        self._handlers = collections.defaultdict(list)
+        self._event_handlers = collections.defaultdict(list)
         self._events = collections.defaultdict(
             lambda: asyncio.Event(loop=self.loop))
 
@@ -33,19 +56,14 @@ class Client:
         """Do not change the event loop for a client"""
         return self._loop
 
-    def send(self, command: str, **kwargs: Any) -> None:
-        """
-        Send a message to the server.
+    def handle_raw(self, message: str) -> None:
+        handle = process(self.raw_handlers, message)
+        self.loop.create_task(handle)  # type: ignore
 
-        Examples
-        --------
-        client.send("nick", nick="weatherbot")
-        client.send("privmsg", target="#python", message="Hello, World!")
-        """
-        packed_command = pack_command(command, **kwargs).strip()
+    def send_raw(self, message: str) -> None:
         if not self.protocol:
             raise RuntimeError("Not connected")
-        self.protocol.write(packed_command)
+        self.protocol.write(message)
 
     async def connect(self) -> None:
         def protocol_factory() -> Protocol:
@@ -70,7 +88,7 @@ class Client:
     def trigger(self, event: str, **kwargs: Any) -> None:
         """Trigger all handlers for an event to (asynchronously) execute"""
         event = event.upper()
-        for func in self._handlers[event]:
+        for func in self._event_handlers[event]:
             self.loop.create_task(func(**kwargs))
         # This will unblock anyone that is awaiting on the next loop update,
         # while still ensuring the next `await client.wait(event)` doesn't
@@ -112,7 +130,7 @@ class Client:
         wrapped = func
         if not asyncio.iscoroutinefunction(wrapped):
             wrapped = asyncio.coroutine(wrapped)
-        self._handlers[event.upper()].append(wrapped)
+        self._event_handlers[event.upper()].append(wrapped)
         # Always return original
         return func
 
@@ -121,3 +139,37 @@ class Client:
         if protocol is self.protocol:
             self.trigger("client_disconnect")
             self.protocol = None
+
+
+class Client(RawClient):
+    def __init__(self, host: str, port: int, *,
+                 encoding: str = "UTF-8", ssl: bool = True,
+                 loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+        super().__init__(host, port, encoding=encoding, ssl=ssl, loop=loop)
+        self.raw_handlers.append(rfc2812_handler(self))
+
+    def send(self, command: str, **kwargs: Any) -> None:
+        """
+        Send a message to the server.
+
+        Examples
+        --------
+        client.send("nick", nick="weatherbot")
+        client.send("privmsg", target="#python", message="Hello, World!")
+        """
+        packed_command = pack_command(command, **kwargs).strip()
+        self.send_raw(packed_command)
+
+
+rfc2812_log = logging.getLogger('bottom.rfc2812_handler')
+
+
+def rfc2812_handler(client: RawClient) -> Callable:
+    async def handler(next_handler: Callable, message: str) -> None:
+        try:
+            event, kwargs = unpack_command(message)
+            client.trigger(event, **kwargs)
+        except ValueError:
+            rfc2812_log.debug("Failed to parse line >>> {}".format(message))
+        await next_handler(message)
+    return handler

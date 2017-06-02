@@ -1,23 +1,20 @@
 import asyncio
-import logging
-from bottom.unpack import unpack_command
 from typing import Optional
 
 MYPY = False
 if MYPY:
-    from bottom.client import Client  # noqa
+    from bottom.client import RawClient  # pragma: nocover  # noqa
 
 # Always write the full \r\n per spec, but accept \n when reading
 DELIM = b"\r\n"
 DELIM_COMPAT = b"\n"
-log = logging.getLogger('bottom')
 
 
 class Protocol(asyncio.Protocol):
-    client = None  # type: Client
+    client = None  # type: RawClient
     transport = None  # type: asyncio.WriteTransport
 
-    def __init__(self, client: 'Optional[Client]' = None) -> None:
+    def __init__(self, client: 'Optional[RawClient]' = None) -> None:
         if client is not None:
             self.client = client
         self.closed = False  # type: bool
@@ -40,11 +37,7 @@ class Protocol(asyncio.Protocol):
         *lines, self.buffer = self.buffer.split(DELIM_COMPAT)
         for line in lines:
             message = line.decode(self.client.encoding, "ignore").strip()
-            try:
-                event, kwargs = unpack_command(message)
-                self.client.trigger(event, **kwargs)
-            except ValueError:
-                log.debug("Failed to parse line >>> {}".format(message))
+            self.client.handle_raw(message)
 
     def write(self, message: str) -> None:
         message = message.strip()

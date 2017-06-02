@@ -14,6 +14,7 @@ def test_ping_pong(client, server, connect, flush):
     assert not server.received
 
     flush()
+    flush()
 
     # Both should have been received now
     assert client.triggers["PING"] == 1

@@ -46,16 +46,18 @@ def test_multipart_line(protocol, transport, active_client, flush):
     assert active_client.triggers["PRIVMSG"] == 1
 
 
-def test_multiline_chunk(protocol, transport, active_client):
+def test_multiline_chunk(protocol, transport, active_client, flush):
     """Multiple IRC lines in a single data_received block"""
     protocol.data_received(
         b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
+    flush()
     assert active_client.triggers["PRIVMSG"] == 2
 
 
-def test_invalid_line(protocol, transport, active_client):
+def test_invalid_line(protocol, transport, active_client, flush):
     """Well-formatted but invalid line"""
     protocol.data_received(b"blah unknown command\r\n")
+    flush()
     assert list(active_client.triggers.keys()) == ['CLIENT_CONNECT']
 
 
