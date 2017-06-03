@@ -1,4 +1,3 @@
-""" Setup file """
 import os
 from setuptools import setup, find_packages
 
@@ -15,39 +14,39 @@ def get_version():
 REQUIREMENTS = []
 
 TEST_REQUIREMENTS = [
-    'coverage',
-    'flake8',
-    'mypy',
-    'pytest',
-    'tox',
+    "coverage==4.4.1",
+    "flake8==3.3.0",
+    "mypy==0.511",
+    "pytest==3.1.1",
+    "tox==2.7.0",
 ]
 
 if __name__ == "__main__":
     setup(
-        name='bottom',
+        name="bottom",
         version=get_version(),
         description="asyncio-based rfc2812-compliant IRC Client",
         long_description=README,
         classifiers=[
-            'Development Status :: 4 - Beta',
-            'Intended Audience :: Developers',
-            'License :: OSI Approved :: MIT License',
-            'Operating System :: OS Independent',
-            'Programming Language :: Python',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.4',
-            'Topic :: Software Development :: Libraries',
-            'Topic :: Communications :: Chat',
-            'Topic :: Communications :: Chat :: Internet Relay Chat'
+            "Development Status :: 4 - Beta",
+            "Intended Audience :: Developers",
+            "License :: OSI Approved :: MIT License",
+            "Operating System :: OS Independent",
+            "Programming Language :: Python",
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.4",
+            "Topic :: Software Development :: Libraries",
+            "Topic :: Communications :: Chat",
+            "Topic :: Communications :: Chat :: Internet Relay Chat"
         ],
-        author='Joe Cross',
-        author_email='joe.mcross@gmail.com',
-        url='https://github.com/numberoverzero/bottom',
-        license='MIT',
-        keywords='irc bot asyncio client',
-        platforms='any',
+        author="Joe Cross",
+        author_email="joe.mcross@gmail.com",
+        url="https://github.com/numberoverzero/bottom",
+        license="MIT",
+        keywords="irc bot asyncio client",
+        platforms="any",
         include_package_data=True,
-        packages=find_packages(exclude=('tests', 'examples')),
+        packages=find_packages(exclude=("tests", "examples")),
         install_requires=REQUIREMENTS,
         tests_require=REQUIREMENTS + TEST_REQUIREMENTS,
     )

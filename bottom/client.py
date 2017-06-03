@@ -2,7 +2,7 @@ import asyncio
 import collections
 import functools
 import logging
-from typing import Any, Callable, Dict, List, Optional  # noqa
+from typing import Any, Callable, Dict, List, Optional, Tuple  # noqa
 from bottom.protocol import Protocol
 from bottom.pack import pack_command
 from bottom.unpack import unpack_command
@@ -69,9 +69,12 @@ class RawClient:
         def protocol_factory() -> Protocol:
             return Protocol(client=self)
 
-        # See https://github.com/python/typeshed/issues/953
-        _, protocol = await self.loop.create_connection(  # type: ignore
-            protocol_factory, host=self.host, port=self.port, ssl=self.ssl)
+        _, protocol = await self.loop.create_connection(
+            protocol_factory,
+            host=self.host,
+            port=self.port,
+            ssl=self.ssl
+        )  # type: Tuple[Any, Any]
         if self.protocol:
             self.protocol.close()
         self.protocol = protocol
