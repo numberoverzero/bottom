@@ -66,6 +66,7 @@ class RawClient:
         self.protocol.write(message)
 
     async def connect(self) -> None:
+        """Open a connection to the defined server."""
         def protocol_factory() -> Protocol:
             return Protocol(client=self)
 
@@ -85,6 +86,7 @@ class RawClient:
         self.trigger("client_connect")
 
     async def disconnect(self) -> None:
+        """Close the connection to the defined server."""
         if self.protocol:
             self.protocol.close()
 
@@ -146,8 +148,16 @@ class RawClient:
 
 class Client(RawClient):
     def __init__(self, host: str, port: int, *,
-                 encoding: str = "UTF-8", ssl: bool = True,
+                 encoding: str = "utf-8", ssl: bool = True,
                  loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+        """
+
+        :param host: The IRC server address to connect to.
+        :param port: The port of the IRC server.
+        :param encoding: The character encoding to use.  Default is utf-8.
+        :param ssl: Whether SSL should be used while connecting.  Default is True.
+        :param loop:  The even loop to use.  Defaults is ``asyncio.get_event_loop()``.
+        """
         super().__init__(host, port, encoding=encoding, ssl=ssl, loop=loop)
         self.raw_handlers.append(rfc2812_handler(self))
 
@@ -155,10 +165,11 @@ class Client(RawClient):
         """
         Send a message to the server.
 
-        Examples
-        --------
-        client.send("nick", nick="weatherbot")
-        client.send("privmsg", target="#python", message="Hello, World!")
+        .. code-block:: python
+
+            client.send("nick", nick="weatherbot")
+            client.send("privmsg", target="#python", message="Hello, World!")
+
         """
         packed_command = pack_command(command, **kwargs).strip()
         self.send_raw(packed_command)

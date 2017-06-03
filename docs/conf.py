@@ -1,25 +1,21 @@
 import sys
-import alabaster
 import pkg_resources
+import sphinx_rtd_theme
 
 extensions = [
-    'alabaster',
     'sphinx.ext.autodoc',
+    'sphinx.ext.intersphinx',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon'
 ]
 
-default_role = "any"
-
 templates_path = ['_templates']
-source_suffix = '.rst'
 
 master_doc = 'index'
 
 project = 'bottom'
 copyright = '2016, Joe Cross'
 author = 'Joe Cross'
-
 
 try:
     release = pkg_resources.get_distribution('bottom').version
@@ -33,34 +29,22 @@ del pkg_resources
 version = '.'.join(release.split('.')[:2])
 
 language = 'en'
-
 exclude_patterns = ['_build']
 
 pygments_style = 'sphinx'
-
-html_theme = 'alabaster'
-
-html_theme_options = {
-    'github_button': True,
-    'github_user': 'numberoverzero',
-    'github_repo': 'bottom',
-    'github_banner': True,
-
-    'github_type': 'star',
-    'github_count': True,
-
-    'fixed_sidebar': True,
-
-    'show_powered_by': False,
-    'analytics_id': 'UA-65843067-2'
+html_use_smartypants = False
+html_static_path = ["_static"]
+html_theme = 'sphinx_rtd_theme'
+html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+html_context = {
+    "favicon": "favicon-cog.ico",
+    "show_sphinx": False
 }
-html_theme_path = [alabaster.get_path()]
-html_static_path = ['_static']
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',
-        'searchbox.html'
-    ]
+
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3.6', None),
 }
+
+
+def setup(app):
+    app.add_stylesheet("bottom.css")
