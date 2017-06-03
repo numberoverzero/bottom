@@ -18,6 +18,7 @@ TEST_REQUIREMENTS = [
     "flake8==3.3.0",
     "mypy==0.511",
     "pytest==3.1.1",
+    "sphinx-rtd-theme==0.2.4",
     "tox==2.7.0",
 ]
 

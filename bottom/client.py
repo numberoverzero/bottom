@@ -155,8 +155,12 @@ class Client(RawClient):
         :param host: The IRC server address to connect to.
         :param port: The port of the IRC server.
         :param encoding: The character encoding to use.  Default is utf-8.
-        :param ssl: Whether SSL should be used while connecting.  Default is True.
-        :param loop:  The even loop to use.  Defaults is ``asyncio.get_event_loop()``.
+        :param ssl:
+            Whether SSL should be used while connecting.
+            Default is True.
+        :param loop:
+            The even loop to use.
+            Defaults is ``asyncio.get_event_loop()``.
         """
         super().__init__(host, port, encoding=encoding, ssl=ssl, loop=loop)
         self.raw_handlers.append(rfc2812_handler(self))
