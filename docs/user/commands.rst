@@ -43,7 +43,6 @@ Commands
 .. code-block:: python
 
     # If channel has n > 1 values, key MUST have 1 or n values
-    client.send('JOIN', channel='0')  # send PART to all joined channels
     client.send('JOIN', channel='#foo-chan')
     client.send('JOIN', channel='#foo-chan', key='foo-key')
     client.send('JOIN', channel=['#foo-chan', '#other'],
@@ -53,6 +52,7 @@ Commands
 
 .. code-block:: python
 
+    client.send('PART', channel='0')  # send PART to all joined channels
     client.send('PART', channel='#foo-chan')
     client.send('PART', channel=['#foo-chan', '#other'])
     client.send('PART', channel='#foo-chan', message='I lost')
@@ -140,7 +140,7 @@ Commands
     # remote requires mask
     client.send('LINKS')
     client.send('LINKS', mask='*.bu.edu')
-    client.send('LINKS', remote='*.edu', mask='*.bu.edu')
+    client.send('LINKS', mask='*.bu.edu', remote='*.edu')
 
 .. code-block:: python
 
