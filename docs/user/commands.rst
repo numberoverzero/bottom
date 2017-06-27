@@ -204,14 +204,14 @@ Commands
 
 .. code-block:: python
 
+    # PING the server you are connected to
     client.send('PING', message='Test..')
 
-    # PING the server
-    client.send('PING', server='tolsun.oulu.fi')
+    # PING a user or a channel
+    # pinging a channel will ping everyone connected to the channel
+    client.send('PING', target='WiZ')
 
     # asks the server to PING the target
-    # the target can be another user on the network, or a channel
-    # pinging a channel will ping everyone connected to the channel
     client.send('PING', target='WiZ', server='tolsun.oulu.fi')
 
 .. code-block:: python
