@@ -42,17 +42,18 @@ Commands
 
 .. code-block:: python
 
-    # If channel has n > 1 values, key MUST have 1 or n values
     client.send('JOIN', channel='#foo-chan')
     client.send('JOIN', channel='#foo-chan', key='foo-key')
     client.send('JOIN', channel=['#foo-chan', '#other'],
-                key='key-for-both')
+                key='foo-key') # other has no key
     client.send('JOIN', channel=['#foo-chan', '#other'],
                 key=['foo-key', 'other-key'])
 
+    # this will cause you to LEAVE all currently joined channels
+    client.send('JOIN', channel='0')
+
 .. code-block:: python
 
-    client.send('PART', channel='0')  # send PART to all joined channels
     client.send('PART', channel='#foo-chan')
     client.send('PART', channel=['#foo-chan', '#other'])
     client.send('PART', channel='#foo-chan', message='I lost')
@@ -203,17 +204,22 @@ Commands
 
 .. code-block:: python
 
-    # server2 requires server1
     client.send('PING', message='Test..')
-    client.send('PING', server2='tolsun.oulu.fi')
-    client.send('PING', server1='WiZ', server2='tolsun.oulu.fi')
+
+    # PING the server
+    client.send('PING', server='tolsun.oulu.fi')
+
+    # asks the server to PING the target
+    # the target can be another user on the network, or a channel
+    # pinging a channel will ping everyone connected to the channel
+    client.send('PING', target='WiZ', server='tolsun.oulu.fi')
 
 .. code-block:: python
 
-    # server2 requires server1
+    # when replying to a PING, the message should be the same
     client.send('PONG', message='Test..')
     client.send('PONG', server2='tolsun.oulu.fi')
-    client.send('PONG', server1='WiZ', server2='tolsun.oulu.fi')
+    client.send('PONG', server1='csd.bu.edu', server2='tolsun.oulu.fi')
 
 .. code-block:: python
 
