@@ -436,16 +436,17 @@ def pack_command(command: str, **kwargs: Any) -> str:
         return "KILL {} :{}".format(f("nick", kwargs), f("message", kwargs))
 
     # PING
-    # https://tools.ietf.org/html/rfc2812#section-3.7.3
-    # PING [<server1>] [<server2>] :[<message>]
+    # https://tools.ietf.org/html/rfc2812#section-3.7.2
+    # PING [<target>] [<server>] :[<message>]
+    # <target> can be a <nick> or a <channel>
     # ----------
     # PING csd.bu.edu tolsun.oulu.fi :Keepalive
     # PING csd.bu.edu :I'm still here
     # PING :I'm still here
     # PING
     elif command == "PING":
-        message = "PING {} {}".format(f("server1", kwargs, ''),
-                                      f("server2", kwargs, ''))
+        message = "PING {} {}".format(f("target", kwargs, ''),
+                                      f("server", kwargs, ''))
         if "message" in kwargs:
             message += " :" + f("message", kwargs)
         return message
