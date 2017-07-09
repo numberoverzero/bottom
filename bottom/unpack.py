@@ -350,11 +350,7 @@ def parameters(command: str) -> List[str]:
         params.append("name")
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "TOPIC"]:
-        params.append("channel")
-        params.append("message")
-
-    elif command in ["RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "TOPIC"]:
         params.append("channel")
         params.append("message")
 
