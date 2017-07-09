@@ -271,11 +271,7 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
         kwargs["target"] = params[0]
         kwargs["channel"] = params[1]
 
-    elif command in ["RPL_TOPIC"]:
-        kwargs["channel"] = params[1]
-        kwargs["topic"] = params[2]
-
-    elif command in ["RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
 
@@ -297,7 +293,7 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
 
     elif command in ["TOPIC"]:
         kwargs["channel"] = params[0]
-        kwargs["topic"] = params[1] if len(params) > 1 else ""
+        kwargs["message"] = params[1] if len(params) > 1 else ""
 
     else:
         raise ValueError("Unknown command '{}'".format(command))
@@ -356,7 +352,7 @@ def parameters(command: str) -> List[str]:
 
     elif command in ["RPL_TOPIC", "TOPIC"]:
         params.append("channel")
-        params.append("topic")
+        params.append("message")
 
     elif command in ["RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
         params.append("channel")
