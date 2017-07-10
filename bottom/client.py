@@ -102,8 +102,9 @@ class RawClient:
         async_event.set()
         async_event.clear()
 
-    async def wait(self, event: str) -> None:
+    async def wait(self, event: str) -> str:
         await self._events[event.upper()].wait()
+        return event
 
     def on(self, event: str, func: Optional[Callable] = None) -> Callable:
         """
