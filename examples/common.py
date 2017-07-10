@@ -29,9 +29,15 @@ def waiter(client):
             loop=client.loop,
             return_when=return_when)
 
+        # Get the result(s) of the completed task(s).
+        ret = [future.result() for future in done]
+
         # Cancel any events that didn't come in.
         for future in pending:
             future.cancel()
+
+        # Return list of completed event names.
+        return ret
     return wait_for
 
 
