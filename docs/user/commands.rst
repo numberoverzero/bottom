@@ -205,21 +205,14 @@ Commands
 .. code-block:: python
 
     # PING the server you are connected to
+    client.send('PING')
     client.send('PING', message='Test..')
-
-    # PING a user or a channel
-    # pinging a channel will ping everyone connected to the channel
-    client.send('PING', target='WiZ')
-
-    # asks the server to PING the target
-    client.send('PING', target='WiZ', server='tolsun.oulu.fi')
 
 .. code-block:: python
 
     # when replying to a PING, the message should be the same
+    client.send('PONG')
     client.send('PONG', message='Test..')
-    client.send('PONG', server2='tolsun.oulu.fi')
-    client.send('PONG', server1='csd.bu.edu', server2='tolsun.oulu.fi')
 
 .. code-block:: python
 
