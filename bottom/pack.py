@@ -442,7 +442,10 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # PING :I'm still here
     # PING
     elif command == "PING":
-        return "PING :{}".format(f("message", kwargs, ""))
+        if message in kwargs:
+            return "PING :{}".format(f("message", kwargs))
+        else:
+            return "PING"
 
     # PONG
     # https://tools.ietf.org/html/rfc2812#section-3.7.3
@@ -451,7 +454,10 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # PONG :I'm still here
     # PONG
     elif command == "PONG":
-        return "PONG :{}".format(f("message", kwargs, ""))
+        if message in kwargs:
+            return "PONG :{}".format(f("message", kwargs))
+        else:
+            return "PONG"
 
     # AWAY
     # https://tools.ietf.org/html/rfc2812#section-4.1
