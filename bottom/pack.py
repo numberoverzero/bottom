@@ -442,7 +442,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # PING :I'm still here
     # PING
     elif command == "PING":
-        if message in kwargs:
+        if "message" in kwargs:
             return "PING :{}".format(f("message", kwargs))
         else:
             return "PING"
@@ -454,7 +454,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # PONG :I'm still here
     # PONG
     elif command == "PONG":
-        if message in kwargs:
+        if "message" in kwargs:
             return "PONG :{}".format(f("message", kwargs))
         else:
             return "PONG"
