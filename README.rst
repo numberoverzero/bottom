@@ -130,3 +130,4 @@ Contributors
 * `Coinkite Inc <https://github.com/coinkite>`_
 * `Johan Lorenzo <https://github.com/JohanLorenzo>`_
 * `Dominik Miedziński <https://github.com/miedzinski>`_
+* `Yay295 <https://github.com/Yay295>`_

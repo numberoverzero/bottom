@@ -436,34 +436,28 @@ def pack_command(command: str, **kwargs: Any) -> str:
         return "KILL {} :{}".format(f("nick", kwargs), f("message", kwargs))
 
     # PING
-    # https://tools.ietf.org/html/rfc2812#section-3.7.3
-    # PING [<server1>] [<server2>] :[<message>]
+    # https://tools.ietf.org/html/rfc2812#section-3.7.2
+    # PING :[<message>]
     # ----------
-    # PING csd.bu.edu tolsun.oulu.fi :Keepalive
-    # PING csd.bu.edu :I'm still here
     # PING :I'm still here
     # PING
     elif command == "PING":
-        message = "PING {} {}".format(f("server1", kwargs, ''),
-                                      f("server2", kwargs, ''))
         if "message" in kwargs:
-            message += " :" + f("message", kwargs)
-        return message
+            return "PING :{}".format(f("message", kwargs))
+        else:
+            return "PING"
 
     # PONG
     # https://tools.ietf.org/html/rfc2812#section-3.7.3
-    # PONG [<server1>] [<server2>] :[<message>]
+    # PONG :[<message>]
     # ----------
-    # PONG csd.bu.edu tolsun.oulu.fi :Keepalive
-    # PONG csd.bu.edu :I'm still here
     # PONG :I'm still here
     # PONG
     elif command == "PONG":
-        message = "PONG {} {}".format(f("server1", kwargs, ''),
-                                      f("server2", kwargs, ''))
         if "message" in kwargs:
-            message += " :" + f("message", kwargs)
-        return message
+            return "PONG :{}".format(f("message", kwargs))
+        else:
+            return "PONG"
 
     # AWAY
     # https://tools.ietf.org/html/rfc2812#section-4.1
