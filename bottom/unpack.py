@@ -8,16 +8,16 @@ RE_IRCLINE = re.compile(
     ^
     (:(?P<prefix>[^\s]+)\s+)?    # Optional prefix (src, nick!host, etc)
                                  # Prefix matches all non-space characters
-                                 # Must start with a ':' character
+                                 # Must start with a ":" character
 
     (?P<command>[^:\s]+)         # Command is required (JOIN, 001, 403)
                                  # Command matches all non-space characters
 
     (?P<params>(\s+[^:][^\s]*)*) # Optional params after command
                                  # Must have at least one leading space
-                                 # Params end at first ':' which starts message
+                                 # Params end at first ":" which starts message
 
-    (?:\s+:(?P<message>.*))?     # Optional message starts after first ':'
+    (?:\s+:(?P<message>.*))?     # Optional message starts after first ":"
                                  # Must have at least one leading space
     $
     """, re.VERBOSE)  # type: Pattern[str]
@@ -160,7 +160,8 @@ for numeric, string in [
     ("485", "ERR_UNIQOPPRIVSNEEDED"),
     ("491", "ERR_NOOPERHOST"),
     ("501", "ERR_UMODEUNKNOWNFLAG"),
-    ("502", "ERR_USERSDONTMATCH")
+    ("502", "ERR_USERSDONTMATCH"),
+    ("TOPIC", "TOPIC")
 ]:
     _2812_synonyms[string] = string
     _2812_synonyms[numeric] = string
@@ -175,11 +176,11 @@ def nickmask(prefix: str, kwargs: Dict[str, Any]) -> None:
     """ store nick, user, host in kwargs if prefix is correct format """
     if "!" in prefix and "@" in prefix:
         # From a user
-        kwargs['nick'], remainder = prefix.split('!', 1)
-        kwargs['user'], kwargs['host'] = remainder.split('@', 1)
+        kwargs["nick"], remainder = prefix.split("!", 1)
+        kwargs["user"], kwargs["host"] = remainder.split("@", 1)
     else:
         # From a server, probably the host
-        kwargs['host'] = prefix
+        kwargs["host"] = prefix
 
 
 def add_nickmask(params: List[str]) -> None:
@@ -192,10 +193,10 @@ def split_line(msg: str) -> Tuple[str, str, List[str]]:
     if not match:
         raise ValueError("Invalid line")
 
-    prefix = match.group("prefix") or ''
+    prefix = match.group("prefix") or ""
     command = match.group("command")
-    params = (match.group('params') or '').split()
-    message = match.group('message') or ''
+    params = (match.group("params") or "").split()
+    message = match.group("message") or ""
 
     if message:
         params.append(message)
@@ -224,18 +225,18 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
         nickmask(prefix, kwargs)
         kwargs["new_nick"] = params[0]
 
-    elif command == 'RPL_NAMREPLY':
+    elif command in ["RPL_NAMREPLY"]:
         kwargs["target"] = params[0]
         kwargs["channel_type"] = params[1] if len(params) > 3 else None
         kwargs["channel"] = params[-2]
-        kwargs["users"] = params[-1].split(' ')
+        kwargs["users"] = params[-1].split(" ")
 
-    elif command == 'RPL_WHOREPLY':
-        '''352    RPL_WHOREPLY
+    elif command in ["RPL_WHOREPLY"]:
+        """352    RPL_WHOREPLY
               <channel> <user> <host> <server> <nick>
               ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
               :<hopcount> <real name>"
-        '''
+        """
         (kwargs["target"],
          kwargs["channel"],
          kwargs["user"],
@@ -243,7 +244,7 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
          kwargs["server"],
          kwargs["nick"],
          kwargs["hg_code"]) = params[0:7]
-        hc, kwargs["real_name"] = params[-1].split(' ', 1)
+        hc, kwargs["real_name"] = params[-1].split(" ", 1)
         kwargs["hopcount"] = int(hc)
 
     elif command == "RPL_ENDOFWHO":
@@ -255,15 +256,15 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
         if params:
             kwargs["message"] = params[0]
         else:
-            kwargs["message"] = ''
+            kwargs["message"] = ""
 
     elif command in ["PART"]:
         nickmask(prefix, kwargs)
         kwargs["channel"] = params[0]
-        if(len(params) > 1):
+        if (len(params) > 1):
             kwargs["message"] = params[-1]
         else:
-            kwargs["message"] = ''
+            kwargs["message"] = ""
 
     elif command in ["INVITE"]:
         nickmask(prefix, kwargs)
@@ -281,14 +282,18 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
         kwargs["count"] = int(params[1])
-        if(len(params) > 2):
+        if (len(params) > 2):
             kwargs["message"] = params[-1]
         else:
-            kwargs["message"] = ''
+            kwargs["message"] = ""
 
     elif command in ["RPL_MYINFO", "RPL_BOUNCE"]:
         kwargs["info"] = params[1:-1]
         kwargs["message"] = params[-1]
+
+    elif command in ["TOPIC"]:
+        kwargs["channel"] = params[0]
+        kwargs["message"] = params[1] if len(params) > 1 else ""
 
     else:
         raise ValueError("Unknown command '{}'".format(command))
@@ -345,7 +350,7 @@ def parameters(command: str) -> List[str]:
         params.append("name")
         params.append("message")
 
-    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]:
+    elif command in ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "TOPIC"]:
         params.append("channel")
         params.append("message")
 
@@ -354,7 +359,7 @@ def parameters(command: str) -> List[str]:
         params.append("channel")
         params.append("message")
 
-    elif command in ['INVITE']:
+    elif command in ["INVITE"]:
         add_nickmask(params)
         params.append("target")
         params.append("channel")
