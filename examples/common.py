@@ -29,9 +29,15 @@ def waiter(client):
             loop=client.loop,
             return_when=return_when)
 
+        # Get the result(s) of the completed task(s).
+        ret = [future.result() for future in done]
+
         # Cancel any events that didn't come in.
         for future in pending:
             future.cancel()
+
+        # Return list of completed event names.
+        return ret
     return wait_for
 
 
@@ -45,7 +51,19 @@ async def on_connect(**kwargs):
     client.send('user', user=NICK,
                 realname='https://github.com/numberoverzero/bottom')
 
-    await wait_for('rpl_endofmotd', 'err_nomotd')
+    # This waits for the 'rpl_endofmotd' and 'err_nomotd' commands,
+    # returning when one of them is triggered. 'events' is a list,
+    # but it will only contain one item in this case since only one
+    # of these commands will be sent by the server.
+    events = await wait_for('rpl_endofmotd', 'err_nomotd')
+    print('Connection made')
+
+    # The event names returned are the same as the ones given, so
+    # we can easily check for them in the result.
+    if 'rpl_endofmotd' in events:
+        print('MOTD returned')
+    elif 'err_nomotd' in events:
+        print('No MOTD returned')
 
     client.send('join', channel=CHANNEL)
 
