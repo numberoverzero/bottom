@@ -228,12 +228,14 @@ def test_wait_ordering(client, flush):
     flush()
     assert invoked == ["handler", "waiter"]
 
+
 def test_wait_return_value(client, flush):
     """ The value returned should be the same as the value given. """
     event_name = "test_wait_return_value"
     returned_name = ""
 
     async def waiter():
+        nonlocal returned_name
         returned_name = await client.wait(event_name)
 
     client.loop.create_task(waiter())
