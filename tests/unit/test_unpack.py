@@ -171,6 +171,18 @@ def test_channel_message_commands():
         validate(command, message, expected_kwargs)
 
 
+def test_topic():
+    """ TOPIC command """
+    command = "TOPIC"
+    message = command + " #ch"
+    expected = {"channel": "#ch", "message": ""}
+    validate(command, message, expected)
+
+    message = command + " #ch :m"
+    expected = {"channel": "#ch", "message": "m"}
+    validate(command, message, expected)
+
+
 def test_who_reply():
     """ WHO response """
     command = 'RPL_WHOREPLY'
