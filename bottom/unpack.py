@@ -160,8 +160,7 @@ for numeric, string in [
     ("485", "ERR_UNIQOPPRIVSNEEDED"),
     ("491", "ERR_NOOPERHOST"),
     ("501", "ERR_UMODEUNKNOWNFLAG"),
-    ("502", "ERR_USERSDONTMATCH"),
-    ("TOPIC", "TOPIC")
+    ("502", "ERR_USERSDONTMATCH")
 ]:
     _2812_synonyms[string] = string
     _2812_synonyms[numeric] = string
