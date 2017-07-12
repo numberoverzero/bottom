@@ -164,11 +164,14 @@ def test_invite():
 
 def test_channel_message_commands():
     """ channel and message commands """
-    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]
+    cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES", "TOPIC"]
     expected_kwargs = {"channel": "#ch", "message": "m"}
     for command in cmds:
         message = command + " nick #ch :m"
         validate(command, message, expected_kwargs)
+    # validate topic's optional message arg
+    validate("TOPIC", "TOPIC nick #ch :", {"channel": "#ch", "message": ""})
+    validate("TOPIC", "TOPIC nick #ch", {"channel": "#ch"})
 
 
 def test_who_reply():
