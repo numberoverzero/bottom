@@ -21,7 +21,8 @@ class Protocol(asyncio.Protocol):
         self.buffer = b""  # type: bytes
 
     def connection_made(self, transport: asyncio.BaseTransport) -> None:
-        assert isinstance(transport, asyncio.WriteTransport)
+        if MYPY:
+            assert isinstance(transport, asyncio.WriteTransport)
         self.transport = transport
 
     def connection_lost(self, exc: Optional[Exception]) -> None:
