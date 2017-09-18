@@ -300,6 +300,18 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
         else:
             kwargs["message"] = ""
 
+    elif command in ["MODE"]:
+        nickmask(prefix, kwargs)
+        if len(params) > 2:
+            command = "CHANNELMODE"
+            kwargs["channel"] = params[0]
+            kwargs["modes"] = params[1]
+            kwargs["params"] = params[2]
+        else:
+            command = "USERMODE"
+            kwargs["nick"] = params[0]
+            kwargs["modes"] = params[1]
+
     else:
         raise ValueError("Unknown command '{}'".format(command))
 
@@ -381,6 +393,17 @@ def parameters(command: str) -> List[str]:
     elif command in ["RPL_MYINFO", "RPL_BOUNCE"]:
         params.append("info")
         params.append("message")
+    
+    elif command in ["USERMODE"]:
+        add_nickmask(params)
+        params.append("nick")
+        params.append("modes")
+        
+    elif command in ["CHANNELMODE"]:
+        add_nickmask(params)
+        params.append("channel")
+        params.append("modes")
+        params.append("params")
 
     else:
         raise ValueError("Unknown command '{}'".format(command))
