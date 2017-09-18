@@ -396,7 +396,7 @@ def parameters(command: str) -> List[str]:
     elif command in ["RPL_MYINFO", "RPL_BOUNCE"]:
         params.append("info")
         params.append("message")
-    
+
     elif command in ["USERMODE"]:
         add_nickmask(params)
         params.append("nick")
