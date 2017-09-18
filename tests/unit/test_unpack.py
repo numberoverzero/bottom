@@ -182,11 +182,19 @@ def test_topic():
     expected = {"channel": "#ch", "message": "m"}
     validate(command, message, expected)
 
+def test_channelmode_no_params():
+    """ MODE command """
+    command = "CHANNELMODE"
+    expected_kwargs = {"channel": "#ch", "host": "",
+                       "modes": "+m", "params": ""}
+    message = "MODE #ch +m"
+    assert (command, expected_kwargs) == unpack_command(message)
+
 def test_channelmode():
     """ MODE command """
     command = "CHANNELMODE"
     expected_kwargs = {"channel": "#ch", "host": "",
-                        "modes": "+o", "params": "trget"}
+                       "modes": "+o", "params": ['trget']}
     message = "MODE #ch +o trget"
     assert (command, expected_kwargs) == unpack_command(message)
 
@@ -194,7 +202,7 @@ def test_usermode():
     """ MODE command """
     command = "USERMODE"
     expected_kwargs = {"nick": "nck", "host": "",
-                        "modes": "+x"}
+                       "modes": "+x"}
     message = "MODE nck +x"
     assert (command, expected_kwargs) == unpack_command(message)
 

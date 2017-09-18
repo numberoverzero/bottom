@@ -302,11 +302,14 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
 
     elif command in ["MODE"]:
         nickmask(prefix, kwargs)
-        if len(params) > 2:
+        if "#" in params[0]:
             command = "CHANNELMODE"
             kwargs["channel"] = params[0]
             kwargs["modes"] = params[1]
-            kwargs["params"] = params[2]
+            if len(params) > 2:
+                kwargs["params"] = params[2:]
+            else:
+                kwargs["params"] = ""
         else:
             command = "USERMODE"
             kwargs["nick"] = params[0]
@@ -398,7 +401,7 @@ def parameters(command: str) -> List[str]:
         add_nickmask(params)
         params.append("nick")
         params.append("modes")
-        
+
     elif command in ["CHANNELMODE"]:
         add_nickmask(params)
         params.append("channel")
