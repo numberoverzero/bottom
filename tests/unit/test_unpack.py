@@ -190,6 +190,9 @@ def test_channelmode_no_params():
                        "modes": "+m", "params": ""}
     message = "MODE #ch +m"
     assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_channelmode():
@@ -199,6 +202,9 @@ def test_channelmode():
                        "modes": "+o", "params": ['trget']}
     message = "MODE #ch +o trget"
     assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_usermode():
@@ -208,6 +214,8 @@ def test_usermode():
                        "modes": "+x"}
     message = "MODE nck +x"
     assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_who_reply():
