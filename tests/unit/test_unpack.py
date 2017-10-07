@@ -183,6 +183,77 @@ def test_topic():
     validate(command, message, expected)
 
 
+def test_channelmode_no_params():
+    """ MODE command """
+    command = "CHANNELMODE"
+    expected_kwargs = {"channel": "#ch", "host": "",
+                       "modes": "+m", "params": []}
+    message = "MODE #ch +m"
+    assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
+
+
+def test_channelmode_hash():
+    """ MODE command """
+    command = "CHANNELMODE"
+    expected_kwargs = {"channel": "#ch", "host": "",
+                       "modes": "+oo", "params": ['trget', 'trget2']}
+    message = "MODE #ch +oo trget trget2"
+    assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
+
+
+def test_channelmode_ampersand():
+    """ MODE command """
+    command = "CHANNELMODE"
+    expected_kwargs = {"channel": "&ch", "host": "",
+                       "modes": "+oo", "params": ['trget', 'trget2']}
+    message = "MODE &ch +oo trget trget2"
+    assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
+
+
+def test_channelmode_bang():
+    """ MODE command """
+    command = "CHANNELMODE"
+    expected_kwargs = {"channel": "!ch", "host": "",
+                       "modes": "+o", "params": ['trget', 'trget2']}
+    message = "MODE !ch +o trget trget2"
+    assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
+
+
+def test_channelmode_plus():
+    """ MODE command """
+    command = "CHANNELMODE"
+    expected_kwargs = {"channel": "+ch", "host": "",
+                       "modes": "+o", "params": ['trget', 'trget2']}
+    message = "MODE +ch +o trget trget2"
+    assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    expected_kwargs['nick'] = 'nck'
+    assert set(expected_kwargs) == set(parameters(command))
+
+
+def test_usermode():
+    """ MODE command """
+    command = "USERMODE"
+    expected_kwargs = {"nick": "nck", "host": "",
+                       "modes": "+x"}
+    message = "MODE nck +x"
+    assert (command, expected_kwargs) == unpack_command(message)
+    expected_kwargs['user'] = 'usr'
+    assert set(expected_kwargs) == set(parameters(command))
+
+
 def test_who_reply():
     """ WHO response """
     command = 'RPL_WHOREPLY'
