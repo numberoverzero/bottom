@@ -123,6 +123,8 @@ Supported Events
 * PART
 * PRIVMSG
 * NOTICE
+* USERMODE (renamed from MODE)
+* CHANNELMODE (renamed from MODE)
 * RPL_WELCOME (001)
 * RPL_YOURHOST (002)
 * RPL_CREATED (003)
