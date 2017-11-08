@@ -26,6 +26,8 @@ Installation
 Getting Started
 ===============
 
+(the full documentation is available here: http://bottom-docs.readthedocs.io/)
+
 Create an instance:
 
 .. code-block:: python
@@ -102,21 +104,27 @@ Connect and run the bot forever:
 API
 ===
 
-The full API consists of 1 class, with 6 methods:
+The full API consists of 1 class, with 8 methods:
 
 .. code-block:: python
 
-    async Client.connect()
+    # manage connections
 
+    async Client.connect()
     async Client.disconnect()
 
+    # send, receive, and wait for rfc-2812 messages
+
     Client.send(command, **kwargs)
-
     @Client.on(event)
-
+    Client.trigger(event, **kwargs)
     async Client.wait(event)
 
-    Client.trigger(event, **kwargs)
+    # send and receive anything newline-terminated,
+    # provided for eg. IRCv3 extensions
+
+    Client.send_raw(message)
+    Client.handle_raw(message)
 
 
 Contributors
