@@ -3,8 +3,9 @@ import collections
 import functools
 import logging
 from typing import Any, Callable, Dict, List, Optional, Tuple  # noqa
-from bottom.protocol import Protocol
+
 from bottom.pack import pack_command
+from bottom.protocol import Protocol
 from bottom.unpack import unpack_command
 
 

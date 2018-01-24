@@ -1,6 +1,7 @@
 import asyncio
 from typing import Optional
 
+
 MYPY = False
 if MYPY:
     from bottom.client import RawClient  # pragma: nocover  # noqa
