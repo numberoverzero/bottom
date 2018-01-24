@@ -59,7 +59,7 @@ class RawClient:
 
     def handle_raw(self, message: str) -> None:
         handle = process(self.raw_handlers, message)
-        self.loop.create_task(handle)  # type: ignore
+        self.loop.create_task(handle)
 
     def send_raw(self, message: str) -> None:
         if not self.protocol:
