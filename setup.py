@@ -14,12 +14,13 @@ def get_version():
 REQUIREMENTS = []
 
 TEST_REQUIREMENTS = [
-    "coverage==4.4.1",
-    "flake8==3.3.0",
-    "mypy==0.511",
-    "pytest==3.1.1",
-    "sphinx-rtd-theme==0.2.4",
-    "tox==2.7.0",
+    "coverage==5.2.1",
+    "flake8==3.8.3",
+    "mypy==0.782",
+    "pytest==6.0.1",
+    "sphinx==3.1.2",
+    "sphinx-rtd-theme==0.5.0",
+    "tox==3.18.1",
 ]
 
 if __name__ == "__main__":
@@ -35,7 +36,7 @@ if __name__ == "__main__":
             "Operating System :: OS Independent",
             "Programming Language :: Python",
             "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.4",
+            "Programming Language :: Python :: 3.8",
             "Topic :: Software Development :: Libraries",
             "Topic :: Communications :: Chat",
             "Topic :: Communications :: Chat :: Internet Relay Chat"

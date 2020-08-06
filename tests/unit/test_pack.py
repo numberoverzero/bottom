@@ -11,9 +11,9 @@ def like(pattern, value):
     # Split on : so we don't replace spaces in messages
     index = pattern.rfind(':')
     if index >= 0:
-        pattern = SPACES.sub(r'\s+', pattern[:index]) + pattern[index:]
+        pattern = SPACES.sub(r'\\s+', pattern[:index]) + pattern[index:]
     else:
-        pattern = SPACES.sub(r'\s+', pattern)
+        pattern = SPACES.sub(r'\\s+', pattern)
     # Ignore trailing spaces/newlines
     pattern += r"\s*?"
     return bool(re.match(pattern, value))

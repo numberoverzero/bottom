@@ -24,7 +24,7 @@ def f(field: str, kwargs: Dict[str, Any],
 
 
 def pack(field: str, kwargs: Dict[str, Any],
-         default: Optional[Any] = None, sep: str=',') -> str:
+         default: Optional[Any] = None, sep: str = ',') -> str:
     """ Util for joining multiple fields with commas """
     if default is not None:
         value = kwargs.get(field, default)

@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Pattern, Tuple  # noqa
 
 
 RE_IRCLINE = re.compile(
-    """
+    r"""
     ^
     (:(?P<prefix>[^\s]+)\s+)?    # Optional prefix (src, nick!host, etc)
                                  # Prefix matches all non-space characters

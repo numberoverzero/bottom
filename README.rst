@@ -2,8 +2,6 @@
     :target: http://bottom-docs.readthedocs.org/
 .. image:: https://img.shields.io/travis/numberoverzero/bottom/master.svg?style=flat-square
     :target: https://travis-ci.org/numberoverzero/bottom
-.. image:: https://img.shields.io/codecov/c/github/numberoverzero/bottom/master.svg?style=flat-square
-    :target: https://codecov.io/gh/numberoverzero/bottom/branch/master
 .. image:: https://img.shields.io/pypi/v/bottom.svg?style=flat-square
     :target: https://pypi.python.org/pypi/bottom
 .. image:: https://img.shields.io/github/issues-raw/numberoverzero/bottom.svg?style=flat-square
@@ -11,7 +9,7 @@
 .. image:: https://img.shields.io/pypi/l/bottom.svg?style=flat-square
     :target: https://github.com/numberoverzero/bottom/blob/master/LICENSE
 
-asyncio-based rfc2812-compliant IRC Client (3.5+)
+asyncio-based rfc2812-compliant IRC Client (3.8+)
 
 bottom isn't a kitchen-sink library.  Instead, it provides a consistent API
 with a small surface area, tuned for performance and ease of extension.

@@ -26,12 +26,14 @@ Pull requests that decrease coverage will not be merged.
 Development
 -----------
 bottom uses ``tox``, ``pytest``, ``coverage``, and ``flake8``.  To get
-everything set up with pyenv_::
+everything set up in a new virtualenv::
 
     git clone https://github.com/numberoverzero/bottom.git
     cd bottom
-    pyenv virtualenv 3.5.1 bottom
-    python setup.py develop
+    python3.8 -m venv --copies .venv
+    source .venv/bin/activate
+    pip install -r requirements.txt
+    pip install -e .
     tox
 
 Documentation
@@ -42,7 +44,6 @@ a `pull request`_! If there's an area you feel is lacking and will require more
 than a small change, `open an issue`_ to discuss the problem - others are
 probably also confused, and may have suggestions to improve the same area.
 
-.. _pyenv: https://github.com/yyuu/pyenv
 .. _pull request: https://github.com/numberoverzero/bottom/pulls
 .. _open an issue: https://github.com/numberoverzero/bottom/issues/new
 

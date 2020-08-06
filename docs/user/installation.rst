@@ -1,13 +1,26 @@
 Installation
 ============
 
-Bottom supports **Python 3.5+**.
+Bottom supports **Python 3.8+** and has no external dependencies.
 
-Bottom depends on simplex_, a module that offers a simpler interface to pattern
-matching, but with significantly reduced capabilities.
+Standard Installation
+---------------------
 
-To get everything set up, run::
+The easiest way is with pip::
 
     pip install bottom
 
-.. _simplex: https://github.com/numberoverzero/simplex
+
+Alternative Installation
+------------------------
+
+Sometimes the code on GitHub is ahead of the latest PyPI release.  There are two ways to install from GitHub.  First,
+by cloning the repo::
+
+    git clone git://github.com/numberoverzero/bottom.git
+    pip install ./bottom
+
+Since pip supports installing from a git repo, you can also use::
+
+    pip install -e git://github.com/numberoverzero/bottom.git#egg=bottom
+

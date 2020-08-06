@@ -133,7 +133,7 @@ class RawClient:
         loop.run_forever()
         """
         if func is None:
-            return functools.partial(self.on, event)  # type: ignore
+            return functools.partial(self.on, event)
         wrapped = func
         if not asyncio.iscoroutinefunction(wrapped):
             wrapped = asyncio.coroutine(wrapped)
