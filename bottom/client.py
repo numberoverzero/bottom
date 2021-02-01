@@ -2,7 +2,8 @@ import asyncio
 import collections
 import functools
 import logging
-from typing import Any, Callable, Dict, List, Optional, Tuple  # noqa
+import ssl as _ssl
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union  # noqa
 
 from bottom.pack import pack_command
 from bottom.protocol import Protocol
@@ -36,7 +37,7 @@ class RawClient:
     _events = None  # type: Dict[str, asyncio.Event]
 
     def __init__(self, host: str, port: int, *,
-                 encoding: str = "UTF-8", ssl: bool = True,
+                 encoding: str = "UTF-8", ssl: Union[bool, _ssl.SSLContext] = True,
                  loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         self.host = host
         self.port = port
@@ -150,7 +151,7 @@ class RawClient:
 
 class Client(RawClient):
     def __init__(self, host: str, port: int, *,
-                 encoding: str = "utf-8", ssl: bool = True,
+                 encoding: str = "utf-8", ssl: Union[bool, _ssl.SSLContext] = True,
                  loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
         """
 
