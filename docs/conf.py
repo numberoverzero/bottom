@@ -14,7 +14,7 @@ templates_path = ['_templates']
 master_doc = 'index'
 
 project = 'bottom'
-copyright = '2016, Joe Cross'
+copyright = '2022, Joe Cross'
 author = 'Joe Cross'
 
 try:
@@ -42,7 +42,7 @@ html_context = {
 }
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3.6', None),
+    'python': ('https://docs.python.org/3.10', None),
 }
 
 

@@ -9,7 +9,7 @@
 .. image:: https://img.shields.io/pypi/l/bottom.svg?style=flat-square
     :target: https://github.com/numberoverzero/bottom/blob/master/LICENSE
 
-asyncio-based rfc2812-compliant IRC Client (3.8+)
+asyncio-based rfc2812-compliant IRC Client (3.10+)
 
 bottom isn't a kitchen-sink library.  Instead, it provides a consistent API
 with a small surface area, tuned for performance and ease of extension.

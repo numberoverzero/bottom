@@ -58,7 +58,7 @@ invoked.  Let's see that print statement:
 
 .. code-block:: python
 
-    client.loop.run_forever()
+    asyncio.get_event_loop().run_forever()
 
 We can pass arbitrary kwargs to handlers through ``trigger``:
 

@@ -1,7 +1,7 @@
 language: python
-python: 3.8
+python: 3.10
 env:
-  - TOX_ENV=py38
+  - TOX_ENV=py310
   - TOX_ENV=integ
   - TOX_ENV=mypy
 install: pip install tox
