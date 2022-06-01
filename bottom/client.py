@@ -51,7 +51,7 @@ class RawClient:
 
         self._event_handlers = collections.defaultdict(list)
         self._events = collections.defaultdict(
-            lambda: asyncio.Event(loop=self.loop))
+            lambda: asyncio.Event())
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
