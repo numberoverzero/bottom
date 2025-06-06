@@ -1,6 +1,6 @@
 import asyncio
-import bottom
 
+import bottom
 
 host = 'chat.freenode.net'
 port = 6697

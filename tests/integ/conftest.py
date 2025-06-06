@@ -1,9 +1,9 @@
 import asyncio
 import collections
-import pytest
-# import ssl as _ssl
 
+# import ssl as _ssl
 import bottom
+import pytest
 
 
 @pytest.fixture

@@ -1,6 +1,8 @@
-from bottom.pack import pack_command
-import pytest
 import re
+
+import pytest
+from bottom.pack import pack_command
+
 SPACES = re.compile(r"(\\?\s+)+")
 
 

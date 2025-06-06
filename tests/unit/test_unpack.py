@@ -1,5 +1,5 @@
-from bottom.unpack import unpack_command, parameters, synonym
 import pytest
+from bottom.unpack import parameters, synonym, unpack_command
 
 
 def test_no_command():

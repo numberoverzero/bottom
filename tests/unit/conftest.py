@@ -1,8 +1,10 @@
-from bottom.client import Client
-from bottom.protocol import Protocol
-import pytest
 import asyncio
 import collections
+
+import pytest
+from bottom.client import Client
+from bottom.protocol import Protocol
+
 NOT_CORO = "Can't schedule non-coroutine"
 
 
