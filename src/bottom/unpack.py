@@ -3,7 +3,6 @@
 import re
 from typing import Any, Dict, List, Pattern, Tuple  # noqa
 
-
 RE_IRCLINE = re.compile(
     r"""
     ^

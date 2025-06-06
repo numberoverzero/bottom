@@ -1,10 +1,9 @@
 import asyncio
 from typing import Optional
 
-
 MYPY = False
 if MYPY:
-    from bottom.client import RawClient  # pragma: nocover  # noqa
+    from bottom.client import RawClient  # pragma: nocover
 
 # Always write the full \r\n per spec, but accept \n when reading
 DELIM = b"\r\n"
