@@ -14,7 +14,7 @@ class Router(object):
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
-                self.client.loop.create_task(
+                asyncio.create_task(
                     func(nick, target, message, match, **kwargs))
 
     def route(self, pattern, func=None, **kwargs):
@@ -24,7 +24,13 @@ class Router(object):
         # Decorator should always return the original function
         wrapped = func
         if not asyncio.iscoroutinefunction(wrapped):
-            wrapped = asyncio.coroutine(wrapped)
+            _original_wrapped = wrapped
+
+            @functools.wraps(_original_wrapped)
+            async def wrapper(*args, **kwargs):
+                _original_wrapped(*args, **kwargs)
+
+            wrapped = wrapper
 
         compiled = re.compile(pattern)
         self.routes[compiled] = (wrapped, pattern)

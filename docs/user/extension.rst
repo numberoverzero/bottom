@@ -71,6 +71,7 @@ And its usage:
 
 .. code-block:: python
 
+    import asyncio
     import bottom
     import logging
     from irc_logging import Logger
@@ -86,7 +87,8 @@ And its usage:
         remote_logger.info("Connected!")
 
     # Connect and send "INFO: Connected!"
-    client.loop.run_until_complete(client.connect())
+    asyncio.create_task(client.connect())
+    asyncio.get_event_loop().run_forever()
 
 Notice that the logging functionality is part of a different object, not the
 client.  This keeps the namespace clean, and reduces the attribute contention
@@ -158,7 +160,13 @@ client:
             # Decorator should always return the original function
             wrapped = func
             if not asyncio.iscoroutinefunction(wrapped):
-                wrapped = asyncio.coroutine(wrapped)
+                _original_wrapped = wrapped
+
+                @functools.wraps(_original_wrapped)
+                async def wrapper(*args, **kwargs):
+                    _original_wrapped(*args, **kwargs)
+
+                wrapped = wrapper
 
             compiled = re.compile(pattern)
             self.routes[compiled] = (wrapped, pattern)
@@ -183,7 +191,6 @@ can be used to wait for any signal that the MOTD has been sent (eg. ERR_NOMOTD m
                 return
             done, pending = await asyncio.wait(
                 [bot.wait(event) for event in events],
-                loop=bot.loop,
                 return_when=return_when)
 
             # Cancel any events that didn't come in.

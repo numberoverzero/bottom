@@ -26,7 +26,6 @@ def waiter(client):
             return
         done, pending = await asyncio.wait(
             [client.wait(event) for event in events],
-            loop=client.loop,
             return_when=return_when)
 
         # Get the result(s) of the completed task(s).
@@ -69,13 +68,13 @@ async def on_connect(**kwargs):
 
 
 def run():
-    # This schedules a connection to be created when the bot's event loop
-    # is run.  Nothing will happen until the loop starts running to clear
+    # This schedules a connection to be created.
+    # Nothing will happen until the loop starts running to clear
     # the pending coroutines.
-    client.loop.create_task(client.connect())
+    asyncio.create_task(client.connect())
 
     # Ctrl + C to quit
     print(
         "Connecting to {} on port {} as {} in channel {}".format(
             host, port, NICK, CHANNEL))
-    client.loop.run_forever()
+    asyncio.get_event_loop().run_forever()

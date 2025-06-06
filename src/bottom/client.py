@@ -51,7 +51,7 @@ class RawClient:
 
         self._event_handlers = collections.defaultdict(list)
         self._events = collections.defaultdict(
-            lambda: asyncio.Event(loop=self.loop))
+            lambda: asyncio.Event())
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -137,7 +137,13 @@ class RawClient:
             return functools.partial(self.on, event)
         wrapped = func
         if not asyncio.iscoroutinefunction(wrapped):
-            wrapped = asyncio.coroutine(wrapped)
+            _original_wrapped = wrapped
+
+            @functools.wraps(_original_wrapped)
+            async def wrapper(*args, **kwargs):
+                _original_wrapped(*args, **kwargs)
+
+            wrapped = wrapper
         self._event_handlers[event.upper()].append(wrapped)
         # Always return original
         return func

@@ -30,7 +30,7 @@ everything set up in a new virtualenv::
 
     git clone https://github.com/numberoverzero/bottom.git
     cd bottom
-    python3.8 -m venv --copies .venv
+    python3.10 -m venv --copies .venv
     source .venv/bin/activate
     pip install -r requirements.txt
     pip install -e .
