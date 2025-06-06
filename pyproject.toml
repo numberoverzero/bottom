@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "bottom"
+version = "3.0.0"
+description = "asyncio-based rfc2812-compliant IRC Client"
+readme = "README.rst"
+requires-python = ">=3.11"
+authors = [{name="numberoverzero"}]
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+]
+dependencies = []
+
+[dependency-groups]
+test = [
+    "coverage==7.8.2",
+    "pytest==8.4.0",
+]
+lint = [
+    "ruff==0.11.13",
+    "ty==0.0.1a8",
+]
+docs = [
+    "sphinx==8.2.3",
+    "sphinx-rtd-theme==3.0.2",
+]
+dist = [
+    "build==1.2.2",
+    "twine==6.1.0"
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "docs"},
+    {include-group = "dist"},
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "F", "E", "I", "ANN", "RUF",
+]
+
+[tool.ruff.lint.isort]
+known-third-party = ["bottom"]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,8 +1,0 @@
-language: python
-python: 3.8
-env:
-  - TOX_ENV=py38
-  - TOX_ENV=integ
-  - TOX_ENV=mypy
-install: pip install tox
-script: tox -e $TOX_ENV

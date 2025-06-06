@@ -1,3 +1,0 @@
-include README.rst
-recursive-exclude tests *
-recursive-exclude examples *
