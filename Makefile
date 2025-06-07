@@ -1,6 +1,6 @@
 .PHONY: help clean dev lint test docs build publish
 
-PY_VERSION = 3.11
+PY_VERSION = 3.12
 BROWSER ?= browser
 
 help:

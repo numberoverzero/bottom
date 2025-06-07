@@ -1,7 +1,7 @@
 Installation
 ============
 
-Bottom supports **Python 3.10+** and has no external dependencies.
+Bottom supports **Python 3.12+** and has no external dependencies.
 
 Standard Installation
 ---------------------

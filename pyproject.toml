@@ -8,7 +8,7 @@ name = "bottom"
 version = "3.0.0"
 description = "asyncio-based rfc2812-compliant IRC Client"
 readme = "README.rst"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [{name="numberoverzero"}]
 license = "MIT"
 license-files = ["LICENSE"]
@@ -17,7 +17,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.11"
+python = ">=3.12"
 
 
 [dependency-groups]
@@ -51,6 +51,23 @@ line-length = 120
 select = [
     "F", "E", "I", "ANN", "RUF",
 ]
+exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+]
 
 [tool.ruff.lint.isort]
 known-third-party = ["bottom"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore missing type annotations in tests
+"conftest.py" = ["ANN"]
+"test_*.py" = ["ANN"]
+
+[tool.ruff.flake8-annotations]
+# we take **kwargs: t.Any in a few places because we pass those values through str.format()
+# and don't really care what type they are.  users can pass custom objects that implement a custom __str__
+allow-star-arg-any = true
