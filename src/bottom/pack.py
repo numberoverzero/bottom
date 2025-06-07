@@ -1,31 +1,31 @@
-""" Simplified support for rfc2812 """
+"""Simplified support for rfc2812"""
+
 # https://tools.ietf.org/html/rfc2812
 import collections.abc
-from typing import Any, Dict, Optional
+import typing as t
+
+_missing = object()
 
 
-def b(field: str, kwargs: Dict[str, Any],
-      present: Optional[Any] = None, missing: Any = '') -> str:
+def b(field: str, kwargs: dict[str, t.Any], missing: str = "") -> str:
     """
-    Return `present` value (default to `field`) if `field` in `kwargs` and
-    Truthy, otherwise return `missing` value
+    Return `field` if `field` has a truthy value in `kwargs`, otherwise return `missing` value
     """
-    if kwargs.get(field):
-        return field if present is None else str(present)
-    return str(missing)
+    val = kwargs.get(field, _missing)
+    if val and val is not _missing:
+        return field
+    return missing
 
 
-def f(field: str, kwargs: Dict[str, Any],
-      default: Optional[Any] = None) -> str:
-    """ Alias for more readable command construction """
+def f(field: str, kwargs: dict[str, t.Any], default: str | int | None = None) -> str:
+    """Alias for more readable command construction"""
     if default is not None:
         return str(kwargs.get(field, default))
     return str(kwargs[field])
 
 
-def pack(field: str, kwargs: Dict[str, Any],
-         default: Optional[Any] = None, sep: str = ',') -> str:
-    """ Util for joining multiple fields with commas """
+def pack(field: str, kwargs: dict[str, t.Any], default: str | None = None, sep: str = ",") -> str:
+    """Util for joining multiple fields with commas"""
     if default is not None:
         value = kwargs.get(field, default)
     else:
@@ -38,8 +38,8 @@ def pack(field: str, kwargs: Dict[str, Any],
         return str(value)
 
 
-def pack_command(command: str, **kwargs: Any) -> str:
-    """ Pack a command to send to an IRC server """
+def pack_command(command: str, **kwargs: t.Any) -> str:
+    """Pack a command to send to an IRC server"""
     if not command:
         raise ValueError("Must provide a command")
     if not isinstance(command, str):
@@ -93,10 +93,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # USER guest 8 :Ronnie Reagan
     # USER guest :Ronnie Reagan
     elif command == "USER":
-        return "USER {} {} * :{}".format(
-            f("user", kwargs),
-            f("mode", kwargs, 0),
-            f("realname", kwargs))
+        return "USER {} {} * :{}".format(f("user", kwargs), f("mode", kwargs, 0), f("realname", kwargs))
 
     # OPER
     # https://tools.ietf.org/html/rfc2812#section-3.1.4
@@ -114,7 +111,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # MODE Angel +i
     # MODE
     elif command == "USERMODE":
-        return "MODE {} {}".format(f("nick", kwargs), f("modes", kwargs, ''))
+        return "MODE {} {}".format(f("nick", kwargs), f("modes", kwargs, ""))
 
     # SERVICE
     # https://tools.ietf.org/html/rfc2812#section-3.1.6
@@ -123,10 +120,8 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # SERVICE dict *.fr 0 :French
     elif command == "SERVICE":
         return "SERVICE {} * {} {} 0 :{}".format(
-            f("nick", kwargs),
-            f("distribution", kwargs),
-            f("type", kwargs),
-            f("info", kwargs))
+            f("nick", kwargs), f("distribution", kwargs), f("type", kwargs), f("info", kwargs)
+        )
 
     # QUIT
     # https://tools.ietf.org/html/rfc2812#section-3.1.7
@@ -159,8 +154,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # JOIN #foo
     # JOIN 0
     elif command == "JOIN":
-        return "JOIN {} {}".format(pack("channel", kwargs),
-                                   pack("key", kwargs, ''))
+        return "JOIN {} {}".format(pack("channel", kwargs), pack("key", kwargs, ""))
 
     # PART
     # https://tools.ietf.org/html/rfc2812#section-3.2.2
@@ -182,9 +176,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # MODE #en-ops +v WiZ
     # MODE #Fins -s
     elif command == "CHANNELMODE":
-        return "MODE {} {} {}".format(f("channel", kwargs),
-                                      f("modes", kwargs),
-                                      f("params", kwargs, ''))
+        return "MODE {} {} {}".format(f("channel", kwargs), f("modes", kwargs), f("params", kwargs, ""))
 
     # TOPIC
     # https://tools.ietf.org/html/rfc2812#section-3.2.4
@@ -208,8 +200,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # NAMES
     elif command == "NAMES":
         if "channel" in kwargs:
-            return "NAMES {} {}".format(pack("channel", kwargs),
-                                        f("target", kwargs, ''))
+            return "NAMES {} {}".format(pack("channel", kwargs), f("target", kwargs, ""))
         return "NAMES"
 
     # LIST
@@ -221,8 +212,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # LIST
     elif command == "LIST":
         if "channel" in kwargs:
-            return "LIST {} {}".format(pack("channel", kwargs),
-                                       f("target", kwargs, ''))
+            return "LIST {} {}".format(pack("channel", kwargs), f("target", kwargs, ""))
         return "LIST"
 
     # INVITE
@@ -231,8 +221,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # ----------
     # INVITE Wiz #Twilight_Zone
     elif command == "INVITE":
-        return "INVITE {} {}".format(f("nick", kwargs),
-                                     f("channel", kwargs))
+        return "INVITE {} {}".format(f("nick", kwargs), f("channel", kwargs))
 
     # KICK
     # https://tools.ietf.org/html/rfc2812#section-3.2.8
@@ -242,8 +231,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # KICK #Finnish WiZ,Wiz-Bot :Both speaking English
     # KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
     elif command == "KICK":
-        base = "KICK {} {}".format(pack("channel", kwargs),
-                                   pack("nick", kwargs))
+        base = "KICK {} {}".format(pack("channel", kwargs), pack("nick", kwargs))
         if "message" in kwargs:
             return base + " :" + pack("message", kwargs)
         return base
@@ -256,8 +244,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # PRIVMSG $*.fi :Server tolsun.oulu.fi rebooting.
     # PRIVMSG #Finnish :This message is in english
     elif command == "PRIVMSG":
-        return "PRIVMSG {} :{}".format(f("target", kwargs),
-                                       f("message", kwargs))
+        return "PRIVMSG {} :{}".format(f("target", kwargs), f("message", kwargs))
 
     # NOTICE
     # https://tools.ietf.org/html/rfc2812#section-3.3.2
@@ -267,8 +254,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # NOTICE $*.fi :Server tolsun.oulu.fi rebooting.
     # NOTICE #Finnish :This message is in english
     elif command == "NOTICE":
-        return "NOTICE {} :{}".format(f("target", kwargs),
-                                      f("message", kwargs))
+        return "NOTICE {} :{}".format(f("target", kwargs), f("message", kwargs))
 
     # MOTD
     # https://tools.ietf.org/html/rfc2812#section-3.4.1
@@ -277,7 +263,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # MOTD remote.*.edu
     # MOTD
     elif command == "MOTD":
-        return "MOTD " + f("target", kwargs, '')
+        return "MOTD " + f("target", kwargs, "")
 
     # LUSERS
     # https://tools.ietf.org/html/rfc2812#section-3.4.2
@@ -288,8 +274,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # LUSERS
     elif command == "LUSERS":
         if "mask" in kwargs:
-            return "LUSERS {} {}".format(f("mask", kwargs),
-                                         f("target", kwargs, ''))
+            return "LUSERS {} {}".format(f("mask", kwargs), f("target", kwargs, ""))
         return "LUSERS"
 
     # VERSION
@@ -299,7 +284,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # VERSION remote.*.edu
     # VERSION
     elif command == "VERSION":
-        return "VERSION " + f("target", kwargs, '')
+        return "VERSION " + f("target", kwargs, "")
 
     # STATS
     # https://tools.ietf.org/html/rfc2812#section-3.4.4
@@ -310,8 +295,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # STATS
     elif command == "STATS":
         if "query" in kwargs:
-            return "STATS {} {}".format(f("query", kwargs),
-                                        f("target", kwargs, ''))
+            return "STATS {} {}".format(f("query", kwargs), f("target", kwargs, ""))
         return "STATS"
 
     # LINKS
@@ -335,7 +319,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # TIME remote.*.edu
     # TIME
     elif command == "TIME":
-        return "TIME " + f("target", kwargs, '')
+        return "TIME " + f("target", kwargs, "")
 
     # CONNECT
     # https://tools.ietf.org/html/rfc2812#section-3.4.7
@@ -344,9 +328,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # CONNECT tolsun.oulu.fi 6667 *.edu
     # CONNECT tolsun.oulu.fi 6667
     elif command == "CONNECT":
-        return "CONNECT {} {} {}".format(f("target", kwargs),
-                                         f("port", kwargs),
-                                         f("remote", kwargs, ''))
+        return "CONNECT {} {} {}".format(f("target", kwargs), f("port", kwargs), f("remote", kwargs, ""))
 
     # TRACE
     # https://tools.ietf.org/html/rfc2812#section-3.4.8
@@ -354,7 +336,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # ----------
     # TRACE
     elif command == "TRACE":
-        return "TRACE " + f("target", kwargs, '')
+        return "TRACE " + f("target", kwargs, "")
 
     # ADMIN
     # https://tools.ietf.org/html/rfc2812#section-3.4.9
@@ -362,7 +344,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # ----------
     # ADMIN
     elif command == "ADMIN":
-        return "ADMIN " + f("target", kwargs, '')
+        return "ADMIN " + f("target", kwargs, "")
 
     # INFO
     # https://tools.ietf.org/html/rfc2812#section-3.4.10
@@ -370,7 +352,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # ----------
     # INFO
     elif command == "INFO":
-        return "INFO " + f("target", kwargs, '')
+        return "INFO " + f("target", kwargs, "")
 
     # SERVLIST
     # https://tools.ietf.org/html/rfc2812#section-3.5.1
@@ -380,8 +362,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # SERVLIST *SERV
     # SERVLIST
     elif command == "SERVLIST":
-        return "SERVLIST {} {}".format(f("mask", kwargs, ''),
-                                       f("type", kwargs, ''))
+        return "SERVLIST {} {}".format(f("mask", kwargs, ""), f("type", kwargs, ""))
 
     # SQUERY
     # https://tools.ietf.org/html/rfc2812#section-3.5.2
@@ -389,8 +370,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # ----------
     # SQUERY irchelp :HELP privmsg
     elif command == "SQUERY":
-        return "SQUERY {} :{}".format(f("target", kwargs),
-                                      f("message", kwargs))
+        return "SQUERY {} :{}".format(f("target", kwargs), f("message", kwargs))
 
     # WHO
     # https://tools.ietf.org/html/rfc2812#section-3.6.1
@@ -400,7 +380,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # WHO *.fi
     # WHO
     elif command == "WHO":
-        return "WHO {} {}".format(f("mask", kwargs, ''), b("o", kwargs))
+        return "WHO {} {}".format(f("mask", kwargs, ""), b("o", kwargs))
 
     # WHOIS
     # https://tools.ietf.org/html/rfc2812#section-3.6.2
@@ -410,8 +390,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # WHOIS jto* o
     # WHOIS *.fi
     elif command == "WHOIS":
-        return "WHOIS {} {}".format(pack("mask", kwargs),
-                                    f("target", kwargs, ''))
+        return "WHOIS {} {}".format(pack("mask", kwargs), f("target", kwargs, ""))
 
     # WHOWAS
     # https://tools.ietf.org/html/rfc2812#section-3.6.3
@@ -422,9 +401,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # WHOWAS Mermaid
     elif command == "WHOWAS":
         if "count" in kwargs:
-            return "WHOWAS {} {} {}".format(pack("nick", kwargs),
-                                            f("count", kwargs),
-                                            f("target", kwargs, ''))
+            return "WHOWAS {} {} {}".format(pack("nick", kwargs), f("count", kwargs), f("target", kwargs, ""))
         return "WHOWAS " + pack("nick", kwargs)
 
     # KILL
@@ -503,9 +480,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # SUMMON Wiz
     elif command == "SUMMON":
         if "target" in kwargs:
-            return "SUMMON {} {} {}".format(f("nick", kwargs),
-                                            f("target", kwargs),
-                                            f("channel", kwargs, ''))
+            return "SUMMON {} {} {}".format(f("nick", kwargs), f("target", kwargs), f("channel", kwargs, ""))
         return "SUMMON " + f("nick", kwargs)
 
     # USERS
@@ -515,7 +490,7 @@ def pack_command(command: str, **kwargs: Any) -> str:
     # USERS remote.*.edu
     # USERS
     elif command == "USERS":
-        return "USERS " + f("target", kwargs, '')
+        return "USERS " + f("target", kwargs, "")
 
     # WALLOPS
     # https://tools.ietf.org/html/rfc2812#section-4.7

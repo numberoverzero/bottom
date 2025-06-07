@@ -30,6 +30,7 @@ def loop(transport, protocol, connection_info):
         protocol.connection_made(transport)
         connection_info["created"] += 1
         return transport, protocol
+
     loop.create_connection = create_connection
 
     return loop
@@ -38,11 +39,13 @@ def loop(transport, protocol, connection_info):
 @pytest.fixture
 def flush(loop):
     """Run loop once, to execute any pending tasks"""
+
     async def sentinel():
         pass
 
     def _flush():
         loop.run_until_complete(sentinel())
+
     return _flush
 
 
@@ -54,6 +57,7 @@ def schedule(loop, flush):
             loop.create_task(coro)
         if immediate:
             flush()
+
     return _schedule
 
 
@@ -75,6 +79,7 @@ def transport(protocol):
         def close(self):
             self.closed = True
             protocol.connection_lost(exc=None)
+
     return Transport()
 
 
@@ -104,9 +109,10 @@ class TrackingClient(Client):
         super().trigger(event, **kwargs)
 
 
-class Watcher():
+class Watcher:
     """Exposes `call` function, `calls` attribute, and `called` property.
     Useful for lambdas that can't += a variable"""
+
     def __init__(self):
         self.calls = 0
 

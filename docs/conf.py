@@ -1,6 +1,9 @@
+import importlib.metadata
 import sys
+import typing as t
 
-import pkg_resources
+if t.TYPE_CHECKING:
+    from sphinx.application import Sphinx
 
 extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx", "sphinx.ext.viewcode", "sphinx.ext.napoleon"]
 
@@ -13,14 +16,14 @@ copyright = "2025, numberoverzero"
 author = "numberoverzero"
 
 try:
-    release = pkg_resources.get_distribution("bottom").version
-except pkg_resources.DistributionNotFound:
+    release = importlib.metadata.version("bottom")
+except importlib.metadata.PackageNotFoundError:
     print("To build the documentation, The distribution information of bottom")
     print("Has to be available.  Either install the package into your")
     print('development environment or run "setup.py develop" to setup the')
     print("metadata.  A virtualenv is recommended!")
     sys.exit(1)
-del pkg_resources
+del importlib.metadata
 version = ".".join(release.split(".")[:2])
 
 language = "en"
@@ -33,9 +36,9 @@ html_theme = "sphinx_rtd_theme"
 html_context = {"favicon": "favicon-cog.ico", "show_sphinx": False}
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.11", None),
+    "python": ("https://docs.python.org/3.12", None),
 }
 
 
-def setup(app):
+def setup(app: Sphinx) -> None:
     app.add_css_file("bottom.css")

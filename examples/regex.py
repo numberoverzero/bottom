@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import re
+import typing as t
 
 
 class Router(object):
@@ -10,14 +11,13 @@ class Router(object):
         client.on("privmsg")(self._handle)
 
     def _handle(self, nick, target, message, **kwargs):
-        """ client callback entrance """
+        """client callback entrance"""
         for regex, (func, pattern) in self.routes.items():
             match = regex.match(message)
             if match:
-                asyncio.create_task(
-                    func(nick, target, message, match, **kwargs))
+                asyncio.create_task(func(nick, target, message, match, **kwargs))
 
-    def route(self, pattern, func=None, **kwargs):
+    def route[T: t.Callable[..., Any] | None](self, pattern: str, func: T | None = None, **kwargs) -> T:
         if func is None:
             return functools.partial(self.route, pattern)
 
@@ -40,11 +40,11 @@ class Router(object):
 if __name__ == "__main__":
     # Common client setup for all examples
     from common import NICK, client, run
+
     router = Router(client)
 
-
-    @router.route("^bot, say (\w+)\.$")
-    def echo(nick, target, message, match, **kwargs):
+    @router.route(r"^bot, say (\w+)\.$")
+    def echo(nick: str, target: str, message: str, match, **kwargs):
         # Don't echo ourselves
         if nick == NICK:
             return

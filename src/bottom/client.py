@@ -36,9 +36,15 @@ class RawClient:
     _event_handlers = None  # type: Dict[str, List[Callable]]
     _events = None  # type: Dict[str, asyncio.Event]
 
-    def __init__(self, host: str, port: int, *,
-                 encoding: str = "UTF-8", ssl: Union[bool, _ssl.SSLContext] = True,
-                 loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        *,
+        encoding: str = "UTF-8",
+        ssl: Union[bool, _ssl.SSLContext] = True,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None:
         self.host = host
         self.port = port
         self.ssl = ssl
@@ -50,8 +56,7 @@ class RawClient:
         self._loop = loop
 
         self._event_handlers = collections.defaultdict(list)
-        self._events = collections.defaultdict(
-            lambda: asyncio.Event())
+        self._events = collections.defaultdict(lambda: asyncio.Event())
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
@@ -69,15 +74,11 @@ class RawClient:
 
     async def connect(self) -> None:
         """Open a connection to the defined server."""
+
         def protocol_factory() -> Protocol:
             return Protocol(client=self)
 
-        _, protocol = await self.loop.create_connection(
-            protocol_factory,
-            host=self.host,
-            port=self.port,
-            ssl=self.ssl
-        )  # type: Tuple[Any, Any]
+        _, protocol = await self.loop.create_connection(protocol_factory, host=self.host, port=self.port, ssl=self.ssl)  # type: Tuple[Any, Any]
         if self.protocol:
             self.protocol.close()
         self.protocol = protocol
@@ -156,9 +157,15 @@ class RawClient:
 
 
 class Client(RawClient):
-    def __init__(self, host: str, port: int, *,
-                 encoding: str = "utf-8", ssl: Union[bool, _ssl.SSLContext] = True,
-                 loop: Optional[asyncio.AbstractEventLoop] = None) -> None:
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        *,
+        encoding: str = "utf-8",
+        ssl: Union[bool, _ssl.SSLContext] = True,
+        loop: Optional[asyncio.AbstractEventLoop] = None,
+    ) -> None:
         """
 
         :param host: The IRC server address to connect to.
@@ -188,7 +195,7 @@ class Client(RawClient):
         self.send_raw(packed_command)
 
 
-rfc2812_log = logging.getLogger('bottom.rfc2812_handler')
+rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
 
 
 def rfc2812_handler(client: RawClient) -> Callable:
@@ -199,4 +206,5 @@ def rfc2812_handler(client: RawClient) -> Callable:
         except ValueError:
             rfc2812_log.debug("Failed to parse line >>> {}".format(message))
         await next_handler(message)
+
     return handler

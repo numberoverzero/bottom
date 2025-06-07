@@ -48,8 +48,7 @@ def test_multipart_line(protocol, transport, active_client, flush):
 
 def test_multiline_chunk(protocol, transport, active_client, flush):
     """Multiple IRC lines in a single data_received block"""
-    protocol.data_received(
-        b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
+    protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
     flush()
     assert active_client.triggers["PRIVMSG"] == 2
 
@@ -58,18 +57,18 @@ def test_invalid_line(protocol, transport, active_client, flush):
     """Well-formatted but invalid line"""
     protocol.data_received(b"blah unknown command\r\n")
     flush()
-    assert list(active_client.triggers.keys()) == ['CLIENT_CONNECT']
+    assert list(active_client.triggers.keys()) == ["CLIENT_CONNECT"]
 
 
 def test_close(protocol, transport, active_client):
     """Protocol.close triggers connection_lost,
     client triggers exactly 1 disconnect"""
     protocol.close()
-    assert active_client.triggers['CLIENT_DISCONNECT'] == 1
+    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
     assert protocol.closed
 
     protocol.close()
-    assert active_client.triggers['CLIENT_DISCONNECT'] == 1
+    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
 
     transport.close()
-    assert active_client.triggers['CLIENT_DISCONNECT'] == 1
+    assert active_client.triggers["CLIENT_DISCONNECT"] == 1

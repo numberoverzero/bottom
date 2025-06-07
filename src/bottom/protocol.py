@@ -14,7 +14,7 @@ class Protocol(asyncio.Protocol):
     client = None  # type: RawClient
     transport = None  # type: asyncio.WriteTransport
 
-    def __init__(self, client: 'Optional[RawClient]' = None) -> None:
+    def __init__(self, client: "Optional[RawClient]" = None) -> None:
         if client is not None:
             self.client = client
         self.closed = False  # type: bool

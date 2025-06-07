@@ -1,7 +1,7 @@
 def test_connect(client, connect):
     """Connect client triggers client_connect"""
     connect()
-    assert client.triggers['CLIENT_CONNECT'] == 1
+    assert client.triggers["CLIENT_CONNECT"] == 1
 
 
 def test_ping_pong(client, server, connect, flush):

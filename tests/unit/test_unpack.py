@@ -3,21 +3,21 @@ from bottom.unpack import parameters, synonym, unpack_command
 
 
 def test_no_command():
-    """ raise when command is None or empty """
+    """raise when command is None or empty"""
     with pytest.raises(AttributeError):
-        unpack_command(None)
+        unpack_command(None)  # type: ignore
     with pytest.raises(ValueError):
         unpack_command("")
 
 
 def test_bad_command():
-    """ raise when command is incorrectly formatted """
+    """raise when command is incorrectly formatted"""
     with pytest.raises(ValueError):
         unpack_command(":prefix_only")
 
 
 def test_unknown_command():
-    """ raise when command isn't known """
+    """raise when command isn't known"""
     with pytest.raises(ValueError):
         unpack_command("unknown_command")
     with pytest.raises(ValueError):
@@ -25,12 +25,12 @@ def test_unknown_command():
 
 
 def test_ignore_case():
-    """ input case doesn't matter """
+    """input case doesn't matter"""
     assert ("PING", {"message": "m"}) == unpack_command("pInG :m")
 
 
 def test_synonym():
-    """ numeric -> string """
+    """numeric -> string"""
     # Defined commands
     assert synonym("001") == synonym("RPL_WELCOME") == "RPL_WELCOME"
     # Unknown, even impossible commands
@@ -38,7 +38,7 @@ def test_synonym():
 
 
 def validate(command, message, expected_kwargs):
-    """ Basic case - expected_kwargs expects all parameters of the command """
+    """Basic case - expected_kwargs expects all parameters of the command"""
     assert (command, expected_kwargs) == unpack_command(message)
     assert set(expected_kwargs) == set(parameters(command))
 
@@ -62,14 +62,14 @@ def test_param_positioning():
 
 
 def test_client_commands():
-    """ CLIENT_CONNECT and CLIENT_DISCONNECT """
+    """CLIENT_CONNECT and CLIENT_DISCONNECT"""
     expected = set(["host", "port"])
     assert expected == set(parameters("CLIENT_CONNECT"))
     assert expected == set(parameters("CLIENT_DISCONNECT"))
 
 
 def test_ping():
-    """ PING command """
+    """PING command"""
     command = "PING"
     message = "PING :ping msg"
     expected_kwargs = {"message": "ping msg"}
@@ -77,20 +77,18 @@ def test_ping():
 
 
 def test_privmsg():
-    """ PRIVMSG command """
+    """PRIVMSG command"""
     command = "PRIVMSG"
     message = ":n!u@h PRIVMSG #t :m"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "message": "m", "target": "#t"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "message": "m", "target": "#t"}
     validate(command, message, expected_kwargs)
 
 
 def test_notice():
-    """ NOTICE command """
+    """NOTICE command"""
     command = "NOTICE"
     message = ":n!u@h NOTICE #t :m"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "message": "m", "target": "#t"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "message": "m", "target": "#t"}
     validate(command, message, expected_kwargs)
 
     # server notice - can't use validate since not all params are defined
@@ -100,70 +98,63 @@ def test_notice():
 
 
 def test_join():
-    """ JOIN command """
+    """JOIN command"""
     command = "JOIN"
     message = ":n!u@h JOIN #c"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "channel": "#c"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "channel": "#c"}
     validate(command, message, expected_kwargs)
 
 
 def test_nick():
-    """ NICK command """
+    """NICK command"""
     command = "NICK"
     message = ":n!u@h NICK new_user_nick"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "new_nick": "new_user_nick"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "new_nick": "new_user_nick"}
     validate(command, message, expected_kwargs)
 
 
 def test_quit():
-    """ QUIT command """
+    """QUIT command"""
     command = "QUIT"
     message = ":n!u@h QUIT :m"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "message": "m"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "message": "m"}
     validate(command, message, expected_kwargs)
 
 
 def test_quit_no_msg():
-    """ QUIT command """
+    """QUIT command"""
     command = "QUIT"
     message = ":n!u@h QUIT"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "message": ""}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "message": ""}
     validate(command, message, expected_kwargs)
 
 
 def test_part():
-    """ PART command """
+    """PART command"""
     command = "PART"
     message = ":n!u@h PART #c :m"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "channel": "#c", "message": "m"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "channel": "#c", "message": "m"}
     validate(command, message, expected_kwargs)
 
 
 def test_part_no_msg():
-    """ PART command """
+    """PART command"""
     command = "PART"
     message = ":n!u@h PART #c"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "channel": "#c", "message": ""}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "channel": "#c", "message": ""}
     validate(command, message, expected_kwargs)
 
 
 def test_invite():
-    """ INVITE command """
+    """INVITE command"""
     command = "INVITE"
     message = ":n!u@h INVITE n #c"
-    expected_kwargs = {"nick": "n", "user": "u", "host": "h",
-                       "target": "n", "channel": "#c"}
+    expected_kwargs = {"nick": "n", "user": "u", "host": "h", "target": "n", "channel": "#c"}
     validate(command, message, expected_kwargs)
 
 
 def test_channel_message_commands():
-    """ channel and message commands """
+    """channel and message commands"""
     cmds = ["RPL_TOPIC", "RPL_NOTOPIC", "RPL_ENDOFNAMES"]
     expected_kwargs = {"channel": "#ch", "message": "m"}
     for command in cmds:
@@ -172,7 +163,7 @@ def test_channel_message_commands():
 
 
 def test_topic():
-    """ TOPIC command """
+    """TOPIC command"""
     command = "TOPIC"
     message = command + " #ch"
     expected = {"channel": "#ch", "message": ""}
@@ -184,83 +175,84 @@ def test_topic():
 
 
 def test_channelmode_no_params():
-    """ MODE command """
+    """MODE command"""
     command = "CHANNELMODE"
-    expected_kwargs = {"channel": "#ch", "host": "",
-                       "modes": "+m", "params": []}
+    expected_kwargs = {"channel": "#ch", "host": "", "modes": "+m", "params": []}
     message = "MODE #ch +m"
     assert (command, expected_kwargs) == unpack_command(message)
-    expected_kwargs['user'] = 'usr'
-    expected_kwargs['nick'] = 'nck'
+    expected_kwargs["user"] = "usr"
+    expected_kwargs["nick"] = "nck"
     assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_channelmode_hash():
-    """ MODE command """
+    """MODE command"""
     command = "CHANNELMODE"
-    expected_kwargs = {"channel": "#ch", "host": "",
-                       "modes": "+oo", "params": ['trget', 'trget2']}
+    expected_kwargs = {"channel": "#ch", "host": "", "modes": "+oo", "params": ["trget", "trget2"]}
     message = "MODE #ch +oo trget trget2"
     assert (command, expected_kwargs) == unpack_command(message)
-    expected_kwargs['user'] = 'usr'
-    expected_kwargs['nick'] = 'nck'
+    expected_kwargs["user"] = "usr"
+    expected_kwargs["nick"] = "nck"
     assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_channelmode_ampersand():
-    """ MODE command """
+    """MODE command"""
     command = "CHANNELMODE"
-    expected_kwargs = {"channel": "&ch", "host": "",
-                       "modes": "+oo", "params": ['trget', 'trget2']}
+    expected_kwargs = {"channel": "&ch", "host": "", "modes": "+oo", "params": ["trget", "trget2"]}
     message = "MODE &ch +oo trget trget2"
     assert (command, expected_kwargs) == unpack_command(message)
-    expected_kwargs['user'] = 'usr'
-    expected_kwargs['nick'] = 'nck'
+    expected_kwargs["user"] = "usr"
+    expected_kwargs["nick"] = "nck"
     assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_channelmode_bang():
-    """ MODE command """
+    """MODE command"""
     command = "CHANNELMODE"
-    expected_kwargs = {"channel": "!ch", "host": "",
-                       "modes": "+o", "params": ['trget', 'trget2']}
+    expected_kwargs = {"channel": "!ch", "host": "", "modes": "+o", "params": ["trget", "trget2"]}
     message = "MODE !ch +o trget trget2"
     assert (command, expected_kwargs) == unpack_command(message)
-    expected_kwargs['user'] = 'usr'
-    expected_kwargs['nick'] = 'nck'
+    expected_kwargs["user"] = "usr"
+    expected_kwargs["nick"] = "nck"
     assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_channelmode_plus():
-    """ MODE command """
+    """MODE command"""
     command = "CHANNELMODE"
-    expected_kwargs = {"channel": "+ch", "host": "",
-                       "modes": "+o", "params": ['trget', 'trget2']}
+    expected_kwargs = {"channel": "+ch", "host": "", "modes": "+o", "params": ["trget", "trget2"]}
     message = "MODE +ch +o trget trget2"
     assert (command, expected_kwargs) == unpack_command(message)
-    expected_kwargs['user'] = 'usr'
-    expected_kwargs['nick'] = 'nck'
+    expected_kwargs["user"] = "usr"
+    expected_kwargs["nick"] = "nck"
     assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_usermode():
-    """ MODE command """
+    """MODE command"""
     command = "USERMODE"
-    expected_kwargs = {"nick": "nck", "host": "",
-                       "modes": "+x"}
+    expected_kwargs = {"nick": "nck", "host": "", "modes": "+x"}
     message = "MODE nck +x"
     assert (command, expected_kwargs) == unpack_command(message)
-    expected_kwargs['user'] = 'usr'
+    expected_kwargs["user"] = "usr"
     assert set(expected_kwargs) == set(parameters(command))
 
 
 def test_who_reply():
-    """ WHO response """
-    command = 'RPL_WHOREPLY'
-    expected_kwargs = {"target": "#t", "channel": "#ch", "server": "srv",
-                       "real_name": "rn", "host": "hst",
-                       "nick": "nck", "hg_code": "H",
-                       "hopcount": 27, "user": "usr"}
+    """WHO response"""
+    command = "RPL_WHOREPLY"
+    expected_kwargs = {
+        "target": "#t",
+        "channel": "#ch",
+        "server": "srv",
+        "real_name": "rn",
+        "host": "hst",
+        "nick": "nck",
+        "hg_code": "H",
+        "hopcount": 27,
+        "user": "usr",
+    }
     message = command + " #t #ch usr hst srv nck H :27 rn"
     validate(command, message, expected_kwargs)
 
@@ -274,27 +266,31 @@ def test_end_of_who_reply():
 
 def test_name_reply():
     command = "RPL_NAMREPLY"
-    expected_kwargs = {"channel": "#ch", "target": "#t",
-                       "users": ['aa', 'bb', 'cc'],
-                       "channel_type": None}
+    expected_kwargs = {"channel": "#ch", "target": "#t", "users": ["aa", "bb", "cc"], "channel_type": None}
     message = command + " #t #ch :aa bb cc"
     validate(command, message, expected_kwargs)
 
 
 def test_name_reply_longer():
     command = "RPL_NAMREPLY"
-    expected_kwargs = {"channel": "#ch", "target": "#t",
-                       "users": ['aa', 'bb', 'cc'],
-                       "channel_type": "="}
+    expected_kwargs = {"channel": "#ch", "target": "#t", "users": ["aa", "bb", "cc"], "channel_type": "="}
     message = command + " #t = #ch :aa bb cc"
     validate(command, message, expected_kwargs)
 
 
 def test_message_commands():
-    """ message-only commands """
-    cmds = ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD", "RPL_WELCOME",
-            "RPL_YOURHOST", "RPL_CREATED", "RPL_LUSERCLIENT", "RPL_LUSERME",
-            "ERR_NOMOTD"]
+    """message-only commands"""
+    cmds = [
+        "RPL_MOTDSTART",
+        "RPL_MOTD",
+        "RPL_ENDOFMOTD",
+        "RPL_WELCOME",
+        "RPL_YOURHOST",
+        "RPL_CREATED",
+        "RPL_LUSERCLIENT",
+        "RPL_LUSERME",
+        "ERR_NOMOTD",
+    ]
     expected_kwargs = {"message": "m"}
     for command in cmds:
         message = command + " :m"
@@ -302,7 +298,7 @@ def test_message_commands():
 
 
 def test_count_commands():
-    """ count + message commands """
+    """count + message commands"""
     cmds = ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]
     expected_kwargs = {"message": "m", "count": 3}
     for command in cmds:
@@ -311,7 +307,7 @@ def test_count_commands():
 
 
 def test_count_commands_no_msg():
-    """ count + message commands """
+    """count + message commands"""
     cmds = ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]
     expected_kwargs = {"message": "", "count": 3}
     for command in cmds:
@@ -320,7 +316,7 @@ def test_count_commands_no_msg():
 
 
 def test_info_commands():
-    """ *info + message commands """
+    """*info + message commands"""
     cmds = ["RPL_MYINFO", "RPL_BOUNCE"]
     expected_kwargs = {"message": "m", "info": ["one", "two", "three"]}
     for command in cmds:

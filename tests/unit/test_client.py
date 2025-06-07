@@ -37,35 +37,32 @@ def test_stop_processing(loop, flush):
     task = process([first, second, not_called], "123")
     loop.create_task(task)
     flush()
-    assert calls == [
-        ("first", "123"),
-        ("second", "321")
-    ]
+    assert calls == [("first", "123"), ("second", "321")]
 
 
 def test_send_unknown_command(active_client, protocol):
-    """ Sending an unknown command raises """
+    """Sending an unknown command raises"""
     assert active_client.protocol is protocol
     with pytest.raises(ValueError):
         active_client.send("Unknown Command")
 
 
 def test_send_before_connected(client, transport):
-    """ Sending before connected raises """
+    """Sending before connected raises"""
     with pytest.raises(RuntimeError):
         client.send("PONG")
     assert not transport.written
 
 
 def test_disconnect_before_connected(client, schedule):
-    """ Disconnecting a client that's not connected is a no-op """
+    """Disconnecting a client that's not connected is a no-op"""
     assert client.protocol is None
     schedule(client.disconnect())
     assert client.protocol is None
 
 
 def test_send_after_disconnected(client, transport, schedule):
-    """ Sending after disconnect does not invoke writer """
+    """Sending after disconnect does not invoke writer"""
     schedule(client.connect())
     # Written while connected
     client.send("PONG")
@@ -79,7 +76,7 @@ def test_send_after_disconnected(client, transport, schedule):
 
 
 def test_old_connection_lost(active_client, protocol):
-    """ An old connection closing is a no-op """
+    """An old connection closing is a no-op"""
     assert active_client.protocol is protocol
     old_conn = object()
     active_client._connection_lost(old_conn)
@@ -98,32 +95,32 @@ def test_multiple_connect(client, protocol, schedule, connection_info):
 
 
 def test_unpack_triggers_client(active_client, protocol, flush):
-    """ protocol pushes messages to the client """
+    """protocol pushes messages to the client"""
     received = []
 
     @active_client.on("PRIVMSG")
     async def receive(nick, user, host, target, message):
         received.extend([nick, user, host, target, message])
 
-    protocol.data_received(
-        b":nick!user@host PRIVMSG #target :this is message\n")
+    protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\n")
     flush()
     assert received == ["nick", "user", "host", "#target", "this is message"]
 
 
 def test_on_signature(client):
-    """ register a handler with full function signature options"""
+    """register a handler with full function signature options"""
     client.on("f")(lambda arg, *args, kw_only, kw_default="d", **kwargs: None)
 
 
 def test_on_coroutine(client):
     async def handle(arg, *args, kw_only, kw_default="d", **kwargs):
         pass
+
     client.on("f")(handle)
 
 
 def test_trigger_no_handlers(client, flush):
-    """ trigger an event with no handlers """
+    """trigger an event with no handlers"""
     client.trigger("some event")
     flush()
 
@@ -155,7 +152,7 @@ def test_trigger_multiple_handlers(client, flush):
 
 
 def test_trigger_unpacking(client, flush):
-    """ Usual semantics for unpacking **kwargs """
+    """Usual semantics for unpacking **kwargs"""
     called = False
 
     def func(arg, *args, kw_only, kw_default="default", **kwargs):
@@ -174,7 +171,8 @@ def test_trigger_unpacking(client, flush):
 
 
 def test_bound_method_of_instance(client, flush):
-    """ verify bound methods are correctly inspected """
+    """verify bound methods are correctly inspected"""
+
     class Class(object):
         def method(self, arg, kw_default="default"):
             assert arg == "arg"
@@ -187,8 +185,8 @@ def test_bound_method_of_instance(client, flush):
 
 
 def test_callback_ordering(client, flush):
-    """ Callbacks for a second event don't queue behind the first event """
-    second_complete = asyncio.Event(loop=client.loop)
+    """Callbacks for a second event don't queue behind the first event"""
+    second_complete = asyncio.Event()
     call_order = []
     complete_order = []
 
@@ -212,7 +210,7 @@ def test_callback_ordering(client, flush):
 
 
 def test_wait_ordering(client, flush):
-    """ Handlers are enqueued before trigger waits """
+    """Handlers are enqueued before trigger waits"""
     invoked = []
 
     @client.on("some.trigger")
@@ -231,7 +229,7 @@ def test_wait_ordering(client, flush):
 
 
 def test_wait_return_value(client, flush):
-    """ The value returned should be the same as the value given. """
+    """The value returned should be the same as the value given."""
     event_name = "test_wait_return_value"
     returned_name = ""
 

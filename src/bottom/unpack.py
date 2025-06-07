@@ -1,4 +1,5 @@
-""" Simplified support for rfc2812 """
+"""Simplified support for rfc2812"""
+
 # https://tools.ietf.org/html/rfc2812
 import re
 from typing import Any, Dict, List, Pattern, Tuple  # noqa
@@ -20,7 +21,9 @@ RE_IRCLINE = re.compile(
     (?:\s+:(?P<message>.*))?     # Optional message starts after first ":"
                                  # Must have at least one leading space
     $
-    """, re.VERBOSE)  # type: Pattern[str]
+    """,
+    re.VERBOSE,
+)  # type: Pattern[str]
 
 _2812_synonyms = {}  # type: Dict[str, str]
 for numeric, string in [
@@ -160,7 +163,7 @@ for numeric, string in [
     ("485", "ERR_UNIQOPPRIVSNEEDED"),
     ("491", "ERR_NOOPERHOST"),
     ("501", "ERR_UMODEUNKNOWNFLAG"),
-    ("502", "ERR_USERSDONTMATCH")
+    ("502", "ERR_USERSDONTMATCH"),
 ]:
     _2812_synonyms[string] = string
     _2812_synonyms[numeric] = string
@@ -172,7 +175,7 @@ def synonym(command: str) -> str:
 
 
 def nickmask(prefix: str, kwargs: Dict[str, Any]) -> None:
-    """ store nick, user, host in kwargs if prefix is correct format """
+    """store nick, user, host in kwargs if prefix is correct format"""
     if "!" in prefix and "@" in prefix:
         # From a user
         kwargs["nick"], remainder = prefix.split("!", 1)
@@ -187,7 +190,7 @@ def add_nickmask(params: List[str]) -> None:
 
 
 def split_line(msg: str) -> Tuple[str, str, List[str]]:
-    """ Parse message according to rfc 2812 for routing """
+    """Parse message according to rfc 2812 for routing"""
     match = RE_IRCLINE.match(msg)
     if not match:
         raise ValueError("Invalid line")
@@ -239,13 +242,15 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
               ( "H" / "G" > ["*"] [ ( "@" / "+" ) ]
               :<hopcount> <real name>"
         """
-        (kwargs["target"],
-         kwargs["channel"],
-         kwargs["user"],
-         kwargs["host"],
-         kwargs["server"],
-         kwargs["nick"],
-         kwargs["hg_code"]) = params[0:7]
+        (
+            kwargs["target"],
+            kwargs["channel"],
+            kwargs["user"],
+            kwargs["host"],
+            kwargs["server"],
+            kwargs["nick"],
+            kwargs["hg_code"],
+        ) = params[0:7]
         hc, kwargs["real_name"] = params[-1].split(" ", 1)
         kwargs["hopcount"] = int(hc)
 
@@ -277,9 +282,16 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
         kwargs["channel"] = params[1]
         kwargs["message"] = params[2]
 
-    elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
-                     "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
-                     "RPL_LUSERCLIENT", "RPL_LUSERME"]:
+    elif command in [
+        "RPL_MOTDSTART",
+        "RPL_MOTD",
+        "RPL_ENDOFMOTD",
+        "RPL_WELCOME",
+        "RPL_YOURHOST",
+        "RPL_CREATED",
+        "RPL_LUSERCLIENT",
+        "RPL_LUSERME",
+    ]:
         kwargs["message"] = params[-1]
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:
@@ -384,9 +396,16 @@ def parameters(command: str) -> List[str]:
         params.append("target")
         params.append("channel")
 
-    elif command in ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD",
-                     "RPL_WELCOME", "RPL_YOURHOST", "RPL_CREATED",
-                     "RPL_LUSERCLIENT", "RPL_LUSERME"]:
+    elif command in [
+        "RPL_MOTDSTART",
+        "RPL_MOTD",
+        "RPL_ENDOFMOTD",
+        "RPL_WELCOME",
+        "RPL_YOURHOST",
+        "RPL_CREATED",
+        "RPL_LUSERCLIENT",
+        "RPL_LUSERME",
+    ]:
         params.append("message")
 
     elif command in ["RPL_LUSEROP", "RPL_LUSERUNKNOWN", "RPL_LUSERCHANNELS"]:

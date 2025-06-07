@@ -1,14 +1,13 @@
 import asyncio
 import collections
 
-# import ssl as _ssl
 import bottom
 import pytest
 
 
 @pytest.fixture
 def host():
-    return 'localhost'
+    return "localhost"
 
 
 @pytest.fixture
@@ -23,9 +22,10 @@ def ssl():
     return None
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True, scope="function")
 def loop():
     loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     loop.set_debug(True)
     return loop
 
@@ -33,16 +33,18 @@ def loop():
 @pytest.fixture
 def flush(loop):
     """Run loop once, to execute any pending tasks"""
+
     async def sentinel():
         pass
 
     def _flush():
         loop.run_until_complete(sentinel())
+
     return _flush
 
 
 @pytest.fixture
-def client(loop, host, port, ssl):
+def client(host, port, ssl):
     class TrackingClient(bottom.Client):
         def __init__(self, *args, **kwargs):
             self.triggers = collections.defaultdict(int)
@@ -53,12 +55,13 @@ def client(loop, host, port, ssl):
             self.triggers[event] += 1
             super().trigger(event, **kwargs)
 
-    return TrackingClient(host=host, port=port, loop=loop, ssl=ssl)
+    return TrackingClient(host=host, port=port, ssl=ssl)
 
 
 @pytest.fixture
-def protocol(client, loop):
+def protocol(client):
     """Server side protocol"""
+
     class Protocol(asyncio.Protocol):
         delim = b"\n"
         delim_compat = b"\r\n"
@@ -105,8 +108,7 @@ def server(protocol, loop, host, port, ssl):
             self.sent = []
 
         async def start(self):
-            self._server = await loop.create_server(
-                protocol.factory(self), host, port, ssl=ssl)
+            self._server = await loop.create_server(protocol.factory(self), host, port, ssl=ssl)
 
         def close(self):
             self._server.close()
@@ -124,6 +126,7 @@ def server(protocol, loop, host, port, ssl):
         def write(self, outgoing):
             self.sent.append(outgoing)
             self.protocol.write(outgoing)
+
     server = Server()
     yield server
     server.close()
@@ -134,4 +137,5 @@ def connect(server, client, loop):
     def _connect():
         loop.run_until_complete(server.start())
         loop.run_until_complete(client.connect())
+
     return _connect
