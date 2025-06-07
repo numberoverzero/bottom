@@ -15,7 +15,7 @@ help:
 	@echo "  publish: upload built .tgz and .whl to public PyPi via twine"
 
 clean:
-	rm -rf dist/ docs/_build
+	rm -rf dist/ docs/_build .coverage
 
 dev:
 	rm -rf .venv
@@ -29,6 +29,7 @@ lint:
 	.venv/bin/ty check
 
 test:
+	rm -f .coverage
 	.venv/bin/pip install -q --group test
 	.venv/bin/coverage run --branch --source=src/bottom -m pytest
 	.venv/bin/coverage report -m

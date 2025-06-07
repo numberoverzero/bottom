@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=2.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 
 [project]
@@ -15,7 +15,10 @@ license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 4 - Beta",
 ]
-dependencies = []
+
+[tool.poetry.dependencies]
+python = ">=3.11"
+
 
 [dependency-groups]
 test = [
@@ -51,7 +54,3 @@ select = [
 
 [tool.ruff.lint.isort]
 known-third-party = ["bottom"]
-
-
-[tool.setuptools.packages.find]
-where = ["src"]
