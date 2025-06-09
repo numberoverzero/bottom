@@ -70,7 +70,7 @@ class ServerProtocol(asyncio.Protocol):
 
 
 class Server:
-    protocol: ServerProtocol
+    protocol: ServerProtocol | None = None
 
     def __init__(self, host: str, port: int, ssl: ssl_module.SSLContext | bool | None, encoding: str):
         self.host = host
@@ -100,7 +100,8 @@ class Server:
 
     async def close(self):
         self._server.close()
-        self.protocol.close()
+        if self.protocol:
+            self.protocol.close()
         await self._server.wait_closed()
 
     def expect(self, incoming, response=None):
@@ -112,10 +113,12 @@ class Server:
         if incoming in self.expected:
             outgoing = self.expected[incoming]
             self.sent.append(outgoing)
+            assert self.protocol
             self.protocol.write(outgoing)
 
     def write(self, outgoing):
         self.sent.append(outgoing)
+        assert self.protocol
         self.protocol.write(outgoing)
 
 
@@ -158,6 +161,7 @@ def port(server: Server) -> int:
 
 @pytest.fixture
 def server_protocol(server: Server) -> ServerProtocol:
+    assert server.protocol
     return server.protocol
 
 

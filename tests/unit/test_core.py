@@ -1,6 +1,5 @@
 import asyncio
 
-import pytest
 from bottom.core import Protocol
 
 from tests.conftest import busy_wait
@@ -64,89 +63,39 @@ async def test_invalid_line(client_protocol: Protocol, captured_messages: list[s
     assert captured_messages == [invalid_line]
 
 
-def test_send_unknown_command(active_client, protocol):
-    """Sending an unknown command raises"""
-    assert active_client.protocol is protocol
-    with pytest.raises(ValueError):
-        active_client.send("Unknown Command")
-
-
-def test_send_before_connected(client, transport):
-    """Sending before connected raises"""
-    with pytest.raises(RuntimeError):
-        client.send("PONG")
-    assert not transport.written
-
-
-def test_disconnect_before_connected(client, schedule):
-    """Disconnecting a client that's not connected is a no-op"""
-    assert client.protocol is None
-    schedule(client.disconnect())
-    assert client.protocol is None
-
-
-def test_send_after_disconnected(client, transport, schedule):
-    """Sending after disconnect does not invoke writer"""
-    schedule(client.connect())
-    # Written while connected
-    client.send("PONG")
-
-    schedule(client.disconnect())
-    # Written while disconnected - not sent
-    with pytest.raises(RuntimeError):
-        client.send("QUIT")
-
-    assert transport.written == [b"PONG\r\n"]
-
-
-def test_old_connection_lost(active_client, protocol):
-    """An old connection closing is a no-op"""
-    assert active_client.protocol is protocol
-    old_conn = object()
-    active_client._connection_lost(old_conn)
-    assert active_client.protocol is protocol
-
-
-def test_multiple_connect(client, protocol, schedule, connection_info):
-    """Establishing a second connection should close the first"""
-    schedule(client.connect())
-    assert client.protocol is protocol
-    assert connection_info["created"] == 1
-
-    schedule(client.connect())
-    assert client.protocol is protocol
-    assert connection_info["created"] == 2
-
-
-def test_unpack_triggers_client(active_client, protocol, flush):
-    """protocol pushes messages to the client"""
-    received = []
-
-    @active_client.on("PRIVMSG")
-    async def receive(nick, user, host, target, message):
-        received.extend([nick, user, host, target, message])
-
-    protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\n")
-    flush()
-    assert received == ["nick", "user", "host", "#target", "this is message"]
+async def test_multiple_connect(client, client_protocol):
+    """Calling connect while already connected doesn't do anything"""
+    assert client.protocol is client_protocol
+    await client.connect()
+    assert client.protocol is client_protocol
 
 
 def test_on_signature(client):
-    """register a handler with full function signature options"""
-    client.on("f")(lambda arg, *args, kw_only, kw_default="d", **kwargs: None)
+    """register a sync handler with full function signature options"""
 
-
-def test_on_coroutine(client):
-    async def handle(arg, *args, kw_only, kw_default="d", **kwargs):
+    def handle(arg, /, pos_only, *args, kw_only, kw_default="d", **kwargs):
         pass
 
     client.on("f")(handle)
+    client.on("f", handle)
 
 
-def test_trigger_no_handlers(client, flush):
+def test_on_coroutine(client):
+    async def handle(arg, /, pos_only, *args, kw_only, kw_default="d", **kwargs):
+        pass
+
+    client.on("f")(handle)
+    client.on("f", handle)
+
+
+async def test_trigger_no_handlers(client):
     """trigger an event with no handlers"""
-    client.trigger("some event")
-    flush()
+    task = client.trigger("some event")
+    assert not client.event_handlers["SOME EVENT"]
+    assert client.triggers["SOME EVENT"] == 1
+
+    await asyncio.sleep(0)
+    assert task.done()
 
 
 def test_trigger_one_handler(client, watch, flush):

@@ -1,5 +1,6 @@
 import asyncio
 
+import pytest
 from bottom.core import Protocol
 from bottom.util import create_task
 
@@ -61,3 +62,43 @@ async def test_multi_reconnect(client, client_protocol: Protocol):
     # this isn't associated with the client, so shouldn't count as client_disconnect.
     client_protocol.connection_lost(exc=None)
     expect(2, 2)
+
+
+async def test_send_unknown_command(client):
+    """Sending an unknown command raises"""
+    with pytest.raises(ValueError):
+        client.send("Unknown Command")
+
+
+async def test_send_before_connect(client):
+    """Sending before connected raises"""
+    with pytest.raises(RuntimeError):
+        client.send("PONG")
+    assert client.protocol is None
+
+
+async def test_send_after_disconnect(client, server):
+    """Sending after disconnect does not invoke writer"""
+    await client.connect()
+    client.send("PONG")
+    await busy_wait(lambda: server.received)
+    assert server.received == ["PONG"]
+
+    await client.disconnect()
+    await busy_wait(lambda: client.protocol is None)
+    with pytest.raises(RuntimeError):
+        client.send("QUIT")
+    assert server.received == ["PONG"]
+
+
+async def test_unpack_triggers_client(client, client_protocol):
+    """protocol pushes messages to the client"""
+    received = []
+
+    @client.on("PRIVMSG")
+    async def receive(nick, user, host, target, message):
+        received.extend([nick, user, host, target, message])
+
+    client_protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\n")
+    await busy_wait(lambda: received)
+    assert received == ["nick", "user", "host", "#target", "this is message"]
