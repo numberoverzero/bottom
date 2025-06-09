@@ -1,6 +1,7 @@
 import asyncio
 
 from bottom.core import Protocol
+from bottom.util import create_task, join_tasks
 
 from tests.conftest import busy_wait
 
@@ -98,15 +99,18 @@ async def test_trigger_no_handlers(client):
     assert task.done()
 
 
-def test_trigger_one_handler(client, watch, flush):
-    client.on("f")(lambda: watch.call())
+async def test_trigger_one_handler(client):
+    called = []
+    client.on("f")(lambda: called.append(1))
     client.trigger("f")
-    flush()
+    assert not called
+
+    await asyncio.sleep(0)
     assert client.triggers["F"] == 1
-    assert watch.called
+    assert called == [1]
 
 
-def test_trigger_multiple_handlers(client, flush):
+async def test_trigger_multiple_handlers(client):
     h1, h2 = 0, 0
 
     def incr(first=True):
@@ -119,12 +123,14 @@ def test_trigger_multiple_handlers(client, flush):
     client.on("f")(lambda: incr(first=True))
     client.on("f")(lambda: incr(first=False))
     client.trigger("f")
-    flush()
+    assert h1 == h2 == 0
+
+    await asyncio.sleep(0)
     assert h1 == 1
     assert h2 == 1
 
 
-def test_trigger_unpacking(client, flush):
+async def test_trigger_unpacking(client):
     """Usual semantics for unpacking **kwargs"""
     called = False
 
@@ -139,25 +145,47 @@ def test_trigger_unpacking(client, flush):
 
     client.on("f")(func)
     client.trigger("f", **{s: s for s in ["arg", "kw_only", "extra"]})
-    flush()
+    await asyncio.sleep(0)
     assert called
 
 
-def test_bound_method_of_instance(client, flush):
+async def test_bound_method_of_instance(client):
     """verify bound methods are correctly inspected"""
+    called = False
 
     class Class(object):
         def method(self, arg, kw_default="default"):
             assert arg == "arg"
             assert kw_default == "default"
+            nonlocal called
+            called = True
 
     instance = Class()
     client.on("f")(instance.method)
     client.trigger("f", **{"arg": "arg"})
-    flush()
+    await asyncio.sleep(0)
+    assert called
 
 
-def test_callback_ordering(client, flush):
+async def test_bound_async_method_of_instance(client):
+    """verify bound methods are correctly inspected"""
+    called = False
+
+    class Class(object):
+        async def method(self, arg, kw_default="default"):
+            assert arg == "arg"
+            assert kw_default == "default"
+            nonlocal called
+            called = True
+
+    instance = Class()
+    client.on("f")(instance.method)
+    client.trigger("f", **{"arg": "arg"})
+    await asyncio.sleep(0)
+    assert called
+
+
+async def test_callback_ordering(client):
     """Callbacks for a second event don't queue behind the first event"""
     second_complete = asyncio.Event()
     call_order = []
@@ -176,42 +204,64 @@ def test_callback_ordering(client, flush):
     client.on("f")(first)
     client.on("f")(second)
 
-    client.trigger("f")
-    flush()
+    all_handlers = client.trigger("f")
+    await all_handlers
+
     assert call_order == ["first", "second"]
     assert complete_order == ["second", "first"]
 
 
-def test_wait_ordering(client, flush):
+async def test_wait_ordering(client):
     """Handlers are enqueued before trigger waits"""
     invoked = []
 
     @client.on("some.trigger")
     def handle(**kwargs):
+        print("handled")
         invoked.append("handler")
 
     async def waiter():
+        invoked.append("start waiting")
         await client.wait("some.trigger")
-        invoked.append("waiter")
+        invoked.append("done waiting")
 
-    client.loop.create_task(waiter())
-    flush()
-    client.trigger("some.trigger")
-    flush()
-    assert invoked == ["handler", "waiter"]
+    wait_task = create_task(waiter())
+    await asyncio.sleep(0)  # let waiter get to `await client.wait()`
+    trigger_task = client.trigger("some.trigger")
+    await join_tasks([wait_task, trigger_task])
+
+    assert invoked == ["start waiting", "handler", "done waiting"]
 
 
-def test_wait_return_value(client, flush):
+async def test_wait_return_value(client):
     """The value returned should be the same as the value given."""
     event_name = "test_wait_return_value"
-    returned_name = ""
+
+    record = []
 
     async def waiter():
-        nonlocal returned_name
+        record.append("start waiting")
         returned_name = await client.wait(event_name)
+        record.append(returned_name)
+        record.append("done waiting")
 
-    client.loop.create_task(waiter())
-    flush()
+    record.append("create")
+    create_task(waiter())
+    record.append("yield1")
+    await asyncio.sleep(0)
+    record.append("trigger")
     client.trigger(event_name)
-    flush()
-    assert returned_name is event_name
+    record.append("yield2")
+    await asyncio.sleep(0)
+
+    expected = [
+        "create",
+        "yield1",
+        "start waiting",
+        "trigger",
+        "yield2",
+        event_name,
+        "done waiting",
+    ]
+
+    assert record == expected
