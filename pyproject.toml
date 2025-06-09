@@ -24,6 +24,7 @@ python = ">=3.12"
 test = [
     "coverage==7.8.2",
     "pytest==8.4.0",
+    "pytest-asyncio==1.0.0",
 ]
 lint = [
     "ruff==0.11.13",
@@ -61,6 +62,10 @@ exclude = [
     ".venv",
     "__pycache__",
 ]
+
+[tool.pytest.ini_options]
+# https://pytest-asyncio.readthedocs.io/en/latest/concepts.html#auto-mode
+asyncio_mode = "auto"
 
 [tool.ruff.lint.isort]
 known-third-party = ["bottom"]

@@ -1,141 +1,132 @@
+from __future__ import annotations
+
 import asyncio
 import collections
+import ssl as ssl_module
+import typing as t
 
 import bottom
 import pytest
+import pytest_asyncio
 
 
 @pytest.fixture
-def host():
+def host() -> str:
     return "localhost"
 
 
 @pytest.fixture
-def port():
+def port() -> int:
     return 8888
 
 
 @pytest.fixture
-def ssl():
+def encoding() -> str:
+    return "utf-8"
+
+
+@pytest.fixture
+def ssl() -> ssl_module.SSLContext | bool | None:
     # TODO: make a working context
     # return _ssl.create_default_context()
     return None
 
 
-@pytest.fixture(autouse=True, scope="function")
-def loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.set_debug(True)
-    return loop
-
-
-@pytest.fixture
-def flush(loop):
-    """Run loop once, to execute any pending tasks"""
-
-    async def sentinel():
-        pass
-
-    def _flush():
-        loop.run_until_complete(sentinel())
-
-    return _flush
-
-
-@pytest.fixture
-def client(host, port, ssl):
+@pytest_asyncio.fixture
+async def client(host, port, ssl, encoding) -> t.AsyncGenerator[bottom.Client]:
     class TrackingClient(bottom.Client):
         def __init__(self, *args, **kwargs):
             self.triggers = collections.defaultdict(int)
             super().__init__(*args, **kwargs)
 
-        def trigger(self, event, **kwargs):
-            event = event.upper()
+        def trigger(self, event, **kwargs) -> asyncio.Task:
+            event = event.strip().upper()
             self.triggers[event] += 1
-            super().trigger(event, **kwargs)
+            return super().trigger(event, **kwargs)
 
-    return TrackingClient(host=host, port=port, ssl=ssl)
-
-
-@pytest.fixture
-def protocol(client):
-    """Server side protocol"""
-
-    class Protocol(asyncio.Protocol):
-        delim = b"\n"
-        delim_compat = b"\r\n"
-        buffer = b""
-
-        @classmethod
-        def factory(cls, server):
-            return lambda: cls(server)
-
-        def __init__(self, server):
-            self.server = server
-            server.protocol = self
-            super().__init__()
-
-        def connection_made(self, transport):
-            self.transport = transport
-
-        def data_received(self, data):
-            self.buffer += data
-            # Assume a strict server that only recognizes the spec's \r\n
-            *lines, self.buffer = self.buffer.split(b"\r\n")
-            for line in lines:
-                incoming = line.decode(client.encoding, "ignore").strip()
-                self.server.handle(incoming)
-
-        def write(self, outgoing):
-            outgoing = outgoing.strip()
-            # Assume a non-compliant server that only writes \n
-            data = outgoing.encode(client.encoding) + b"\n"
-            self.transport.write(data)
-
-        def close(self):
-            self.transport.close()
-
-    return Protocol
+    client = TrackingClient(host=host, port=port, ssl=ssl, encoding=encoding)
+    yield client
+    await client.disconnect()
 
 
-@pytest.yield_fixture
-def server(protocol, loop, host, port, ssl):
-    class Server:
-        def __init__(self):
-            self.expected = {}
-            self.received = []
-            self.sent = []
+class ServerProtocol(asyncio.Protocol):
+    delim_lax = b"\n"
+    delim_strict = b"\r\n"
+    buffer = b""
 
-        async def start(self):
-            self._server = await loop.create_server(protocol.factory(self), host, port, ssl=ssl)
+    def __init__(self, server: Server, encoding: str) -> None:
+        self.server = server
+        self.encoding = encoding
 
-        def close(self):
-            self._server.close()
-            loop.run_until_complete(self._server.wait_closed())
+    def connection_made(self, transport: asyncio.WriteTransport):  # type: ignore[override]
+        self.transport = transport
 
-        def expect(self, incoming, response=None):
-            self.expected[incoming] = response
+    def data_received(self, data):
+        self.buffer += data
+        # Assume a strict server that only recognizes the spec's line ending
+        *lines, self.buffer = self.buffer.split(self.delim_strict)
+        for line in lines:
+            incoming = line.decode(self.encoding, "ignore").strip()
+            self.server.handle(incoming)
 
-        def handle(self, incoming):
-            self.received.append(incoming)
-            outgoing = self.expected[incoming]
-            self.sent.append(outgoing)
-            self.protocol.write(outgoing)
+    def write(self, outgoing):
+        outgoing = outgoing.strip()
+        # Assume a non-compliant server that doesn't write the full line ending
+        data = outgoing.encode(self.encoding) + self.delim_lax
+        self.transport.write(data)
 
-        def write(self, outgoing):
-            self.sent.append(outgoing)
-            self.protocol.write(outgoing)
+    def close(self):
+        self.transport.close()
 
-    server = Server()
+
+class Server:
+    protocol: ServerProtocol
+
+    def __init__(self, host: str, port: int, ssl: ssl_module.SSLContext | bool | None, encoding: str):
+        self.host = host
+        self.port = port
+        self.ssl = ssl
+        self.encoding = encoding
+        self.expected = {}
+        self.received = []
+        self.sent = []
+
+    async def start(self):
+        loop = asyncio.get_running_loop()
+
+        def protocol_factory():
+            protocol = ServerProtocol(self, self.encoding)
+            self.protocol = protocol
+            return protocol
+
+        self._server = await loop.create_server(protocol_factory, host=self.host, port=self.port, ssl=self.ssl)
+
+    async def close(self):
+        self._server.close()
+        self.protocol.close()
+        await self._server.wait_closed()
+
+    def expect(self, incoming, response=None):
+        self.expected[incoming] = response
+
+    def handle(self, incoming):
+        self.received.append(incoming)
+        outgoing = self.expected[incoming]
+        self.sent.append(outgoing)
+        self.protocol.write(outgoing)
+
+    def write(self, outgoing):
+        self.sent.append(outgoing)
+        self.protocol.write(outgoing)
+
+
+@pytest_asyncio.fixture
+async def server(client: bottom.Client) -> t.AsyncGenerator[Server]:
+    server = Server(
+        host=client.host,
+        port=client.port,
+        ssl=client.ssl,
+        encoding=client.encoding,
+    )
     yield server
-    server.close()
-
-
-@pytest.fixture
-def connect(server, client, loop):
-    def _connect():
-        loop.run_until_complete(server.start())
-        loop.run_until_complete(client.connect())
-
-    return _connect
+    await server.close()
