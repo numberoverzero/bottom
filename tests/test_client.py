@@ -10,7 +10,7 @@ from tests.conftest import busy_wait
 
 async def test_connect(client):
     create_task(client.connect())
-    assert client.protocol is None
+    assert client._protocol is None
     await client.wait("CLIENT_CONNECT")
 
 
@@ -75,7 +75,7 @@ async def test_send_before_connect(client):
     """Sending before connected raises"""
     with pytest.raises(RuntimeError):
         client.send("PONG")
-    assert client.protocol is None
+    assert client._protocol is None
 
 
 async def test_send_after_disconnect(client, server):
@@ -86,7 +86,7 @@ async def test_send_after_disconnect(client, server):
     assert server.received == ["PONG"]
 
     await client.disconnect()
-    await busy_wait(lambda: client.protocol is None)
+    await busy_wait(lambda: client._protocol is None)
     with pytest.raises(RuntimeError):
         client.send("QUIT")
     assert server.received == ["PONG"]

@@ -84,12 +84,12 @@ class Protocol(asyncio.Protocol):
 
 
 class EventHandler:
-    event_waiters: dict[str, asyncio.Event]
-    event_handlers: dict[str, list[t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]]]
+    _event_waiters: dict[str, asyncio.Event]
+    _event_handlers: dict[str, list[t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]]]
 
     def __init__(self) -> None:
-        self.event_handlers = collections.defaultdict(list)
-        self.event_waiters = collections.defaultdict(asyncio.Event)
+        self._event_handlers = collections.defaultdict(list)
+        self._event_waiters = collections.defaultdict(asyncio.Event)
 
     @t.overload
     def on[**P, R](self, event: str, fn: None = None) -> util.Decorator[P, R]: ...
@@ -132,7 +132,7 @@ class EventHandler:
 
         def decorator(f: t.Callable[P, R]) -> t.Callable[P, R]:
             async_fn = util.ensure_async_fn(f)
-            self.event_handlers[event.strip().upper()].append(async_fn)
+            self._event_handlers[event.strip().upper()].append(async_fn)
             return f
 
         return decorator if fn is None else decorator(fn)
@@ -162,10 +162,10 @@ class EventHandler:
         """
         event = event.strip().upper()
         # note: create the asyncio.Event before creating the tasks below
-        async_event = self.event_waiters[event]
+        async_event = self._event_waiters[event]
 
         tasks = []
-        for func in self.event_handlers[event]:
+        for func in self._event_handlers[event]:
             tasks.append(util.create_task(func(**kwargs)))
 
         async def toggle() -> None:
@@ -198,7 +198,7 @@ class EventHandler:
                 print("reconnected!")
         ```
         """
-        await self.event_waiters[event.strip().upper()].wait()
+        await self._event_waiters[event.strip().upper()].wait()
         return event
 
 
@@ -226,48 +226,48 @@ class BaseClient(EventHandler):
     ```
     """
 
-    protocol: Protocol | None = None
-    encoding: str
-    ssl: ssl.SSLContext | bool
-    host: str
-    port: int
+    _protocol: Protocol | None = None
+    _encoding: str
+    _ssl: ssl.SSLContext | bool
+    _host: str
+    _port: int
 
     def __init__(self, host: str, port: int, *, encoding: str = "UTF-8", ssl: bool | ssl.SSLContext = True) -> None:
         super().__init__()
-        self.host = host
-        self.port = port
-        self.encoding = encoding
-        self.ssl = ssl
+        self._host = host
+        self._port = port
+        self._encoding = encoding
+        self._ssl = ssl
         self.message_handlers = []
 
     async def connect(self) -> None:
-        if self.protocol and not self.protocol.is_closed:
+        if self._protocol and not self._protocol.is_closed:
             return
         loop = asyncio.get_running_loop()
         _transport, protocol = await loop.create_connection(
-            make_protocol_factory(self), host=self.host, port=self.port, ssl=self.ssl
+            make_protocol_factory(self), host=self._host, port=self._port, ssl=self._ssl
         )
-        if self.protocol:
+        if self._protocol:
             protocol.close()
             return
-        self.protocol = protocol
+        self._protocol = protocol
         self.trigger("client_connect")
 
     async def disconnect(self) -> None:
-        if self.protocol:
-            self.protocol.close()
+        if self._protocol:
+            self._protocol.close()
 
     def send_message(self, message: str) -> None:
-        if not self.protocol:
+        if not self._protocol:
             raise RuntimeError("Not connected")
-        self.protocol.write(message)
+        self._protocol.write(message)
 
 
 def make_protocol_factory(client: BaseClient) -> t.Callable[[], Protocol]:
     def handle_connection_lost(protocol: Protocol, exc: Exception | None) -> None:
-        if protocol is client.protocol:
+        if protocol is client._protocol:
             client.trigger("client_disconnect")
-            client.protocol = None
+            client._protocol = None
 
     def handle_message(message: str) -> None:
         util.stack_process(client.message_handlers, message)
@@ -276,7 +276,7 @@ def make_protocol_factory(client: BaseClient) -> t.Callable[[], Protocol]:
         return Protocol(
             handle_message=handle_message,
             handle_connection_lost=handle_connection_lost,
-            encoding=client.encoding,
+            encoding=client._encoding,
         )
 
     return protocol_factory

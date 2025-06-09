@@ -17,11 +17,11 @@ async def test_multiple_connect_protocol(client_protocol):
 async def test_multiple_disconnect_protocol(client, client_protocol):
     """disconnecting a protocol more than once only triggers on_connection_lost once"""
     assert client_protocol.transport
-    assert client.protocol is client_protocol
+    assert client._protocol is client_protocol
     assert client.triggers["CLIENT_DISCONNECT"] == 0
 
     client_protocol.connection_lost(None)
-    assert client.protocol is None
+    assert client._protocol is None
     assert client_protocol.transport is None
     assert client.triggers["CLIENT_DISCONNECT"] == 1
 
@@ -43,18 +43,18 @@ async def test_multiple_close_protocol(client, client_protocol):
     # transport.close schedules its call to connection_lost on the event loop
     assert client.triggers["CLIENT_DISCONNECT"] == 0
     assert client_protocol.transport is not None
-    assert client.protocol is client_protocol
+    assert client._protocol is client_protocol
 
     await asyncio.sleep(0)
     assert client.triggers["CLIENT_DISCONNECT"] == 1
     assert client_protocol.transport is None
-    assert client.protocol is None
+    assert client._protocol is None
 
     client_protocol.close()
     await asyncio.sleep(0)
     assert client.triggers["CLIENT_DISCONNECT"] == 1
     assert client_protocol.transport is None
-    assert client.protocol is None
+    assert client._protocol is None
 
 
 async def test_no_handlers(client, client_protocol):
@@ -128,9 +128,9 @@ async def test_invalid_line(client_protocol: Protocol, captured_messages: list[s
 
 async def test_multiple_connect(client, client_protocol):
     """Calling connect while already connected doesn't do anything"""
-    assert client.protocol is client_protocol
+    assert client._protocol is client_protocol
     await client.connect()
-    assert client.protocol is client_protocol
+    assert client._protocol is client_protocol
 
 
 def test_on_signature(client):
@@ -154,7 +154,7 @@ def test_on_coroutine(client):
 async def test_trigger_no_handlers(client):
     """trigger an event with no handlers"""
     task = client.trigger("some event")
-    assert not client.event_handlers["SOME EVENT"]
+    assert not client._event_handlers["SOME EVENT"]
     assert client.triggers["SOME EVENT"] == 1
 
     await asyncio.sleep(0)

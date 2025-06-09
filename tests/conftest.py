@@ -187,7 +187,7 @@ async def client(port, host, ssl, encoding) -> t.AsyncGenerator[bottom.Client]:
 @pytest_asyncio.fixture
 async def client_protocol(client: bottom.Client) -> bottom.core.Protocol | None:
     await client.connect()
-    return client.protocol
+    return client._protocol
 
 
 @pytest.fixture
