@@ -22,10 +22,9 @@ def default_connection_lost_handler(protocol: Protocol, exc: Exception | None) -
 
 
 class Protocol(asyncio.Protocol):
-    transport: asyncio.WriteTransport
+    transport: asyncio.WriteTransport | None = None
     on_message: ProtocolMessageHandler
     on_connection_lost: ConnectionLostHandler
-    closed: bool = False
     buffer: bytes = b""
     encoding: str
 
@@ -46,13 +45,17 @@ class Protocol(asyncio.Protocol):
     # note: same way typeshed handles the subclass typing problem
     # https://github.com/python/typeshed/blob/8f5a80e7b741226e525bd90e45496b8f68dc69b6/stdlib/asyncio/protocols.pyi#L24
     def connection_made(self, transport: asyncio.WriteTransport) -> None:  # type: ignore[override]
+        if self.transport:
+            raise RuntimeError(f"{self} tried to connect to {transport} but already connected to {self.transport}")
         self.transport = transport
 
     def connection_lost(self, exc: Exception | None) -> None:
-        self.on_connection_lost(self, exc)
-        if not self.closed:
-            self.closed = True
-            self.close()
+        transport = self.transport
+        if transport:
+            self.transport = None
+            self.on_connection_lost(self, exc)
+            if not transport.is_closing():
+                transport.close()
 
     def data_received(self, data: bytes) -> None:
         self.buffer += data
@@ -65,16 +68,19 @@ class Protocol(asyncio.Protocol):
 
     def write(self, message: str) -> None:
         """immediately writes the message as a complete line; there is no write buffering"""
-        if self.closed:
-            raise RuntimeError("Not connected")
+        if not self.transport:
+            raise RuntimeError(f"Protocol {self} not connected")
         message = message.strip()
         data = message.encode(self.encoding) + DELIM
         self.transport.write(data)
 
     def close(self) -> None:
-        if not self.closed:
-            self.closed = True
+        if self.transport:
             self.transport.close()
+
+    @property
+    def is_closed(self) -> bool:
+        return self.transport is None
 
 
 class EventHandler:
@@ -228,15 +234,16 @@ class BaseClient(EventHandler):
         self.ssl = ssl
         self.message_handlers = []
 
-    @property
-    def is_connected(self) -> bool:
-        return self.protocol is not None and not self.protocol.closed
-
     async def connect(self) -> None:
+        if self.protocol and not self.protocol.is_closed:
+            return
         loop = asyncio.get_running_loop()
         _transport, protocol = await loop.create_connection(
             make_protocol_factory(self), host=self.host, port=self.port, ssl=self.ssl
         )
+        if self.protocol:
+            protocol.close()
+            return
         self.protocol = protocol
         self.trigger("client_connect")
 
@@ -255,9 +262,6 @@ def make_protocol_factory(client: BaseClient) -> t.Callable[[], Protocol]:
         if protocol is client.protocol:
             client.trigger("client_disconnect")
             client.protocol = None
-        else:
-            # not this client's protocol
-            pass
 
     def handle_message(message: str) -> None:
         util.stack_process(client.message_handlers, message)
