@@ -12,7 +12,7 @@ import pytest
 import pytest_asyncio
 
 
-async def busy_wait(criteria: t.Callable[[], bool], timeout_ms=200):
+async def busy_wait(criteria: t.Callable[[], t.Any], timeout_ms=200):
     """
     helper function to yield execution to other coros without adding a long sleep.
 
@@ -32,7 +32,7 @@ async def busy_wait(criteria: t.Callable[[], bool], timeout_ms=200):
     ```
     """
     start = time.monotonic_ns()
-    while not criteria():
+    while not bool(criteria()):
         await asyncio.sleep(0)
         elapsed = (time.monotonic_ns() - start) / 1_000_000  # ns -> ms
         if elapsed >= timeout_ms:
@@ -184,3 +184,19 @@ async def client(port, host, ssl, encoding) -> t.AsyncGenerator[bottom.Client]:
 async def client_protocol(client: bottom.Client) -> bottom.core.Protocol | None:
     await client.connect()
     return client.protocol
+
+
+@pytest.fixture
+def captured_messages(client: bottom.Client) -> t.Iterable[list[str]]:
+    """injects a message handler that captures all incoming messages"""
+    captured = []
+
+    async def capture_message(next_handler, message):
+        captured.append(message)
+        await next_handler(message)
+
+    client.message_handlers.insert(0, capture_message)
+    try:
+        yield captured
+    finally:
+        client.message_handlers.remove(capture_message)

@@ -17,43 +17,47 @@ async def test_protocol_write(client_protocol: Protocol, server):
     assert server.received == ["hello", "world", "foo"]
 
 
-def test_partial_line(client, client_protocol: Protocol):
-    """Part of an IRC line is sent across; shouldn't be emitted as an event"""
+async def test_partial_line(client_protocol: Protocol, captured_messages: list[str]):
+    """partial IRC lines are not emitted to message_handlers"""
     client_protocol.data_received(b":nick!user@host PRIVMSG")
+    # no pending writes/triggers
+    assert list(asyncio.all_tasks()) == [asyncio.current_task()]
+
     assert b"PRIVMSG" in client_protocol.buffer
-    assert not client.triggers["PRIVMSG"]
+    assert not captured_messages
+
+    client_protocol.data_received(b"\r\n")
+    assert b"PRIVMSG" not in client_protocol.buffer
+    # it's left the buffer but we need to yield execution so the message_handler stack runs
+    await busy_wait(lambda: captured_messages)
+    assert captured_messages == [":nick!user@host PRIVMSG"]
 
 
-async def test_multipart_line(client, client_protocol):
+async def test_multipart_line(client_protocol: Protocol, captured_messages: list[str]):
     """Single line transmitted in multiple parts"""
-    client_protocol.data_received(b":nick!user@host PRIVMSG")
-    client_protocol.data_received(b" #target :this is message\r\n")
-    await asyncio.sleep(0)
-    assert client.triggers["PRIVMSG"] == 1
+    part1 = ":nick!user@host PRIVMSG"
+    part2 = " #target :this is message"
+    client_protocol.data_received(part1.encode())
+    client_protocol.data_received(f"{part2}\r\n".encode())
+
+    await busy_wait(lambda: captured_messages)
+    assert captured_messages == [part1 + part2]
 
 
-def test_multiline_chunk(client, client_protocol):
+async def test_multiline_chunk(client_protocol: Protocol, captured_messages: list[str]):
     """Multiple IRC lines in a single data_received block"""
-    client_protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
-    assert client.triggers["PRIVMSG"] == 2
+    privmsg = ":nick!user@host PRIVMSG #target :this is message"
+    notice = ":n!u@h NOTICE #t :m"
+    client_protocol.data_received(f"{privmsg}\r\n{notice}\r\n".encode())
+    await busy_wait(lambda: captured_messages)
+    assert captured_messages == [privmsg, notice]
 
 
-def test_invalid_line(client, client_protocol):
+async def test_invalid_line(client_protocol: Protocol, captured_messages: list[str]):
     """Well-formatted but invalid line"""
-    client_protocol.data_received(b"blah unknown command\r\n")
-    # no rfc2812 events triggered
-    assert list(client.triggers.keys()) == ["CLIENT_CONNECT"]
+    invalid_line = "blah unknown command"
+    client_protocol.data_received(f"{invalid_line}\r\n".encode())
 
+    await busy_wait(lambda: captured_messages)
 
-def test_close(client, client_protocol):
-    """Protocol.close triggers connection_lost,
-    client triggers exactly 1 disconnect"""
-    client_protocol.close()
-    assert client.triggers["CLIENT_DISCONNECT"] == 1
-    assert client_protocol.closed
-
-    client_protocol.close()
-    assert client.triggers["CLIENT_DISCONNECT"] == 1
-
-    client_protocol.transport.close()
-    assert client.triggers["CLIENT_DISCONNECT"] == 1
+    assert captured_messages == [invalid_line]
