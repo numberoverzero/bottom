@@ -6,47 +6,9 @@ import ssl as ssl_module
 import typing as t
 
 import bottom
+import bottom.core
 import pytest
 import pytest_asyncio
-
-
-@pytest.fixture
-def host() -> str:
-    return "localhost"
-
-
-@pytest.fixture
-def port() -> int:
-    return 8888
-
-
-@pytest.fixture
-def encoding() -> str:
-    return "utf-8"
-
-
-@pytest.fixture
-def ssl() -> ssl_module.SSLContext | bool | None:
-    # TODO: make a working context
-    # return _ssl.create_default_context()
-    return None
-
-
-@pytest_asyncio.fixture
-async def client(host, port, ssl, encoding) -> t.AsyncGenerator[bottom.Client]:
-    class TrackingClient(bottom.Client):
-        def __init__(self, *args, **kwargs):
-            self.triggers = collections.defaultdict(int)
-            super().__init__(*args, **kwargs)
-
-        def trigger(self, event, **kwargs) -> asyncio.Task:
-            event = event.strip().upper()
-            self.triggers[event] += 1
-            return super().trigger(event, **kwargs)
-
-    client = TrackingClient(host=host, port=port, ssl=ssl, encoding=encoding)
-    yield client
-    await client.disconnect()
 
 
 class ServerProtocol(asyncio.Protocol):
@@ -120,13 +82,63 @@ class Server:
         self.protocol.write(outgoing)
 
 
+@pytest.fixture
+def host() -> str:
+    return "localhost"
+
+
+@pytest.fixture
+def encoding() -> str:
+    return "utf-8"
+
+
+@pytest.fixture
+def ssl() -> ssl_module.SSLContext | bool | None:
+    # TODO: make a working context
+    # return _ssl.create_default_context()
+    return None
+
+
 @pytest_asyncio.fixture
-async def server(client: bottom.Client) -> t.AsyncGenerator[Server]:
+async def server(host, ssl, encoding) -> t.AsyncGenerator[Server]:
     server = Server(
-        host=client.host,
-        port=client.port,
-        ssl=client.ssl,
-        encoding=client.encoding,
+        host=host,
+        port=0,  # find a free port; other fixtures will get port off from the server
+        ssl=ssl,
+        encoding=encoding,
     )
+    await server.start()
     yield server
     await server.close()
+
+
+@pytest.fixture
+def port(server: Server) -> int:
+    return server._server.sockets[0].getsockname()[1]
+
+
+@pytest.fixture
+def server_protocol(server: Server) -> ServerProtocol:
+    return server.protocol
+
+
+@pytest_asyncio.fixture
+async def client(port, host, ssl, encoding) -> t.AsyncGenerator[bottom.Client]:
+    class TrackingClient(bottom.Client):
+        def __init__(self, *args, **kwargs):
+            self.triggers = collections.defaultdict(int)
+            super().__init__(*args, **kwargs)
+
+        def trigger(self, event, **kwargs) -> asyncio.Task:
+            event = event.strip().upper()
+            self.triggers[event] += 1
+            return super().trigger(event, **kwargs)
+
+    client = TrackingClient(host=host, port=port, ssl=ssl, encoding=encoding)
+    yield client
+    await client.disconnect()
+
+
+@pytest.fixture
+def client_protocol(client: bottom.Client) -> bottom.core.Protocol | None:
+    return client.protocol
