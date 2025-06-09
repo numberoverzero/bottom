@@ -3,6 +3,8 @@ import asyncio
 from bottom.core import Protocol
 from bottom.util import create_task
 
+from tests.conftest import busy_wait
+
 
 async def test_connect(client):
     create_task(client.connect())
@@ -11,18 +13,23 @@ async def test_connect(client):
 
 
 async def test_ping_pong(client, server):
+    @client.on("PING")
+    def pong(message, **kwargs):
+        client.send("PONG", message=message[::-1])
+
     async def run():
         await client.connect()
         server.write("PING :ping-message")
-        client.send("PONG")
 
     create_task(run())
 
     # empty until we yield execution with await below
     assert server.received == []
 
-    await client.wait("PING")
-    assert server.received == ["PONG"]
+    # can't just await client.wait("PING") since we want to see the response
+    # get to the server
+    await busy_wait(lambda: server.received)
+    assert server.received == ["PONG :egassem-gnip"]
 
 
 async def test_multi_reconnect(client, client_protocol: Protocol):
