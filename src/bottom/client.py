@@ -62,7 +62,7 @@ def rfc2812_handler(client: Client) -> ClientMessageHandler:
     return handler
 
 
-async def wait_for(client: Client, *events: str, mode: t.Literal["first", "all"] = "first") -> list[str]:
+async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[str]:
     """
     Wait for one or all of the events to happen, depending on mode.
 
