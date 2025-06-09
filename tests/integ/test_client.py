@@ -1,16 +1,10 @@
-async def test_connect(client, server):
+async def test_connect(client):
     """Connect client triggers client_connect"""
-    print("starting server")
-    await server.start()
-    print("starting client")
     await client.connect()
-    print("checking!")
     assert client.triggers["CLIENT_CONNECT"] == 1
-    print("ok")
 
 
 async def test_ping_pong(client, server):
-    await server.start()
     await client.connect()
 
     server.write("PING :ping-message")
