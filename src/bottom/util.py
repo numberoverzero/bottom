@@ -27,13 +27,13 @@ def create_task[T](x: t.Coroutine[t.Any, t.Any, T]) -> asyncio.Task[T]:
     return task
 
 
-def join_tasks(tasks: t.Iterable[asyncio.Task]) -> asyncio.Task:
-    async def gather() -> None:
+def join_tasks(tasks: t.Iterable[asyncio.Task]) -> asyncio.Task[list]:
+    async def gather() -> list:
         if not tasks:
-            return
-        await asyncio.gather(*tasks, return_exceptions=True)
+            return []
+        return await asyncio.gather(*tasks, return_exceptions=True)
 
-    return asyncio.create_task(gather())
+    return create_task(gather())
 
 
 def ensure_async_fn[**P, R](
