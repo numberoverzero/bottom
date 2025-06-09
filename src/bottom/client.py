@@ -67,17 +67,18 @@ async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first"
     Wait for one or all of the events to happen, depending on mode.
 
     ```
-    wait_for = make_waiter(client)
-
     # race for first event
-    completed = await wait_for("RPL_ENDOFMOTD", "ERR_NOMOTD", mode="first")
+    completed = await wait_for(client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
     print(f"first done: {completed}")
 
     # wait for all events
     completed = await wait_for(
-        "RPL_MOTDSTART",
-        "RPL_MOTD",
-        "RPL_ENDOFMOTD",
+        client,
+        [
+            "RPL_MOTDSTART",
+            "RPL_MOTD",
+            "RPL_ENDOFMOTD",
+        ],
         mode="all"
     )
     print("collected whole MOTD")
