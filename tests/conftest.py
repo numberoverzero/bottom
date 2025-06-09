@@ -3,12 +3,40 @@ from __future__ import annotations
 import asyncio
 import collections
 import ssl as ssl_module
+import time
 import typing as t
 
 import bottom
 import bottom.core
 import pytest
 import pytest_asyncio
+
+
+async def busy_wait(criteria: t.Callable[[], bool], timeout_ms=200):
+    """
+    helper function to yield execution to other coros without adding a long sleep.
+
+    if the criteria isn't met within the timeout, we assume it was never going to complete.
+    this prevents deadlocks from holding the test suite hostage.
+
+    usage"
+    ```
+
+    async def test_something():
+        asyncio.create_task(setup())
+        asyncio.create_task(more_work())
+
+        await busy_wait(lambda: some_struct.count >= 10)
+
+        assert some_struct.values == expected
+    ```
+    """
+    start = time.monotonic_ns()
+    while not criteria():
+        await asyncio.sleep(0)
+        elapsed = (time.monotonic_ns() - start) / 1_000_000  # ns -> ms
+        if elapsed >= timeout_ms:
+            raise RuntimeError(f"failed to meet criteria within {max}ms")
 
 
 class ServerProtocol(asyncio.Protocol):
@@ -61,7 +89,14 @@ class Server:
             self.protocol = protocol
             return protocol
 
-        self._server = await loop.create_server(protocol_factory, host=self.host, port=self.port, ssl=self.ssl)
+        self._server = await loop.create_server(
+            protocol_factory,
+            host=self.host,
+            port=self.port,
+            ssl=self.ssl,
+            # start_serving so that we can await start() immediately
+            start_serving=True,
+        )
 
     async def close(self):
         self._server.close()
@@ -73,9 +108,11 @@ class Server:
 
     def handle(self, incoming):
         self.received.append(incoming)
-        outgoing = self.expected[incoming]
-        self.sent.append(outgoing)
-        self.protocol.write(outgoing)
+        # respond if we have one
+        if incoming in self.expected:
+            outgoing = self.expected[incoming]
+            self.sent.append(outgoing)
+            self.protocol.write(outgoing)
 
     def write(self, outgoing):
         self.sent.append(outgoing)
@@ -108,8 +145,10 @@ async def server(host, ssl, encoding) -> t.AsyncGenerator[Server]:
         encoding=encoding,
     )
     await server.start()
-    yield server
-    await server.close()
+    try:
+        yield server
+    finally:
+        await server.close()
 
 
 @pytest.fixture
@@ -135,10 +174,13 @@ async def client(port, host, ssl, encoding) -> t.AsyncGenerator[bottom.Client]:
             return super().trigger(event, **kwargs)
 
     client = TrackingClient(host=host, port=port, ssl=ssl, encoding=encoding)
-    yield client
-    await client.disconnect()
+    try:
+        yield client
+    finally:
+        await client.disconnect()
 
 
-@pytest.fixture
-def client_protocol(client: bottom.Client) -> bottom.core.Protocol | None:
+@pytest_asyncio.fixture
+async def client_protocol(client: bottom.Client) -> bottom.core.Protocol | None:
+    await client.connect()
     return client.protocol
