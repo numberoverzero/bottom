@@ -1,74 +1,59 @@
-def test_connection_made(protocol, transport):
-    protocol.connection_made(transport)
-    assert protocol.transport is transport
+import asyncio
+
+from bottom.core import Protocol
+
+from tests.conftest import busy_wait
 
 
-def test_connection_lost(protocol):
-    class MockClient:
-        called = False
+async def test_protocol_write(client_protocol: Protocol, server):
+    """Protocol strips and normalizes each write"""
+    client_protocol.write("hello")
+    client_protocol.write("world\r\n")
+    client_protocol.write("\r\nfoo\r\n")
 
-        def _connection_lost(self, protocol):
-            self.called = True
+    # asyncio.sleep(0) isn't enough for transports to drain
+    await busy_wait(lambda: len(server.received) >= 3)
 
-    protocol.client = client = MockClient()
-    protocol.connection_lost(exc=None)
-    assert client.called
-
-
-def test_disconnect_after_connect(protocol, transport, active_client):
-    assert active_client.triggers["CLIENT_CONNECT"] == 1
-
-    # Don't need to check transport.closed since this is
-    # only called when the transport is already closed
-    protocol.connection_lost(exc=None)
-    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
+    assert server.received == ["hello", "world", "foo"]
 
 
-def test_write(protocol, transport, active_client):
-    protocol.write("hello")
-    protocol.write("world\r\n")
-    protocol.write("\r\nfoo\r\n")
-    assert transport.written == [b"hello\r\n", b"world\r\n", b"foo\r\n"]
-
-
-def test_partial_line(protocol, transport, active_client, flush):
+def test_partial_line(client, client_protocol: Protocol):
     """Part of an IRC line is sent across; shouldn't be emitted as an event"""
-    protocol.data_received(b":nick!user@host PRIVMSG")
-    flush()
-    assert not active_client.triggers["PRIVMSG"]
+    client_protocol.data_received(b":nick!user@host PRIVMSG")
+    assert b"PRIVMSG" in client_protocol.buffer
+    assert not client.triggers["PRIVMSG"]
 
 
-def test_multipart_line(protocol, transport, active_client, flush):
+async def test_multipart_line(client, client_protocol):
     """Single line transmitted in multiple parts"""
-    protocol.data_received(b":nick!user@host PRIVMSG")
-    protocol.data_received(b" #target :this is message\r\n")
-    flush()
-    assert active_client.triggers["PRIVMSG"] == 1
+    client_protocol.data_received(b":nick!user@host PRIVMSG")
+    client_protocol.data_received(b" #target :this is message\r\n")
+    await asyncio.sleep(0)
+    assert client.triggers["PRIVMSG"] == 1
 
 
-def test_multiline_chunk(protocol, transport, active_client, flush):
+def test_multiline_chunk(client, client_protocol):
     """Multiple IRC lines in a single data_received block"""
-    protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
-    flush()
-    assert active_client.triggers["PRIVMSG"] == 2
+    client_protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\r\n" * 2)
+    assert client.triggers["PRIVMSG"] == 2
 
 
-def test_invalid_line(protocol, transport, active_client, flush):
+def test_invalid_line(client, client_protocol):
     """Well-formatted but invalid line"""
-    protocol.data_received(b"blah unknown command\r\n")
-    flush()
-    assert list(active_client.triggers.keys()) == ["CLIENT_CONNECT"]
+    client_protocol.data_received(b"blah unknown command\r\n")
+    # no rfc2812 events triggered
+    assert list(client.triggers.keys()) == ["CLIENT_CONNECT"]
 
 
-def test_close(protocol, transport, active_client):
+def test_close(client, client_protocol):
     """Protocol.close triggers connection_lost,
     client triggers exactly 1 disconnect"""
-    protocol.close()
-    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
-    assert protocol.closed
+    client_protocol.close()
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
+    assert client_protocol.closed
 
-    protocol.close()
-    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
+    client_protocol.close()
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
 
-    transport.close()
-    assert active_client.triggers["CLIENT_DISCONNECT"] == 1
+    client_protocol.transport.close()
+    assert client.triggers["CLIENT_DISCONNECT"] == 1

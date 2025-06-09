@@ -1,43 +1,6 @@
 import asyncio
 
 import pytest
-from bottom.client import Client, RawClient, process
-
-
-def test_default_event_loop():
-    default_loop = asyncio.get_event_loop()
-    client = Client(host="host", port=3)
-    assert client.loop is default_loop
-
-
-def test_default_raw_handlers(loop, flush):
-    raw_client = RawClient("host", 3, loop=loop)
-    client = Client("host", 3)
-    assert not raw_client.raw_handlers
-    assert len(client.raw_handlers) == 1
-
-    raw_client.handle_raw("message")
-    flush()
-
-
-def test_stop_processing(loop, flush):
-    calls = []
-
-    async def first(next_handler, message):
-        calls.append(("first", message))
-        await next_handler(message[::-1])
-
-    async def second(next_handler, message):
-        calls.append(("second", message))
-
-    async def not_called(next_handler, message):
-        calls.append(("not_called", message))
-        await next_handler(message)
-
-    task = process([first, second, not_called], "123")
-    loop.create_task(task)
-    flush()
-    assert calls == [("first", "123"), ("second", "321")]
 
 
 def test_send_unknown_command(active_client, protocol):
