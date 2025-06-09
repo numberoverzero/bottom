@@ -51,6 +51,9 @@ line-length = 120
 select = [
     "F", "E", "I", "ANN", "RUF",
 ]
+ignore = [
+    "E501",  # formatter handles this best effort, don't warn on lines too long
+]
 exclude = [
     ".git",
     ".mypy_cache",
