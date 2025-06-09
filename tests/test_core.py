@@ -1,9 +1,71 @@
 import asyncio
 
+import pytest
 from bottom.core import Protocol
 from bottom.util import create_task, join_tasks
 
 from tests.conftest import busy_wait
+
+
+async def test_multiple_connect_protocol(client_protocol):
+    """connecting a protocol more than once, even to the same transport, raises"""
+    assert client_protocol.transport
+    with pytest.raises(RuntimeError):
+        client_protocol.connection_made(client_protocol.transport)
+
+
+async def test_multiple_disconnect_protocol(client, client_protocol):
+    """disconnecting a protocol more than once only triggers on_connection_lost once"""
+    assert client_protocol.transport
+    assert client.protocol is client_protocol
+    assert client.triggers["CLIENT_DISCONNECT"] == 0
+
+    client_protocol.connection_lost(None)
+    assert client.protocol is None
+    assert client_protocol.transport is None
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
+
+    client_protocol.connection_lost(None)
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
+
+
+async def test_write_disconnect_protocol(client, client_protocol):
+    """can't write to a protocol after disconnecting it"""
+    client_protocol.connection_lost(None)
+    with pytest.raises(RuntimeError):
+        client_protocol.write("PING")
+
+
+async def test_multiple_close_protocol(client, client_protocol):
+    """closing a protocol more than once only triggers on_connection_lost once"""
+    client_protocol.close()
+    # note: nothing's closed yet, because this calls into transport.close and
+    # transport.close schedules its call to connection_lost on the event loop
+    assert client.triggers["CLIENT_DISCONNECT"] == 0
+    assert client_protocol.transport is not None
+    assert client.protocol is client_protocol
+
+    await asyncio.sleep(0)
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
+    assert client_protocol.transport is None
+    assert client.protocol is None
+
+    client_protocol.close()
+    await asyncio.sleep(0)
+    assert client.triggers["CLIENT_DISCONNECT"] == 1
+    assert client_protocol.transport is None
+    assert client.protocol is None
+
+
+async def test_no_handlers(client, client_protocol):
+    """default handler is used when message_handlers stack is empty"""
+    client.message_handlers.clear()
+    client_protocol.data_received(b"world\r\n")
+    assert len(asyncio.all_tasks()) == 2  # this test is asyncio.current_task
+
+    # because there are no handlers, the stack processor will clear immediately
+    await asyncio.sleep(0)
+    assert list(asyncio.all_tasks()) == [asyncio.current_task()]
 
 
 async def test_protocol_write(client_protocol: Protocol, server):
@@ -217,7 +279,6 @@ async def test_wait_ordering(client):
 
     @client.on("some.trigger")
     def handle(**kwargs):
-        print("handled")
         invoked.append("handler")
 
     async def waiter():
@@ -235,14 +296,13 @@ async def test_wait_ordering(client):
 
 async def test_wait_return_value(client):
     """The value returned should be the same as the value given."""
-    event_name = "test_wait_return_value"
+    event_name = "my-event"
 
     record = []
 
     async def waiter():
         record.append("start waiting")
-        returned_name = await client.wait(event_name)
-        record.append(returned_name)
+        record.append(await client.wait(event_name))
         record.append("done waiting")
 
     record.append("create")
@@ -250,7 +310,7 @@ async def test_wait_return_value(client):
     record.append("yield1")
     await asyncio.sleep(0)
     record.append("trigger")
-    client.trigger(event_name)
+    await client.trigger(event_name)
     record.append("yield2")
     await asyncio.sleep(0)
 

@@ -17,7 +17,7 @@ ProtocolMessageHandler = t.Callable[[str], None]
 ConnectionLostHandler = t.Callable[["Protocol", Exception | None], None]
 
 
-def default_connection_lost_handler(protocol: Protocol, exc: Exception | None) -> None:
+def default_connection_lost_handler(protocol: Protocol, exc: Exception | None) -> None:  # pragma: no cover
     pass
 
 
@@ -35,10 +35,10 @@ class Protocol(asyncio.Protocol):
         encoding: str | None,
     ) -> None:
         self.on_message = handle_message
-        if handle_connection_lost is None:
+        if handle_connection_lost is None:  # pragma: no cover
             handle_connection_lost = default_connection_lost_handler
         self.on_connection_lost = handle_connection_lost
-        if encoding is None:
+        if encoding is None:  # pragma: no cover
             encoding = "utf-8"
         self.encoding = encoding
 
@@ -161,15 +161,21 @@ class EventHandler:
         ```
         """
         event = event.strip().upper()
+        # note: create the asyncio.Event before creating the tasks below
+        async_event = self.event_waiters[event]
+
         tasks = []
         for func in self.event_handlers[event]:
             tasks.append(util.create_task(func(**kwargs)))
-        # This will unblock anyone that is awaiting on the next loop update,
-        # while still ensuring the next `await client.wait(event)` doesn't
-        # immediately fire.
-        async_event = self.event_waiters[event]
-        async_event.set()
-        async_event.clear()
+
+        async def toggle() -> None:
+            # note: without this asyncio.sleep(0), anything that started waiting
+            # in this loop tick won't see the event fire.
+            await asyncio.sleep(0)
+            async_event.set()
+            async_event.clear()
+
+        util.create_task(toggle())
         return util.join_tasks(tasks)
 
     async def wait(self, event: str) -> str:

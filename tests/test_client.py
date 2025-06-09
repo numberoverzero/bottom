@@ -1,6 +1,7 @@
 import asyncio
 
 import pytest
+from bottom.client import wait_for
 from bottom.core import Protocol
 from bottom.util import create_task
 
@@ -102,3 +103,64 @@ async def test_unpack_triggers_client(client, client_protocol):
     client_protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\n")
     await busy_wait(lambda: received)
     assert received == ["nick", "user", "host", "#target", "this is message"]
+
+
+async def test_wait_for_first_tie(client):
+    """
+    wait_for(mode="first") returns the event that triggered first, and cancels the others
+
+    when more than one is set in the same loop tick, all completed triggers return.
+    """
+
+    race = wait_for(client, ["bar", "foo"], mode="first")
+    client.trigger("foo")
+    client.trigger("bar")
+    result = await race
+
+    assert set(result) == set(["foo", "bar"])
+
+
+async def test_wait_for_first_single(client):
+    """
+    wait_for(mode="first") returns the event that triggered first, and cancels the others
+
+    when more than one is set in the same loop tick, all completed triggers return.
+    """
+
+    async def slower():
+        # this sleep staggers the "foo" trigger into the next cycle
+        await asyncio.sleep(0)
+        client.trigger("foo")
+
+    race = wait_for(client, ["bar", "foo"], mode="first")
+    client.trigger("bar")
+    create_task(slower())
+    result = await race
+
+    assert result == ["bar"]
+
+
+async def test_wait_for_all(client):
+    """wait_for(mode="all") returns when all events have triggered"""
+
+    async def slower():
+        # this sleep staggers the "foo" trigger into the next cycle
+        await asyncio.sleep(0)
+        client.trigger("foo")
+
+    race = wait_for(client, ["bar", "foo"], mode="all")
+    client.trigger("bar")
+    create_task(slower())
+    result = await race
+
+    assert set(result) == set(["foo", "bar"])
+
+
+@pytest.mark.parametrize("mode", ["first", "all"])
+async def test_wait_for_nothing(mode, client):
+    """wait_for(mode="all") returns when all events have triggered"""
+
+    race = wait_for(client, [], mode=mode)
+    assert asyncio.iscoroutine(race)
+    result = await race
+    assert result == []
