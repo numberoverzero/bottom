@@ -1,12 +1,14 @@
+.. _Extensions:
+
 Extensions
-==========
+^^^^^^^^^^
 
 bottom doesn't have any clever import hooks to identify plugins based on name,
 shape, or other significant denomination.  Instead, we can create extensions
 by using ``client.on`` on a ``Client`` instance.
 
 Keepalive
----------
+=========
 
 Instead of writing the same ``PING`` handler everywhere, a reusable plugin:
 
@@ -31,7 +33,7 @@ That's it!  And to use it:
 
 
 Returning new objects
----------------------
+=====================
 
 Aside from subclassing ``bottom.Client``, we can use a class to expose
 additional behavior around a client.  This can be useful when we're worried
@@ -105,7 +107,7 @@ This line hooked the logger's disconnect handler to the client:
 
 
 Pattern matching
-----------------
+================
 
 We can write a simple wrapper class to annotate functions to handle PRIVMSG matching a regex.
 To keep the interface simple, we can use bottom's annotation pattern and pass the regex to match.
@@ -174,7 +176,7 @@ client:
 
 
 Wait for any events
--------------------
+===================
 
 Use :func:`Client.wait` to pause until one or all signals have fired.  For example, after sending NICK/USER during
 CLIENT_CONNECT, some servers will ignore subsequent commands until they have finished sending RPL_ENDOFMOTD.  This
@@ -217,7 +219,7 @@ To use in the CLIENT_CONNECT process:
         client.send('join', ...)
 
 Send and trigger raw messages
------------------------------
+=============================
 
 .. versionadded:: 2.1.0
 
@@ -231,6 +233,8 @@ Twitch.tv's `Membership capability`__ using IRC v3's capabilities registration:
     client = MyTwitchClient(...)
     client.send_raw("CAP REQ :twitch.tv/membership")
 
+*(aside: twitch is replacing IRC, so the above link is expected to die eventually)*
+
 Just as ``Client.trigger`` can be used to manually invoke handlers for a specific
 event, ``Client.handle_raw`` can be called to manually invoke raw handlers for a
 given message.  For the above example, you can ensure you handle the response from
@@ -243,11 +247,11 @@ Twitch.tv with the following:
     client.handle_raw(response)
 
 
-__ https://dev.twitch.tv/docs/v5/guides/irc#twitch-specific-irc-capabilities
+__ https://dev.twitch.tv/docs/chat/irc#connecting-to-the-twitch-irc-server
 
 
 Raw handlers
-------------
+============
 
 .. versionadded:: 2.1.0
 
@@ -320,7 +324,7 @@ And its usage:
     client.raw_handlers.insert(0, forwarding)
 
 Full message encryption
------------------------
+=======================
 
 This is a more complex example of a raw handler where messages are encrypted
 and then base64 encoded.  On the wire their only similarity with the IRC protocol

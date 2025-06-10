@@ -39,6 +39,10 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3.12", None),
 }
 
+linkcheck_allowed_redirects = {
+    r"https://github\.com/.*": r"https://github\.com/login\?return_to=.*",
+}
+
 
 def setup(app: Sphinx) -> None:
     app.add_css_file("bottom.css")

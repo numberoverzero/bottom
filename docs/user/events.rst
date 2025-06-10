@@ -1,5 +1,7 @@
+.. _Events:
+
 Events
-======
+^^^^^^
 
 In bottom, an event is simply a string and set of ``**kwargs`` to be passed to
 any handlers listening for that event:
@@ -12,7 +14,7 @@ any handlers listening for that event:
             print("Found a potato!")
 
 IRC Events
-----------
+==========
 
 While connected, a client will trigger events for valid IRC commands that it
 receives, with kwargs according to that command's structure.  For example, the
@@ -38,7 +40,7 @@ Because ``kwargs`` contains those fields, we could also use:
 
 
 Triggering
-----------
+==========
 
 The same mechanism that the client uses to dispatch events can be invoked
 manually, either for custom events or to simulate receiving an irc command:
@@ -69,7 +71,7 @@ We can pass arbitrary kwargs to handlers through ``trigger``:
     client.trigger("event", nick="bot", message="hello, world")
 
 Waiting
--------
+=======
 
 Sometimes we need to wait for another event to occur before continuing.  For
 example, consider a reconnect handler that wants to trigger the "reconnect"
@@ -110,7 +112,7 @@ allows any code that is waiting on that event to continue.  Be careful using
 allow us to wait (forever) for events that may never trigger.
 
 Supported Events
-----------------
+================
 
 .. code-block:: python
 

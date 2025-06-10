@@ -238,7 +238,7 @@ Like ``connect``, use the bot's event loop to schedule a disconnect:
 
     client.send(command, **kwargs)
 
-Send a command to the server.  See `Commands <user/commands.html>`_.
+Send a command to the server.  See :ref:`Commands<Commands>`.
 
 
 ``Client.handle_raw``

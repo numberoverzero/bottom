@@ -1,4 +1,4 @@
-.PHONY: help clean dev lint test docs build publish
+.PHONY: help clean dev lint test docs build publish pr-check
 
 PY_VERSION = 3.12
 BROWSER ?= browser
@@ -13,6 +13,7 @@ help:
 	@echo "  docs: build docs and open them in a browser"
 	@echo "  build: build .tgz and .whl packages"
 	@echo "  publish: upload built .tgz and .whl to public PyPi via twine"
+	@echo "  pr-check: please run before submitting a pr"
 
 clean:
 	rm -rf dist/ docs/_build .coverage
@@ -47,3 +48,5 @@ build: clean lint test
 
 publish: build
 	.venv/bin/twine upload dist/*
+
+pr-check: build docs
