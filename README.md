@@ -7,140 +7,152 @@
 [![GitHub License](
     https://img.shields.io/github/license/numberoverzero/bottom?style=for-the-badge)](
     https://github.com/numberoverzero/bottom/blob/master/LICENSE)
+[![GitHub Issues or Pull Requests](
+    https://img.shields.io/github/issues/numberoverzero/bottom?style=for-the-badge)](
+    https://github.com/numberoverzero/bottom/issues)
+
+# asyncio-based rfc2812-compliant IRC Client (3.12+)
+
+bottom is a small no-dependency library for running simple or complex IRC clients.
+
+It's easy to get started with built-in support for common commands, and extensible
+enough to support any capabilities, including custom encryption, local events,
+bridging, replication, and more.
+
+# Installation
+
+```
+pip install bottom
+```
+
+# Documentation
+
+The user guide and API reference are [available here](http://bottom-docs.readthedocs.io/) including
+examples for regex based routing of privmsg, custom encryption, and a full list of
+[rfc2812 commands](https://bottom-docs.readthedocs.io/en/latest/user/commands.html) that are supported by default.
+
+# Quick Start
+
+The following example creates a client that will:
+* connect, identify itself, wait for MOTD, and join a channel
+* respond to `PING` automatically
+* respond to any `PRIVMSG` sent directly to it, or in a channel
 
 
-.. image:: https://img.shields.io/github/issues-raw/numberoverzero/bottom.svg?style=flat-square
-    :target: https://github.com/numberoverzero/bottom/issues
-.. image:: https://img.shields.io/pypi/l/bottom.svg?style=flat-square
-    :target: https://github.com/numberoverzero/bottom/blob/master/LICENSE
+```py
+import asyncio
+import bottom
 
-asyncio-based rfc2812-compliant IRC Client (3.12+)
+host = 'chat.freenode.net'
+port = 6697
+ssl = True
 
-bottom isn't a kitchen-sink library.  Instead, it provides a consistent API
-with a small surface area, tuned for performance and ease of extension.
-Similar to the routing style of bottle.py, hooking into events is one line.
+NICK = "bottom-bot"
+CHANNEL = "#bottom-dev"
 
-Installation
-============
-::
-
-    pip install bottom
-
-Getting Started
-===============
-
-(the full documentation is available here: http://bottom-docs.readthedocs.io/)
-
-Create an instance:
-
-.. code-block:: python
-
-    import asyncio
-    import bottom
-
-    host = 'chat.freenode.net'
-    port = 6697
-    ssl = True
-
-    NICK = "bottom-bot"
-    CHANNEL = "#bottom-dev"
-
-    bot = bottom.Client(host=host, port=port, ssl=ssl)
+bot = bottom.Client(host=host, port=port, ssl=ssl)
 
 
-Send nick/user/join when connection is established:
+@bot.on('CLIENT_CONNECT')
+async def connect(**kwargs):
+    bot.send('NICK', nick=NICK)
+    bot.send('USER', user=NICK,
+                realname='https://github.com/numberoverzero/bottom')
 
-.. code-block:: python
+    # Don't try to join channels until we're past the MOTD
+    await bottom.wait_for(bot, ["RPL_ENDOFMOTD", "ERR_NOMOTD"])
 
-    @bot.on('CLIENT_CONNECT')
-    async def connect(**kwargs):
-        bot.send('NICK', nick=NICK)
-        bot.send('USER', user=NICK,
-                 realname='https://github.com/numberoverzero/bottom')
-
-        # Don't try to join channels until the server has
-        # sent the MOTD, or signaled that there's no MOTD.
-        done, pending = await asyncio.wait(
-            [bot.wait("RPL_ENDOFMOTD"),
-             bot.wait("ERR_NOMOTD")],
-            loop=bot.loop,
-            return_when=asyncio.FIRST_COMPLETED
-        )
-
-        # Cancel whichever waiter's event didn't come in.
-        for future in pending:
-            future.cancel()
-
-        bot.send('JOIN', channel=CHANNEL)
+    bot.send('JOIN', channel=CHANNEL)
 
 
-Respond to ping:
-
-.. code-block:: python
-
-    @bot.on('PING')
-    def keepalive(message, **kwargs):
-        bot.send('PONG', message=message)
+@bot.on('PING')
+def keepalive(message: str, **kwargs):
+    bot.send('PONG', message=message)
 
 
-Echo messages (channel and direct):
-
-.. code-block:: python
-
-    @bot.on('PRIVMSG')
-    def message(nick, target, message, **kwargs):
-        """ Echo all messages """
-        # don't echo self
-        if nick == NICK: return
-        # respond directly
-        if target == NICK: target = nick
-        bot.send("PRIVMSG", target=target, message=message)
+@bot.on('PRIVMSG')
+def message(nick: str, target: str, message: str, **kwargs):
+    if nick == NICK:
+        return  # bot sent this message, ignore
+    if target == NICK:
+        target = nick  # direct message, respond directly
+    # else: respond in channel
+    bot.send("PRIVMSG", target=target, message=f"echo: {message}")
 
 
-Connect and run the bot forever:
-
-.. code-block:: python
-
-    bot.loop.create_task(bot.connect())
-    bot.loop.run_forever()
-
-API
-===
-
-The full API consists of 1 class, with 8 methods:
-
-.. code-block:: python
-
-    # manage connections
-
-    async Client.connect()
-    async Client.disconnect()
-
-    # send, receive, and wait for rfc-2812 messages
-
-    Client.send(command, **kwargs)
-    @Client.on(event)
-    Client.trigger(event, **kwargs)
-    async Client.wait(event)
-
-    # send and receive anything newline-terminated,
-    # provided for eg. IRCv3 extensions
-
-    Client.send_raw(message)
-    Client.handle_raw(message)
+async def main():
+    loop = asyncio.get_event_loop()
+    await bot.connect()
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        await bot.disconnect()
+    finally:
+      loop.close()
 
 
-Contributors
-============
+if __name__ == "__main__":
+    asyncio.run(main())
+```
 
-* `fahhem <https://github.com/fahhem>`_
-* `thebigmunch <https://github.com/thebigmunch>`_
-* `tilal6991 <https://github.com/tilal6991>`_
-* `AMorporkian <https://github.com/AMorporkian>`_
-* `nedbat <https://github.com/nedbat>`_
-* `Coinkite Inc <https://github.com/coinkite>`_
-* `Johan Lorenzo <https://github.com/JohanLorenzo>`_
-* `Dominik Miedziński <https://github.com/miedzinski>`_
-* `Yay295 <https://github.com/Yay295>`_
-* `Elijah Lazkani <https://github.com/elazkani>`_
+# API
 
+The public API is fairly small, and built around sending commands with
+`send(cmd, **kw)` (or `send_message(msg)` for raw IRC lines) and processing
+events with `@on(event)` and `wait(event)`.
+
+```py
+class Client:
+    # functions that handle the inbound raw IRC lines
+    # by default, Client includes an rfc2812 handler that triggers
+    # events caught by @Client.on
+    message_handlers: list[ClientMessageHandler]
+
+    # connects to the given host, port, and optionally over ssl.
+    async connect() -> None
+
+    # start disconnecting if connected.  safe to call multiple times.
+    async disconnect() -> None
+
+    # send a known rfc2812 command, formatting kwargs for you
+    send(command: str, **kwargs) -> None
+
+    # decorate a function (sync or async) to handle an event.
+    # these can be rfc2812 events (privmsg, ping, notice) or built-in
+    # events (client_connect, client_disconnect) or your own signals
+    @on(event: str)(async handler)
+
+    # manually trigger an event to be processed by any registered handlers
+    # for example, to simulate receiving a message:
+    #     my_client.trigger("privmsg", nick=...)
+    # or send a local-only message to another part of your system:
+    #     trigger("backup-local", backend="s3", session=...)
+    trigger(event: str, **kwargs) -> asyncio.Task
+
+    # wait for an event to be triggered.
+    async wait(event: str) -> str
+
+    # send raw IRC line.  bypasses rfc2812 parsing and validation,
+    # so you can support custom IRC messages or extensions, like SASL.
+    send_message(message: str) -> None
+
+# wait for the client to emit one or more events.  when mode is "first"
+# this returns the events that finished first (more than one event can be triggered
+# in a single loop step) and cancels the rest.  when mode is "all" this waits
+# for all events to trigger.
+async def wait_for(client, events: list[str], mode: "first"|"all") -> list[str]
+```
+
+# Contributors
+
+* [fahhem](https://github.com/fahhem)
+* [thebigmunch](https://github.com/thebigmunch)
+* [tilal6991](https://github.com/tilal6991)
+* [AMorporkian](https://github.com/AMorporkian)
+* [nedbat](https://github.com/nedbat)
+* [Coinkite Inc](https://github.com/coinkite)
+* [Johan Lorenzo](https://github.com/JohanLorenzo)
+* [Dominik Miedziński](https://github.com/miedzinski)
+* [Yay295](https://github.com/Yay295)
+* [Elijah Lazkani](https://github.com/elazkani)
+* [hell-of-the-devil](https://github.com/hell-of-the-devil)

@@ -256,6 +256,7 @@ class BaseClient(EventHandler):
     async def disconnect(self) -> None:
         if self._protocol:
             self._protocol.close()
+            await self.wait("client_disconnect")
 
     def send_message(self, message: str) -> None:
         if not self._protocol:
