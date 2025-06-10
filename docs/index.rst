@@ -60,18 +60,20 @@ Create an instance:
 
 
     async def main():
-        loop = asyncio.get_event_loop()
         await bot.connect()
         try:
-            loop.run_forever()
-        except KeyboardInterrupt:
+            # serve until the connection drops...
+            await bot.wait("client_disconnect")
+            print("\ndisconnected by remote")
+        except asyncio.CancelledError:
+            # ...or we hit ctrl+c
             await bot.disconnect()
-        finally:
-        loop.close()
+            print("\ndisconnected after ctrl+c")
 
 
     if __name__ == "__main__":
         asyncio.run(main())
+
 
 
 Next Steps
