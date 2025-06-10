@@ -40,9 +40,10 @@ docs: clean
 	.venv/bin/python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs/ docs/_build/html
 	${BROWSER} docs/_build/html/index.html
 
-build: clean
+build: clean lint test
 	.venv/bin/pip install -q --group dist
 	.venv/bin/python -m build
+	.venv/bin/twine check dist/*
 
 publish: build
 	.venv/bin/twine upload dist/*

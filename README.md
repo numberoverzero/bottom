@@ -1,7 +1,14 @@
-.. image:: https://readthedocs.org/projects/bottom-docs/badge?style=flat-square
-    :target: http://bottom-docs.readthedocs.org/
-.. image:: https://img.shields.io/pypi/v/bottom.svg?style=flat-square
-    :target: https://pypi.python.org/pypi/bottom
+[![Documentation](
+    https://img.shields.io/readthedocs/bottom-docs?style=for-the-badge)](
+    http://bottom-docs.readthedocs.org/)
+[![PyPi](
+    https://img.shields.io/pypi/v/bottom?style=for-the-badge)](
+    https://pypi.org/project/bottom/)
+[![GitHub License](
+    https://img.shields.io/github/license/numberoverzero/bottom?style=for-the-badge)](
+    https://github.com/numberoverzero/bottom/blob/master/LICENSE)
+
+
 .. image:: https://img.shields.io/github/issues-raw/numberoverzero/bottom.svg?style=flat-square
     :target: https://github.com/numberoverzero/bottom/issues
 .. image:: https://img.shields.io/pypi/l/bottom.svg?style=flat-square

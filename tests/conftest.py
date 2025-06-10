@@ -161,8 +161,8 @@ def port(server: Server) -> int:
 
 @pytest.fixture
 def server_protocol(server: Server) -> ServerProtocol:
-    assert server.protocol
-    return server.protocol
+    assert server.protocol is not None
+    return server.protocol  # ty: ignore  # https://github.com/astral-sh/ty/issues/164
 
 
 @pytest_asyncio.fixture

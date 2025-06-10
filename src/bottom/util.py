@@ -41,7 +41,7 @@ def ensure_async_fn[**P, R](
 ) -> t.Callable[P, t.Coroutine[t.Any, t.Any, R]]:
     """returns the input fn if it was async, otherwise returns an async wrapper around the input fn"""
     if asyncio.iscoroutinefunction(fn):
-        return fn
+        return fn  # ty: ignore  # might not be pulling type info from the iscoroutinefunction above?
     else:
 
         @functools.wraps(fn)

@@ -178,9 +178,9 @@ async def test_trigger_multiple_handlers(client):
     def incr(first=True):
         nonlocal h1, h2
         if first:
-            h1 += 1
+            h1 += 1  # ty: ignore # https://github.com/astral-sh/ty/issues/220
         else:
-            h2 += 1
+            h2 += 1  # ty: ignore # https://github.com/astral-sh/ty/issues/220
 
     client.on("f")(lambda: incr(first=True))
     client.on("f")(lambda: incr(first=False))
