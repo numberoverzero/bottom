@@ -36,10 +36,9 @@ test:
 
 docs: clean
 	.venv/bin/pip install -q --group docs
-	cd docs && $(MAKE) html
+	.venv/bin/python -m sphinx -b linkcheck -D linkcheck_timeout=1 docs/ docs/_build/linkcheck
+	.venv/bin/python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs/ docs/_build/html
 	${BROWSER} docs/_build/html/index.html
-	# TODO test the command that will be run by readthedocs
-	# sphinx-build -W -b html -d {envtmpdir}/doctrees . {envtmpdir}/html
 
 build: clean
 	.venv/bin/pip install -q --group dist
