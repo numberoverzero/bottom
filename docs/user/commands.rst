@@ -1,7 +1,7 @@
 .. _Commands:
 
-Commands
-^^^^^^^^
+Sending Supported IRC Commands
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. code-block:: python
 

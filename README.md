@@ -104,11 +104,6 @@ events with `@on(event)` and `wait(event)`.
 
 ```py
 class Client:
-    # functions that handle the inbound raw IRC lines
-    # by default, Client includes an rfc2812 handler that triggers
-    # events caught by @Client.on
-    message_handlers: list[ClientMessageHandler]
-
     # connects to the given host, port, and optionally over ssl.
     async connect() -> None
 
@@ -131,17 +126,22 @@ class Client:
     trigger(event: str, **kwargs) -> asyncio.Task
 
     # wait for an event to be triggered.
-    async wait(event: str) -> str
+    async wait(event: str) -> dict
 
     # send raw IRC line.  bypasses rfc2812 parsing and validation,
     # so you can support custom IRC messages or extensions, like SASL.
     send_message(message: str) -> None
 
+    # functions that handle the inbound raw IRC lines.
+    # by default, Client includes an rfc2812 handler that triggers
+    # events caught by @Client.on
+    message_handlers: list[ClientMessageHandler]
+
 # wait for the client to emit one or more events.  when mode is "first"
 # this returns the events that finished first (more than one event can be triggered
 # in a single loop step) and cancels the rest.  when mode is "all" this waits
 # for all events to trigger.
-async def wait_for(client, events: list[str], mode: "first"|"all") -> list[str]
+async def wait_for(client, events: list[str], mode: "first"|"all") -> list[dict]
 ```
 
 # Contributors

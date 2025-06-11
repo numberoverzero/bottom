@@ -1,7 +1,7 @@
 .. _Extensions:
 
-Extensions
-^^^^^^^^^^
+Extending the Client
+^^^^^^^^^^^^^^^^^^^^
 
 bottom doesn't have any clever import hooks to identify plugins based on name,
 shape, or other significant denomination.  Instead, we can create extensions

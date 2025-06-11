@@ -92,11 +92,11 @@ Next Steps
     :maxdepth: 2
 
     user/installation
-    user/async
     user/api
-    user/events
-    user/commands
     user/extension
+    user/migration
+    user/commands
+    user/events
     dev/development
 
 .. _bottom: https://github.com/numberoverzero/bottom

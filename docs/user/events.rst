@@ -1,7 +1,7 @@
 .. _Events:
 
-Events
-^^^^^^
+Receiving Events
+^^^^^^^^^^^^^^^^
 
 In bottom, an event is simply a string and set of ``**kwargs`` to be passed to
 any handlers listening for that event:
@@ -111,8 +111,8 @@ allows any code that is waiting on that event to continue.  Be careful using
 ``client.wait`` - because we can call trigger with any string, ``wait`` will
 allow us to wait (forever) for events that may never trigger.
 
-Supported Events
-================
+Supported IRC Events
+====================
 
 .. code-block:: python
 
