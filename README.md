@@ -147,8 +147,8 @@ class Client:
 async def wait_for(client, events: list[str], mode: "first"|"all") -> list[dict]
 
 # type hints for message handlers
-type NextMessageHandler = Callable[[str], Coroutine[Any, Any, Any]]
-type ClientMessageHandler = Callable[[NextMessageHandler, str], Coroutine[Any, Any, Any]]
+type NextMessageHandler = Callable[[bytes], Coroutine[Any, Any, Any]]
+type ClientMessageHandler = Callable[[NextMessageHandler, bytes], Coroutine[Any, Any, Any]]
 ```
 
 # Contributors

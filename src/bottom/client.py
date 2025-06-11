@@ -61,12 +61,12 @@ class Client(BaseClient):
 rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
 
 
-async def rfc2812_handler(next_handler: NextMessageHandler[Client], client: Client, message: str) -> None:
+async def rfc2812_handler(next_handler: NextMessageHandler[Client], client: Client, message: bytes) -> None:
     try:
-        event, kwargs = unpack_command(message)
+        event, kwargs = unpack_command(message.decode(client._encoding))
         client.trigger(event, **kwargs)
     except ValueError:
-        rfc2812_log.debug("Failed to parse line >>> {}".format(message))
+        rfc2812_log.debug("Failed to parse line >>> {}".format(message.decode(client._encoding)))
     await next_handler(client, message)
 
 

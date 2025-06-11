@@ -29,8 +29,8 @@ Public API
         class MyClient(Client):
             pass
 
-        async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
-            print(f"I saw a message: {message}")
+        async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: bytes):
+            print(f"I saw a message: {message.decode()}")
             await next_handler(client, message)
 
     see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
@@ -47,8 +47,8 @@ Public API
         class MyClient(Client):
             pass
 
-        async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
-            print(f"I saw a message: {message}")
+        async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: bytes):
+            print(f"I saw a message: {message.decode()}")
             await next_handler(client, message)
 
         handler: ClientMessageHandler[MyClient] = handle_message

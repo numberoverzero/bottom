@@ -265,11 +265,10 @@ We'll handle incoming messages with a :data:`ClientMessageHandler<bottom.ClientM
     import base64
     from bottom import NextMessageHandler
 
-    async def decrypt_message(next_handler: NextMessageHandler[EncryptingClient], client: EncryptingClient, message: str):
+    async def decrypt_message(next_handler: NextMessageHandler[EncryptingClient], client: EncryptingClient, message: bytes):
         encrypted_bytes = base64.b64decode(message.encode())
         decrypted_bytes = await client.ctx.decrypt(encrypted_bytes)
-        decrypted_str = decrypted_bytes.decode()
-        await next_handler(client, decrypted_str)
+        await next_handler(client, decrypted_bytes)
 
 If the decrypted values are well-formed rfc2812 IRC commands, we can put this handler in front of the default handler
 and it will let us use the existing :meth:`Client.trigger<bottom.Client.trigger>` and

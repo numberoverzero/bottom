@@ -24,17 +24,16 @@ class EncryptionContext:
 
 
 async def decrypt_message(
-    next_handler: NextMessageHandler[EncryptingClient], client: EncryptingClient, message: str
+    next_handler: NextMessageHandler[EncryptingClient], client: EncryptingClient, message: bytes
 ) -> None:
     if ACTUALLY_ENCRYPTING:
         # note: this won't work on a standard server because it won't just send us b64 encoded lines
         encrypted_bytes = base64.b64decode(message)
     else:
-        encrypted_bytes = message.encode()
+        encrypted_bytes = message
     decrypted_bytes = await ctx.decrypt(encrypted_bytes)
-    decrypted_str = decrypted_bytes.decode()
-    print(f"next_handler got: {decrypted_str}")
-    await next_handler(client, decrypted_str)
+    print(f"next_handler got: {decrypted_bytes.decode()}")
+    await next_handler(client, decrypted_bytes)
 
 
 class EncryptingClient(Client):

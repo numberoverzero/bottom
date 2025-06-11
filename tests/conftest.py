@@ -191,9 +191,9 @@ async def client_protocol(client: bottom.Client) -> bottom.core.Protocol | None:
 
 
 @pytest.fixture
-def captured_messages(client: bottom.Client) -> t.Iterable[list[str]]:
+def captured_messages(client: bottom.Client) -> t.Iterable[list[bytes]]:
     """injects a message handler that captures all incoming messages"""
-    captured = []
+    captured: list[bytes] = []
 
     async def capture_message(next_handler, client, message):
         captured.append(message)

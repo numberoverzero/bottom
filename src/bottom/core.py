@@ -13,7 +13,7 @@ __all__ = ["BaseClient", "ClientMessageHandler", "NextMessageHandler", "Protocol
 DELIM = b"\r\n"
 DELIM_COMPAT = b"\n"
 
-ProtocolMessageHandler = t.Callable[[str], None]
+ProtocolMessageHandler = t.Callable[[bytes], None]
 ConnectionLostHandler = t.Callable[["Protocol", Exception | None], None]
 
 
@@ -26,21 +26,16 @@ class Protocol(asyncio.Protocol):
     on_message: ProtocolMessageHandler
     on_connection_lost: ConnectionLostHandler
     buffer: bytes = b""
-    encoding: str
 
     def __init__(
         self,
         handle_message: ProtocolMessageHandler,
         handle_connection_lost: ConnectionLostHandler | None,
-        encoding: str | None,
     ) -> None:
         self.on_message = handle_message
         if handle_connection_lost is None:  # pragma: no cover
             handle_connection_lost = default_connection_lost_handler
         self.on_connection_lost = handle_connection_lost
-        if encoding is None:  # pragma: no cover
-            encoding = "utf-8"
-        self.encoding = encoding
 
     # note: same way typeshed handles the subclass typing problem
     # https://github.com/python/typeshed/blob/8f5a80e7b741226e525bd90e45496b8f68dc69b6/stdlib/asyncio/protocols.pyi#L24
@@ -63,17 +58,14 @@ class Protocol(asyncio.Protocol):
         # client.  The last will be b"" if the buffer ends on b"\n"
         *lines, self.buffer = self.buffer.split(DELIM_COMPAT)
         for line in lines:
-            message = line.decode(self.encoding, "ignore").strip()
-            self.on_message(message)
+            self.on_message(line.strip())
 
-    def write(self, message: str) -> None:
+    def write(self, message: bytes) -> None:
         """immediately writes the message as a complete line; there is no write buffering"""
         # can't use self.is_closed or type checkers complain at self.transport.write() below
         if self.transport is None or self.transport.is_closing():
             raise RuntimeError(f"Protocol {self} not connected")
-        message = message.strip()
-        data = message.encode(self.encoding) + DELIM
-        self.transport.write(data)
+        self.transport.write(message.strip() + DELIM)
 
     def close(self) -> None:
         if self.transport:
@@ -294,7 +286,7 @@ class EventHandler:
 # https://github.com/sphinx-doc/sphinx/issues/11561
 # https://github.com/sphinx-doc/sphinx/pull/13508
 
-type NextMessageHandler[T: BaseClient] = t.Callable[[T, str], t.Coroutine[t.Any, t.Any, t.Any]]
+type NextMessageHandler[T: BaseClient] = t.Callable[[T, bytes], t.Coroutine[t.Any, t.Any, t.Any]]
 """
 Type hint for an async function that takes a message to process.
 
@@ -305,8 +297,8 @@ This is the type of the first argument in a message handler::
     class MyClient(Client):
         pass
 
-    async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
-        print(f"I saw a message: {message}")
+    async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: bytes):
+        print(f"I saw a message: {message.decode()}")
         await next_handler(client, message)
 
 see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
@@ -317,7 +309,9 @@ examples of customizing a :class:`Client<bottom.Client>`'s functionality.
 # https://github.com/sphinx-doc/sphinx/issues/11561
 # https://github.com/sphinx-doc/sphinx/pull/13508
 
-type ClientMessageHandler[T: BaseClient] = t.Callable[[NextMessageHandler[T], T, str], t.Coroutine[t.Any, t.Any, t.Any]]
+type ClientMessageHandler[T: BaseClient] = t.Callable[
+    [NextMessageHandler[T], T, bytes], t.Coroutine[t.Any, t.Any, t.Any]
+]
 """
 Type hint for an async function that processes a message, and may call the next handler in the chain.
 
@@ -328,8 +322,8 @@ This is the type of the entire message handler::
     class MyClient(Client):
         pass
 
-    async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
-        print(f"I saw a message: {message}")
+    async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: bytes):
+        print(f"I saw a message: {message.decode()}")
         await next_handler(client, message)
 
     handler: ClientMessageHandler[MyClient] = handle_message
@@ -350,7 +344,7 @@ class BaseClient(EventHandler):
 
         from bottom import Client, NextHandler
 
-        async def handle_message(next_handler: NextHandler[Client], client: Client, message: str) -> None:
+        async def handle_message(next_handler: NextHandler[Client], client: Client, message: bytes) -> None:
             print("before")
             await next_handler(client, message)
             print("after")
@@ -369,8 +363,8 @@ class BaseClient(EventHandler):
 
         from bottom import Client, NextMessageHandler
 
-        async def print_everything(next_handler: NextMessageHandler[Client], client: Client, message: str) -> None:
-            print(f"incoming message: {message}")
+        async def print_everything(next_handler: NextMessageHandler[Client], client: Client, message: bytes) -> None:
+            print(f"incoming message: {message.decode()}")
             await next_handler(client, message)
 
         client = Client(host="localhost", port=443)
@@ -381,14 +375,14 @@ class BaseClient(EventHandler):
 
         from bottom import Client, NextMessageHandler
 
-        async def uno_handler(next_handler: NextMessageHandler[Client], client: Client, message: str) -> None:
+        async def uno_handler(next_handler: NextMessageHandler[Client], client: Client, message: bytes) -> None:
             if message.startswith(b"reverse:"):
                 message = message[len(b"reverse:"):]
-                print(f"reversing {message}")
+                print(f"reversing {message.decode()}")
                 await next_handler(client, message[::-1])
-            elif message.startswith("skip:"):
-                message = message[len("skip:"):]
-                print(f"skipping: {message}")
+            elif message.startswith(b"skip:"):
+                message = message[len(b"skip:"):]
+                print(f"skipping: {message.decode()}")
             else:
                 print("passing message through unchanged")
                 await next_handler(client, message)
@@ -416,7 +410,7 @@ class BaseClient(EventHandler):
     _host: str
     _port: int
 
-    def __init__(self, host: str, port: int, *, encoding: str = "UTF-8", ssl: bool | ssl.SSLContext = True) -> None:
+    def __init__(self, host: str, port: int, *, encoding: str = "utf-8", ssl: bool | ssl.SSLContext = True) -> None:
         super().__init__()
         self._host = host
         self._port = port
@@ -525,7 +519,7 @@ class BaseClient(EventHandler):
         """
         if not self._protocol or self._protocol.is_closing():
             raise RuntimeError("Not connected")
-        self._protocol.write(message)
+        self._protocol.write(message.encode(self._encoding))
 
 
 def make_protocol_factory(client: BaseClient) -> t.Callable[[], Protocol]:
@@ -534,14 +528,13 @@ def make_protocol_factory(client: BaseClient) -> t.Callable[[], Protocol]:
             client.trigger("client_disconnect")
             client._protocol = None
 
-    def handle_message(message: str) -> None:
+    def handle_message(message: bytes) -> None:
         util.stack_process(client.message_handlers, client, message)
 
     def protocol_factory() -> Protocol:
         return Protocol(
             handle_message=handle_message,
             handle_connection_lost=handle_connection_lost,
-            encoding=client._encoding,
         )
 
     return protocol_factory

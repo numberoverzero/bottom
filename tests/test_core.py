@@ -70,9 +70,9 @@ async def test_no_handlers(client, client_protocol):
 
 async def test_protocol_write(client_protocol: Protocol, server):
     """Protocol strips and normalizes each write"""
-    client_protocol.write("hello")
-    client_protocol.write("world\r\n")
-    client_protocol.write("\r\nfoo\r\n")
+    client_protocol.write(b"hello")
+    client_protocol.write(b"world\r\n")
+    client_protocol.write(b"\r\nfoo\r\n")
 
     # asyncio.sleep(0) isn't enough for transports to drain
     await busy_wait(lambda: len(server.received) >= 3)
@@ -80,7 +80,7 @@ async def test_protocol_write(client_protocol: Protocol, server):
     assert server.received == ["hello", "world", "foo"]
 
 
-async def test_partial_line(client_protocol: Protocol, captured_messages: list[str]):
+async def test_partial_line(client_protocol: Protocol, captured_messages: list[bytes]):
     """partial IRC lines are not emitted to message_handlers"""
     client_protocol.data_received(b":nick!user@host PRIVMSG")
     # no pending writes/triggers
@@ -93,33 +93,33 @@ async def test_partial_line(client_protocol: Protocol, captured_messages: list[s
     assert b"PRIVMSG" not in client_protocol.buffer
     # it's left the buffer but we need to yield execution so the message_handler stack runs
     await busy_wait(lambda: captured_messages)
-    assert captured_messages == [":nick!user@host PRIVMSG"]
+    assert captured_messages == [b":nick!user@host PRIVMSG"]
 
 
-async def test_multipart_line(client_protocol: Protocol, captured_messages: list[str]):
+async def test_multipart_line(client_protocol: Protocol, captured_messages: list[bytes]):
     """Single line transmitted in multiple parts"""
-    part1 = ":nick!user@host PRIVMSG"
-    part2 = " #target :this is message"
-    client_protocol.data_received(part1.encode())
-    client_protocol.data_received(f"{part2}\r\n".encode())
+    part1 = b":nick!user@host PRIVMSG"
+    part2 = b" #target :this is message"
+    client_protocol.data_received(part1)
+    client_protocol.data_received(part2 + b"\r\n")
 
     await busy_wait(lambda: captured_messages)
     assert captured_messages == [part1 + part2]
 
 
-async def test_multiline_chunk(client_protocol: Protocol, captured_messages: list[str]):
+async def test_multiline_chunk(client_protocol: Protocol, captured_messages: list[bytes]):
     """Multiple IRC lines in a single data_received block"""
-    privmsg = ":nick!user@host PRIVMSG #target :this is message"
-    notice = ":n!u@h NOTICE #t :m"
-    client_protocol.data_received(f"{privmsg}\r\n{notice}\r\n".encode())
+    privmsg = b":nick!user@host PRIVMSG #target :this is message"
+    notice = b":n!u@h NOTICE #t :m"
+    client_protocol.data_received(privmsg + b"\r\n" + notice + b"\r\n")
     await busy_wait(lambda: captured_messages)
     assert captured_messages == [privmsg, notice]
 
 
-async def test_invalid_line(client_protocol: Protocol, captured_messages: list[str]):
+async def test_invalid_line(client_protocol: Protocol, captured_messages: list[bytes]):
     """Well-formatted but invalid line"""
-    invalid_line = "blah unknown command"
-    client_protocol.data_received(f"{invalid_line}\r\n".encode())
+    invalid_line = b"blah unknown command"
+    client_protocol.data_received(invalid_line + b"\r\n")
 
     await busy_wait(lambda: captured_messages)
 
