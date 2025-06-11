@@ -294,16 +294,20 @@ class EventHandler:
 # https://github.com/sphinx-doc/sphinx/issues/11561
 # https://github.com/sphinx-doc/sphinx/pull/13508
 
-type NextMessageHandler = t.Callable[[str], t.Coroutine[t.Any, t.Any, t.Any]]
-"""Type hint for an async function that takes a message to process.
+type NextMessageHandler[T: BaseClient] = t.Callable[[T, str], t.Coroutine[t.Any, t.Any, t.Any]]
+"""
+Type hint for an async function that takes a message to process.
 
 This is the type of the first argument in a message handler::
 
-    from bottom import NextMessageHandler
+    from bottom import Client, ClientMessageHandler, NextMessageHandler
 
-    async def handle_message(next_handler: NextMessageHandler, message: str):
+    class MyClient(Client):
+        pass
+
+    async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
         print(f"I saw a message: {message}")
-        await next_handler(message)
+        await next_handler(client, message)
 
 see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
 examples of customizing a :class:`Client<bottom.Client>`'s functionality.
@@ -313,19 +317,22 @@ examples of customizing a :class:`Client<bottom.Client>`'s functionality.
 # https://github.com/sphinx-doc/sphinx/issues/11561
 # https://github.com/sphinx-doc/sphinx/pull/13508
 
-type ClientMessageHandler = t.Callable[[NextMessageHandler, str], t.Coroutine[t.Any, t.Any, t.Any]]
+type ClientMessageHandler[T: BaseClient] = t.Callable[[NextMessageHandler[T], T, str], t.Coroutine[t.Any, t.Any, t.Any]]
 """
 Type hint for an async function that processes a message, and may call the next handler in the chain.
 
 This is the type of the entire message handler::
 
-    from bottom import ClientMessageHandler, NextMessageHandler
+    from bottom import Client, ClientMessageHandler, NextMessageHandler
 
-    async def handle_message(next_handler: NextMessageHandler, message: str):
+    class MyClient(Client):
+        pass
+
+    async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
         print(f"I saw a message: {message}")
-        await next_handler(message)
+        await next_handler(client, message)
 
-    handler: ClientMessageHandler = handle_message
+    handler: ClientMessageHandler[MyClient] = handle_message
 
 see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
 examples of customizing a :class:`Client<bottom.Client>`'s functionality.
@@ -336,16 +343,16 @@ class BaseClient(EventHandler):
     message_handlers: list[ClientMessageHandler]
     """List of message handlers that runs on each incoming IRC line from the server.
 
-    The first handler is passed the ``next_handler`` in the chain as well as the ``message`` and can choose
-    to process the message, and/or invoke the next handler, or do nothing.
+    The first handler is passed the ``next_handler`` in the chain as well as the ``client`` and ``message``.  The
+    handler can choose to process the message, and/or invoke the next handler, or do nothing.
 
     The basic structure of a handler is::
 
-        from bottom import NextHandler
+        from bottom import Client, NextHandler
 
-        async def handle_message(next_handler: NextHandler, message: str) -> None:
+        async def handle_message(next_handler: NextHandler[Client], client: Client, message: str) -> None:
             print("before")
-            await next_handler(message)
+            await next_handler(client, message)
             print("after")
 
     By default, every client is configured with a ``rfc2812_handler`` which unpacks
@@ -360,11 +367,11 @@ class BaseClient(EventHandler):
 
     You can add your own handlers before or after this one, or replace it::
 
-        from bottom import NextMessageHandler
+        from bottom import Client, NextMessageHandler
 
-        async def print_everything(next_handler: NextMessageHandler, message: str) -> None:
+        async def print_everything(next_handler: NextMessageHandler[Client], client: Client, message: str) -> None:
             print(f"incoming message: {message}")
-            await next_handler(message)
+            await next_handler(client, message)
 
         client = Client(host="localhost", port=443)
         # run after other handlers
@@ -372,19 +379,19 @@ class BaseClient(EventHandler):
 
     Message handlers don't have to call the next handler, and don't have to pass the same message to the next handler::
 
-        from bottom import NextMessageHandler
+        from bottom import Client, NextMessageHandler
 
-        async def uno_handler(next_handler: NextMessageHandler, message: str) -> None:
-            if message.startswith("reverse:"):
-                message = message[len("reverse:"):]
+        async def uno_handler(next_handler: NextMessageHandler[Client], client: Client, message: str) -> None:
+            if message.startswith(b"reverse:"):
+                message = message[len(b"reverse:"):]
                 print(f"reversing {message}")
-                await next_handler(message[::-1])
+                await next_handler(client, message[::-1])
             elif message.startswith("skip:"):
                 message = message[len("skip:"):]
                 print(f"skipping: {message}")
             else:
                 print("passing message through unchanged")
-                await next_handler(message)
+                await next_handler(client, message)
 
         # run before other handlers
         client.message_handlers.insert(0, uno_handler)
@@ -398,9 +405,9 @@ class BaseClient(EventHandler):
         Each incoming message is handled using a copy of the handlers when the message arrived. Changes to the list do
         not affect handling of that message::
 
-            async def remove_other_handlers(next_handler, message):
+            async def remove_other_handlers(next_handler, client, message):
                 client.message_handlers.clear()
-                await next_handler(message)  # still uses original handlers
+                await next_handler(client, message)  # still uses original handlers
     """
 
     _protocol: Protocol | None = None
@@ -528,7 +535,7 @@ def make_protocol_factory(client: BaseClient) -> t.Callable[[], Protocol]:
             client._protocol = None
 
     def handle_message(message: str) -> None:
-        util.stack_process(client.message_handlers, message)
+        util.stack_process(client.message_handlers, client, message)
 
     def protocol_factory() -> Protocol:
         return Protocol(

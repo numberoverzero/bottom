@@ -79,39 +79,47 @@ async def test_ensure_async_sync():
 
 async def test_stack_process():
     """each processor in a stack is free to call the next handler, or not; and to change args, or not."""
-    calls = []
+    messages = []
+    data = []
 
-    async def first(next_handler, message):
-        calls.append(("first", message))
-        await next_handler(message[::-1])
+    async def first(next_handler, datum, message):
+        messages.append(("first", message))
+        data.append(datum)
+        await next_handler(datum, message[::-1])
 
-    async def second(next_handler, message):
-        calls.append(("second", message))
-        await next_handler(message)
+    async def second(next_handler, datum, message):
+        messages.append(("second", message))
+        data.append(datum)
+        await next_handler(datum, message)
 
-    async def third(next_handler, message):
-        await next_handler(message[::-1] * 2)
-        calls.append(("third", message))
+    async def third(next_handler, datum, message):
+        await next_handler(datum, message[::-1] * 2)
+        data.append(datum)
+        messages.append(("third", message))
 
-    async def fourth(next_handler, message):
-        calls.append(("fourth", "hardcoded"))
+    async def fourth(next_handler, datum, message):
+        data.append(datum)
+        messages.append(("fourth", "hardcoded"))
 
-    async def not_called(next_handler, message):
-        calls.append(("not_called", message))
-        await next_handler(message)
+    async def not_called(next_handler, datum, message):
+        data.append(datum)
+        messages.append(("not_called", message))
+        await next_handler(datum, message)
 
     stack = [first, second, third, fourth, not_called]
-    task = util.stack_process(stack, "123")
+    task = util.stack_process(stack, "datum", "123")
     await task
 
-    expected = [
+    expected_data = ["datum"] * 4
+    expected_messages = [
         ("first", "123"),
         ("second", "321"),
         # third calls the next handler _before_ itself
         ("fourth", "hardcoded"),
         ("third", "321"),
     ]
-    assert calls == expected
+    assert messages == expected_messages
+    assert data == expected_data
 
 
 async def test_process_empty_stack():

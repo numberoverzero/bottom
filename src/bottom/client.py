@@ -5,7 +5,7 @@ import logging
 import ssl
 import typing as t
 
-from bottom.core import BaseClient, ClientMessageHandler, NextMessageHandler
+from bottom.core import BaseClient, NextMessageHandler
 from bottom.pack import pack_command
 from bottom.unpack import unpack_command
 from bottom.util import create_task
@@ -37,7 +37,7 @@ class Client(BaseClient):
                 or provide your own ssl context.
         """
         super().__init__(host, port, encoding=encoding, ssl=ssl)
-        self.message_handlers.append(rfc2812_handler(self))
+        self.message_handlers.append(rfc2812_handler)
 
     async def send(self, command: str, **kwargs: t.Any) -> None:
         """
@@ -61,16 +61,13 @@ class Client(BaseClient):
 rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
 
 
-def rfc2812_handler(client: Client) -> ClientMessageHandler:
-    async def handler(next_handler: NextMessageHandler, message: str) -> None:
-        try:
-            event, kwargs = unpack_command(message)
-            client.trigger(event, **kwargs)
-        except ValueError:
-            rfc2812_log.debug("Failed to parse line >>> {}".format(message))
-        await next_handler(message)
-
-    return handler
+async def rfc2812_handler(next_handler: NextMessageHandler[Client], client: Client, message: str) -> None:
+    try:
+        event, kwargs = unpack_command(message)
+        client.trigger(event, **kwargs)
+    except ValueError:
+        rfc2812_log.debug("Failed to parse line >>> {}".format(message))
+    await next_handler(client, message)
 
 
 async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[dict]:

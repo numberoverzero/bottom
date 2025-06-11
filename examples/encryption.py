@@ -4,7 +4,7 @@ import asyncio
 import base64
 import typing as t
 
-from bottom import Client, ClientMessageHandler, NextMessageHandler, wait_for
+from bottom import Client, NextMessageHandler, wait_for
 
 ACTUALLY_ENCRYPTING = False
 
@@ -23,19 +23,18 @@ class EncryptionContext:
         return data
 
 
-def make_decrypt_handler(ctx: EncryptionContext) -> ClientMessageHandler:
-    async def decrypt_message(next_handler: NextMessageHandler, message: str) -> None:
-        if ACTUALLY_ENCRYPTING:
-            # note: this won't work on a standard server because it won't just send us b64 encoded lines
-            encrypted_bytes = base64.b64decode(message.encode())
-        else:
-            encrypted_bytes = message.encode()
-        decrypted_bytes = await ctx.decrypt(encrypted_bytes)
-        decrypted_str = decrypted_bytes.decode()
-        print(f"next_handler got: {decrypted_str}")
-        await next_handler(decrypted_str)
-
-    return decrypt_message
+async def decrypt_message(
+    next_handler: NextMessageHandler[EncryptingClient], client: EncryptingClient, message: str
+) -> None:
+    if ACTUALLY_ENCRYPTING:
+        # note: this won't work on a standard server because it won't just send us b64 encoded lines
+        encrypted_bytes = base64.b64decode(message)
+    else:
+        encrypted_bytes = message.encode()
+    decrypted_bytes = await ctx.decrypt(encrypted_bytes)
+    decrypted_str = decrypted_bytes.decode()
+    print(f"next_handler got: {decrypted_str}")
+    await next_handler(client, decrypted_str)
 
 
 class EncryptingClient(Client):
@@ -44,11 +43,10 @@ class EncryptingClient(Client):
     def __init__(self, ctx: EncryptionContext, *a: t.Any, **kw: t.Any) -> None:
         super().__init__(*a, **kw)
         self.ctx = ctx
-        decrypt_handler = make_decrypt_handler(ctx)
-        self.message_handlers.insert(0, decrypt_handler)
+        self.message_handlers.insert(0, decrypt_message)
 
     async def send_message(self, message: str) -> None:
-        plaintext_bytes = message.encode()
+        plaintext_bytes = message.encode(self._encoding)
         ciphertext_bytes = await self.ctx.encrypt(plaintext_bytes)
         if ACTUALLY_ENCRYPTING:
             # note: this won't work on a standard server because it doesn't know wtf to do with a b64 encoded line

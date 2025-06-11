@@ -20,13 +20,18 @@ Public API
 
 .. py:data:: bottom.NextMessageHandler
 
+    Type hint for an async function that takes a message to process.
+
     This is the type of the first argument in a message handler::
 
-        from bottom import ClientMessageHandler, NextMessageHandler
+        from bottom import Client, ClientMessageHandler, NextMessageHandler
 
-        async def handle_message(next_handler: NextMessageHandler, message: str):
+        class MyClient(Client):
+            pass
+
+        async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
             print(f"I saw a message: {message}")
-            await next_handler(message)
+            await next_handler(client, message)
 
     see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
     examples of customizing a :class:`Client<bottom.Client>`'s functionality.
@@ -37,13 +42,16 @@ Public API
 
     This is the type of the entire message handler::
 
-      from bottom import ClientMessageHandler, NextMessageHandler
+        from bottom import Client, ClientMessageHandler, NextMessageHandler
 
-      async def handle_message(next_handler: NextMessageHandler, message: str):
-          print(f"I saw a message: {message}")
-          await next_handler(message)
+        class MyClient(Client):
+            pass
 
-      handler: ClientMessageHandler = handle_message
+        async def handle_message(next_handler: NextMessageHandler[MyClient], client: MyClient, message: str):
+            print(f"I saw a message: {message}")
+            await next_handler(client, message)
+
+        handler: ClientMessageHandler[MyClient] = handle_message
 
     see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
     examples of customizing a :class:`Client<bottom.Client>`'s functionality.

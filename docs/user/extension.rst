@@ -265,13 +265,11 @@ We'll handle incoming messages with a :data:`ClientMessageHandler<bottom.ClientM
     import base64
     from bottom import NextMessageHandler
 
-    def make_decrypt_handler(ctx: EncryptionContext):
-        async def decrypt_message(next_handler: NextMessageHandler, message: str):
-            encrypted_bytes = base64.b64decode(message.encode())
-            decrypted_bytes = await ctx.decrypt(encrypted_bytes)
-            decrypted_str = decrypted_bytes.decode()
-            await next_handler(decrypted_str)
-        return decrypt_message
+    async def decrypt_message(next_handler: NextMessageHandler[EncryptingClient], client: EncryptingClient, message: str):
+        encrypted_bytes = base64.b64decode(message.encode())
+        decrypted_bytes = await client.ctx.decrypt(encrypted_bytes)
+        decrypted_str = decrypted_bytes.decode()
+        await next_handler(client, decrypted_str)
 
 If the decrypted values are well-formed rfc2812 IRC commands, we can put this handler in front of the default handler
 and it will let us use the existing :meth:`Client.trigger<bottom.Client.trigger>` and
@@ -283,7 +281,7 @@ and it will let us use the existing :meth:`Client.trigger<bottom.Client.trigger>
 
     ctx = EncryptionContext(...)
     client = Client(host=..., port=...)
-    client.message_handlers.insert(0, make_decrypt_handler(ctx))
+    client.message_handlers.insert(0, decrypt_message)
 
     # ping handler is exactly the same - it doesn't have to know the ping was encrypted
     @client.on("ping")
@@ -303,7 +301,6 @@ Encrypting outgoing messages requires overriding the :meth:`Client.send_message<
         def __init__(self, ctx: EncryptionContext, *a, **kw):
             super().__init__(*a, **kw)
             self.ctx = ctx
-            self.message_handlers.insert(0, make_decrypt_handler(ctx))
 
         async def send_message(self, message: str):
             plaintext_bytes = message.encode()
@@ -318,7 +315,7 @@ Finally, we can add the decrypt_message handler to our ``EncryptingClient.__init
     def __init__(self, ctx: EncryptionContext, *a, **kw):
         super().__init__(*a, **kw)
         self.ctx = ctx
-        self.message_handlers.insert(0, make_decrypt_handler(ctx))
+        self.message_handlers.insert(0, decrypt_message)
 
 
 Now any calls to :meth:`Client.send<bottom.Client.send>` will pass through our custom ``send_message`` before they're

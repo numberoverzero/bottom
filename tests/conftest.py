@@ -195,9 +195,9 @@ def captured_messages(client: bottom.Client) -> t.Iterable[list[str]]:
     """injects a message handler that captures all incoming messages"""
     captured = []
 
-    async def capture_message(next_handler, message):
+    async def capture_message(next_handler, client, message):
         captured.append(message)
-        await next_handler(message)
+        await next_handler(client, message)
 
     client.message_handlers.insert(0, capture_message)
     try:
