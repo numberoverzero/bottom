@@ -68,6 +68,7 @@ exclude = [
 addopts = "-p no:cacheprovider"
 # https://pytest-asyncio.readthedocs.io/en/latest/concepts.html#auto-mode
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff.lint.isort]
 known-third-party = ["bottom"]

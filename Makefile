@@ -28,7 +28,9 @@ lint:
 test: lint
 	rm -rf .coverage .pytest_cache
 	.venv/bin/pip install -q --group test
-	.venv/bin/coverage run --branch --source=src/bottom -m pytest -vv -s
+	# https://docs.python.org/3/library/devmode.html#effects-of-the-python-development-mode
+	# show all warnings, enable asyncio debug mode
+	.venv/bin/python -X dev -m coverage run --branch --source=src/bottom -m pytest -vvv -s
 	.venv/bin/coverage report -m
 
 docs:
