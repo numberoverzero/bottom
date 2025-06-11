@@ -1,41 +1,36 @@
+import asyncio
 import re
 import typing as t
 
-from bottom.core import BaseClient
-from bottom.util import Decorator, create_task, ensure_async_fn
+from bottom import Client
+from bottom.util import create_task
 
 
 class Router(object):
-    def __init__(self, client: BaseClient) -> None:
+    def __init__(self, client: Client) -> None:
         self.client = client
         self.routes = {}
-        client.on("privmsg")(self._route_privmsg)
+        client.on("privmsg")(self._handle_privmsg)
 
-    async def _route_privmsg(self, nick: str, target: str, message: str, **kwargs: t.Any) -> None:
+    async def _handle_privmsg(self, **kwargs: t.Any) -> None:
         """client callback entrance"""
         for regex, (func, pattern) in self.routes.items():
-            match = regex.match(message)
+            match = regex.match(kwargs["message"])
             if match:
-                create_task(func(nick, target, message, match, **kwargs))
+                kwargs.update({"match": match, "pattern": pattern})
+                create_task(func(**kwargs))
 
-    @t.overload
-    def route[**P, R](self, pattern: str | re.Pattern, fn: None = None) -> Decorator[P, R]: ...
-    @t.overload
-    def route[**P, R](self, pattern: str | re.Pattern, fn: t.Callable[P, R]) -> t.Callable[P, R]: ...
-
-    def route[**P, R](
-        self, pattern: str | re.Pattern, fn: t.Callable[P, R] | None = None
-    ) -> Decorator[P, R] | t.Callable[P, R]:
-        def decorator(fn: t.Callable[P, R]) -> t.Callable[P, R]:
-            async_fn = ensure_async_fn(fn)
+    def route[T: t.Coroutine](self, pattern: str | re.Pattern[str]) -> t.Callable[[T], T] | T:
+        def decorator(fn: T) -> T:
+            assert asyncio.iscoroutinefunction(fn), f"{fn} must be async to register"
             if isinstance(pattern, str):
                 compiled = re.compile(pattern)
             else:
                 compiled = pattern
-            self.routes[compiled] = (async_fn, pattern)
+            self.routes[compiled] = (fn, compiled.pattern)
             return fn
 
-        return decorator if fn is None else decorator(fn)
+        return decorator
 
 
 if __name__ == "__main__":
@@ -44,14 +39,14 @@ if __name__ == "__main__":
 
     router = Router(client)
 
-    @router.route(r"^bot, say (\w+)\.$")
-    def echo(nick: str, target: str, message: str, match: re.Match, **kwargs: t.Any) -> None:
+    @router.route(r"^bot, say (\w+) please$")
+    async def echo(nick: str, target: str, match: re.Match, **kwargs: t.Any) -> None:
         # Don't echo ourselves
         if nick == NICK:
             return
         # Respond directly to direct messages
         if target == NICK:
             target = nick
-        client.send("privmsg", target=target, message=match.group(1))
+        await client.send("privmsg", target=target, message=match.group(1))
 
     run()
