@@ -6,37 +6,35 @@ Development
 Versioning  and RFC2812
 =======================
 
-* Bottom follows semver for its **public** API.
+Bottom follows semver for its public API.
 
-  * Currently, ``Client`` is the only public member of bottom.
-  * IRC replies/codes which are not yet implemented may be added at any time,
-    and will correspond to a patch - the function contract of ``@on`` method
-    does not change.
-  * You should not rely on the internal api staying the same between minor
-    versions.
-  * Over time, private apis may be raised to become public.  The reverse will
-    never occur.
+* only the :ref:`documented Public API<Public Api>` is subject to versioning.
+  anything not documented there may change at any time.
+* new IRC replies/codes may be added in patch versions.
+* internal classes and methods may be promoted to public methods in minor versions.
 
 Contributing
 ============
 
-Contributions welcome!  Please make sure ``tox`` passes (including flake8 and
-docs build) before submitting a PR.
+Contributions welcome!  Please run ``make pr-check`` locally before submitting a PR.
 
-Pull requests that decrease coverage will not be merged.
+If you'd like to contribute but aren't sure where to start, consider looking through the `open issues`_!
+
+Some pointers are :ref:`available here<Internal Api>` to help you start navigating the codebase.
+
+.. _Development Setup:
 
 Development
 -----------
-bottom uses ``tox``, ``pytest``, ``coverage``, and ``flake8``.  To get
-everything set up in a new virtualenv::
+bottom uses ``ruff`` and ``pytest``.  To get started:
 
-    git clone https://github.com/numberoverzero/bottom.git
-    cd bottom
-    python3.12 -m venv --copies .venv
-    source .venv/bin/activate
-    pip install -r requirements.txt
-    pip install -e .
-    tox
+.. code-block:: console
+
+    $ git clone https://github.com/numberoverzero/bottom.git
+    $ cd bottom
+    $ make dev
+    # ... make some changes
+    $ make pr-check
 
 Documentation
 -------------
@@ -46,14 +44,6 @@ a `pull request`_! If there's an area you feel is lacking and will require more
 than a small change, `open an issue`_ to discuss the problem - others are
 probably also confused, and may have suggestions to improve the same area.
 
+.. _open issues: https://github.com/numberoverzero/bottom/issues
 .. _pull request: https://github.com/numberoverzero/bottom/pulls
 .. _open an issue: https://github.com/numberoverzero/bottom/issues/new
-
-TODO
-====
-
-* Better ``Client`` docstrings
-* Add missing replies/errors to ``unpack.py:unpack_command``
-
-  * Add reply/error parameters to ``unpack.py:parameters``
-  * Document events, client.send
