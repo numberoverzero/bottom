@@ -104,6 +104,9 @@ events with `@on(event)` and `wait(event)`.
 
 ```py
 class Client:
+    # true when the underlying connection is closed or closing
+    is_closing() -> bool:
+
     # connects to the given host, port, and optionally over ssl.
     async connect() -> None
 

@@ -417,6 +417,10 @@ class BaseClient(EventHandler):
         self._ssl = ssl
         self.message_handlers = []
 
+    def is_closing(self) -> bool:
+        """Return True if the Client is closing or closed."""
+        return self._protocol is None or self._protocol.is_closing()
+
     async def connect(self) -> None:
         """Connect to the server.
 
@@ -462,7 +466,7 @@ class BaseClient(EventHandler):
                 create_task(run())
                 print("Reconnect scheduled.")
         """
-        if self._protocol and not self._protocol.is_closing():
+        if not self.is_closing():
             return
         loop = asyncio.get_running_loop()
         _transport, protocol = await loop.create_connection(

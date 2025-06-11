@@ -33,6 +33,7 @@ That's it!  And to use it:
     client = bottom.Client(...)
     keepalive(client)
 
+.. _ex-plugins:
 
 Plugin Registry
 ===============
@@ -232,6 +233,9 @@ PRIVMSG event:
                 return fn
 
             return decorator
+
+
+.. _ex-encryption:
 
 Full message encryption
 =======================
