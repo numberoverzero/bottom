@@ -64,6 +64,8 @@ exclude = [
 ]
 
 [tool.pytest.ini_options]
+# `make test` also clears .pytest_cache on every run
+addopts = "-p no:cacheprovider"
 # https://pytest-asyncio.readthedocs.io/en/latest/concepts.html#auto-mode
 asyncio_mode = "auto"
 

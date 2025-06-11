@@ -26,9 +26,9 @@ lint:
 	.venv/bin/ty check
 
 test: lint
-	rm -f .coverage
+	rm -rf .coverage .pytest_cache
 	.venv/bin/pip install -q --group test
-	.venv/bin/coverage run --branch --source=src/bottom -m pytest -vv
+	.venv/bin/coverage run --branch --source=src/bottom -m pytest -vv -s
 	.venv/bin/coverage report -m
 
 docs:
