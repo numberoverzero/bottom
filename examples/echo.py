@@ -5,7 +5,7 @@ if __name__ == "__main__":
     from examples.common import NICK, client, run
 
     @client.on("privmsg")
-    def on_privmsg(nick: str, target: str, message: str, **kwargs: t.Any) -> None:
+    async def on_privmsg(nick: str, target: str, message: str, **kwargs: t.Any) -> None:
         """Echo all messages"""
         # Don't echo ourselves
         if nick == NICK:
@@ -14,6 +14,6 @@ if __name__ == "__main__":
         if target == NICK:
             target = nick
 
-        client.send("privmsg", target=target, message=message)
+        await client.send("privmsg", target=target, message=message)
 
     run()

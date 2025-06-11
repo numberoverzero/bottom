@@ -84,7 +84,7 @@ class Protocol(asyncio.Protocol):
 
 
 class EventHandler:
-    _event_futures: dict[str, asyncio.Future[dict]]
+    _event_futures: collections.defaultdict[str, asyncio.Future[dict]]
     _event_handlers: dict[str, list[t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]]]
 
     def __init__(self) -> None:
@@ -178,7 +178,7 @@ class EventHandler:
                 if message != "!commands": return
 
                 # notify
-                client.send(
+                await client.send(
                     "privmsg", target=nick,
                     message="note: !commands was renamed to !help in 1.2")
 
@@ -232,7 +232,13 @@ class EventHandler:
             # note: without this asyncio.sleep(0), anything that started waiting
             # in this loop tick won't see the event fire.
             await asyncio.sleep(0)
-            self._event_futures.pop(event).set_result({**kwargs})
+            # note: defaultdict.pop still raises KeyError.
+            # direct lookup followed by del ensures we get any existing future, and that
+            # we clear the slot for the next waiters
+            fut = self._event_futures[event]
+            assert not fut.done()
+            del self._event_futures[event]
+            fut.set_result({**kwargs})
 
         util.create_task(toggle())
         return util.join_tasks(tasks)
@@ -251,8 +257,8 @@ class EventHandler:
 
                     print("reconnecting...")
                     await client.connect()
-                    client.send("nick", nick="mybot")
-                    client.send("pass", password="hunter2")
+                    await client.send("nick", nick="mybot")
+                    await client.send("pass", password="hunter2")
 
                     print("reconnected!")
 
@@ -433,7 +439,7 @@ class BaseClient(EventHandler):
 
                 await client.connect()
                 # Now that we're connected, let everyone know
-                client.send("privmsg", target=client.channel, message="I'm back.")
+                await client.send("privmsg", target=client.channel, message="I'm back.")
 
 
         Or to schedule the connect without blocking::
@@ -484,7 +490,7 @@ class BaseClient(EventHandler):
             self._protocol.close()
             await self.wait("client_disconnect")
 
-    def send_message(self, message: str) -> None:
+    async def send_message(self, message: str) -> None:
         """Send a complete IRC line without modification.
 
         To easily send an rfc 2812 message, consider :meth:`Client.send<bottom.Client.send>`
@@ -493,9 +499,9 @@ class BaseClient(EventHandler):
 
             import base64
 
-            def send_encoded(image: bytes):
+            async def send_encoded(image: bytes):
                 encoded_str = base64.b64encode(image).decode()
-                client.send_message(f"IMG :{encoded_str}")
+                await client.send_message(f"IMG :{encoded_str}")
 
         """
         if not self._protocol:

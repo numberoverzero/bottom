@@ -15,13 +15,16 @@ async def test_connect(client):
 
 
 async def test_ping_pong(client, server):
+    msg = "ping-message"
+
     @client.on("PING")
-    def pong(message, **kwargs):
-        client.send("PONG", message=message[::-1])
+    async def pong(message, **kwargs):
+        print("sent pong")
+        await client.send("PONG", message=message[::-1])
 
     async def run():
         await client.connect()
-        server.write("PING :ping-message")
+        server.write(f"PING :{msg}")
 
     create_task(run())
 
@@ -31,7 +34,7 @@ async def test_ping_pong(client, server):
     # can't just await client.wait("PING") since we want to see the response
     # get to the server
     await busy_wait(lambda: server.received)
-    assert server.received == ["PONG :egassem-gnip"]
+    assert server.received == [f"PONG :{msg[::-1]}"]
 
 
 async def test_multi_reconnect(client, client_protocol: Protocol):
@@ -68,27 +71,27 @@ async def test_multi_reconnect(client, client_protocol: Protocol):
 async def test_send_unknown_command(client):
     """Sending an unknown command raises"""
     with pytest.raises(ValueError):
-        client.send("Unknown Command")
+        await client.send("Unknown Command")
 
 
 async def test_send_before_connect(client):
     """Sending before connected raises"""
     with pytest.raises(RuntimeError):
-        client.send("PONG")
+        await client.send("PONG")
     assert client._protocol is None
 
 
 async def test_send_after_disconnect(client, server):
     """Sending after disconnect does not invoke writer"""
     await client.connect()
-    client.send("PONG")
+    await client.send("PONG")
     await busy_wait(lambda: server.received)
     assert server.received == ["PONG"]
 
     await client.disconnect()
     await busy_wait(lambda: client._protocol is None)
     with pytest.raises(RuntimeError):
-        client.send("QUIT")
+        await client.send("QUIT")
     assert server.received == ["PONG"]
 
 

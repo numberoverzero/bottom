@@ -34,29 +34,29 @@ Create an instance:
 
     @bot.on('CLIENT_CONNECT')
     async def connect(**kwargs):
-        bot.send('NICK', nick=NICK)
-        bot.send('USER', user=NICK,
+        await bot.send('NICK', nick=NICK)
+        await bot.send('USER', user=NICK,
                     realname='https://github.com/numberoverzero/bottom')
 
         # Don't try to join channels until we're past the MOTD
         await bottom.wait_for(bot, ["RPL_ENDOFMOTD", "ERR_NOMOTD"])
 
-        bot.send('JOIN', channel=CHANNEL)
+        await bot.send('JOIN', channel=CHANNEL)
 
 
     @bot.on('PING')
-    def keepalive(message: str, **kwargs):
-        bot.send('PONG', message=message)
+    async def keepalive(message: str, **kwargs):
+        await bot.send('PONG', message=message)
 
 
     @bot.on('PRIVMSG')
-    def message(nick: str, target: str, message: str, **kwargs):
+    async def message(nick: str, target: str, message: str, **kwargs):
         if nick == NICK:
             return  # bot sent this message, ignore
         if target == NICK:
             target = nick  # direct message, respond directly
         # else: respond in channel
-        bot.send("PRIVMSG", target=target, message=f"echo: {message}")
+        await bot.send("PRIVMSG", target=target, message=f"echo: {message}")
 
 
     async def main():

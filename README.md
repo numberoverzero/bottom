@@ -55,29 +55,29 @@ bot = bottom.Client(host=host, port=port, ssl=ssl)
 
 @bot.on('CLIENT_CONNECT')
 async def connect(**kwargs):
-    bot.send('NICK', nick=NICK)
-    bot.send('USER', user=NICK,
+    await bot.send('NICK', nick=NICK)
+    await bot.send('USER', user=NICK,
                 realname='https://github.com/numberoverzero/bottom')
 
     # Don't try to join channels until we're past the MOTD
     await bottom.wait_for(bot, ["RPL_ENDOFMOTD", "ERR_NOMOTD"])
 
-    bot.send('JOIN', channel=CHANNEL)
+    await bot.send('JOIN', channel=CHANNEL)
 
 
 @bot.on('PING')
-def keepalive(message: str, **kwargs):
-    bot.send('PONG', message=message)
+async def keepalive(message: str, **kwargs):
+    await bot.send('PONG', message=message)
 
 
 @bot.on('PRIVMSG')
-def message(nick: str, target: str, message: str, **kwargs):
+async def message(nick: str, target: str, message: str, **kwargs):
     if nick == NICK:
         return  # bot sent this message, ignore
     if target == NICK:
         target = nick  # direct message, respond directly
     # else: respond in channel
-    bot.send("PRIVMSG", target=target, message=f"echo: {message}")
+    await bot.send("PRIVMSG", target=target, message=f"echo: {message}")
 
 
 async def main():
@@ -111,7 +111,7 @@ class Client:
     async disconnect() -> None
 
     # send a known rfc2812 command, formatting kwargs for you
-    send(command: str, **kwargs) -> None
+    async send(command: str, **kwargs) -> None
 
     # decorate a function (sync or async) to handle an event.
     # these can be rfc2812 events (privmsg, ping, notice) or built-in
@@ -130,7 +130,7 @@ class Client:
 
     # send raw IRC line.  bypasses rfc2812 parsing and validation,
     # so you can support custom IRC messages or extensions, like SASL.
-    send_message(message: str) -> None
+    async send_message(message: str) -> None
 
     # functions that handle the inbound raw IRC lines.
     # by default, Client includes an rfc2812 handler that triggers

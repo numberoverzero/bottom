@@ -39,23 +39,23 @@ class Client(BaseClient):
         super().__init__(host, port, encoding=encoding, ssl=ssl)
         self.message_handlers.append(rfc2812_handler(self))
 
-    def send(self, command: str, **kwargs: t.Any) -> None:
+    async def send(self, command: str, **kwargs: t.Any) -> None:
         """
         Send a message to the server.
 
         ::
 
-            client.send("privmsg", target="n/0", message="it works!")
-            client.send("privmsg", target="#mychan", message="hello, world")
+            await client.send("privmsg", target="n/0", message="it works!")
+            await client.send("privmsg", target="#mychan", message="hello, world")
 
-            client.send("join", target="#mychan")
-            client.send("part", target="#mychan")
+            await client.send("join", target="#mychan")
+            await client.send("part", target="#mychan")
 
         See :ref:`Commands<Commands>` for the list of supported rfc2812 commands.
 
         """
         packed_command = pack_command(command, **kwargs).strip()
-        self.send_message(packed_command)
+        await self.send_message(packed_command)
 
 
 rfc2812_log = logging.getLogger("bottom.rfc2812_handler")

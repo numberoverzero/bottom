@@ -37,7 +37,7 @@ we're back.  We need to ``await`` for the connection before sending anything:
         await client.connect()
 
         # Notify the room
-        client.send('privmsg', target='#bottom-dev',
+        await client.send('privmsg', target='#bottom-dev',
                     message="I'm baaack!")
 
 What about a handler that doesn't need an established connection to finish?
@@ -80,7 +80,7 @@ different than waiting for client.connect to complete:
         await client.wait("client_connect")
 
         # Notify the room
-        client.send('privmsg', target='#bottom-dev',
+        await client.send('privmsg', target='#bottom-dev',
                     message="I'm baaack!")
 
 Debugging

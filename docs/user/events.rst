@@ -89,9 +89,9 @@ future:
 
 
     @client.on("reconnect")
-    def handle_reconnect(reconnect_msg="", **kwargs):
+    async def handle_reconnect(reconnect_msg="", **kwargs):
         if reconnect_msg:
-            client.send("privmsg", target=CHANNEL, message=reconnect_msg)
+            await client.send("privmsg", target=CHANNEL, message=reconnect_msg)
 
 Because both ``client.send`` and ``client.connect`` schedule coroutines, the
 event loop may reorder (or process out of order).  In ``reconnect`` what we
