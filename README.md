@@ -142,6 +142,10 @@ class Client:
 # in a single loop step) and cancels the rest.  when mode is "all" this waits
 # for all events to trigger.
 async def wait_for(client, events: list[str], mode: "first"|"all") -> list[dict]
+
+# type hints for message handlers
+type NextMessageHandler = Callable[[str], Coroutine[Any, Any, Any]]
+type ClientMessageHandler = Callable[[NextMessageHandler, str], Coroutine[Any, Any, Any]]
 ```
 
 # Contributors

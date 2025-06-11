@@ -280,8 +280,46 @@ class EventHandler:
         return await self._event_futures[event.strip().upper()]
 
 
+# TODO: sphinx doesn't support PEP 695 types yet
+# https://github.com/sphinx-doc/sphinx/issues/11561
+# https://github.com/sphinx-doc/sphinx/pull/13508
+
 type NextMessageHandler = t.Callable[[str], t.Coroutine[t.Any, t.Any, t.Any]]
+"""Type hint for an async function that takes a message to process.
+
+This is the type of the first argument in a message handler::
+
+    from bottom import NextMessageHandler
+
+    async def handle_message(next_handler: NextMessageHandler, message: str):
+        print(f"I saw a message: {message}")
+        await next_handler(message)
+
+see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
+examples of customizing a :class:`Client<bottom.Client>`'s functionality.
+"""
+
+# TODO: sphinx doesn't support PEP 695 types yet
+# https://github.com/sphinx-doc/sphinx/issues/11561
+# https://github.com/sphinx-doc/sphinx/pull/13508
+
 type ClientMessageHandler = t.Callable[[NextMessageHandler, str], t.Coroutine[t.Any, t.Any, t.Any]]
+"""
+Type hint for an async function that processes a message, and may call the next handler in the chain.
+
+This is the type of the entire message handler::
+
+    from bottom import ClientMessageHandler, NextMessageHandler
+
+    async def handle_message(next_handler: NextMessageHandler, message: str):
+        print(f"I saw a message: {message}")
+        await next_handler(message)
+
+    handler: ClientMessageHandler = handle_message
+
+see :attr:`message_handlers<bottom.Client.message_handlers>` for details, or :ref:`Extensions<Extensions>` for
+examples of customizing a :class:`Client<bottom.Client>`'s functionality.
+"""
 
 
 class BaseClient(EventHandler):

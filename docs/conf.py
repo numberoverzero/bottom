@@ -5,7 +5,12 @@ import typing as t
 if t.TYPE_CHECKING:
     from sphinx.application import Sphinx
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx", "sphinx.ext.viewcode", "sphinx.ext.napoleon"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+]
 
 templates_path = ["_templates"]
 
