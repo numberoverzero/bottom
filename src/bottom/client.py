@@ -23,12 +23,18 @@ class Client(BaseClient):
         ssl: bool | ssl.SSLContext = True,
     ) -> None:
         """
-        :param host: The IRC server address to connect to.
-        :param port: The port of the IRC server.
-        :param encoding: The character encoding to use.  Default is utf-8.
-        :param ssl:
-            Whether SSL should be used while connecting.
-            Default is True.
+        Create a new client that can interact with an IRC server.
+
+        The client does not automatically connect.  Instead, use
+        :meth:`connect <bottom.Client.connect>`
+
+        Args:
+            host: the server's host
+            port: the server's port
+            encoding: the encoding to use when converting from bytes
+                over the wire.  This is almost always "utf-8"
+            ssl: ``True`` to create an ssl context, ``False`` to not use ssl,
+                or provide your own ssl context.
         """
         super().__init__(host, port, encoding=encoding, ssl=ssl)
         self.message_handlers.append(rfc2812_handler(self))
@@ -37,10 +43,15 @@ class Client(BaseClient):
         """
         Send a message to the server.
 
-        .. code-block:: python
+        ::
 
-            client.send("nick", nick="weatherbot")
-            client.send("privmsg", target="#python", message="Hello, World!")
+            client.send("privmsg", target="n/0", message="it works!")
+            client.send("privmsg", target="#mychan", message="hello, world")
+
+            client.send("join", target="#mychan")
+            client.send("part", target="#mychan")
+
+        See :ref:`Commands<Commands>` for the list of supported rfc2812 commands.
 
         """
         packed_command = pack_command(command, **kwargs).strip()
@@ -62,27 +73,37 @@ def rfc2812_handler(client: Client) -> ClientMessageHandler:
     return handler
 
 
-async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[str]:
+async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[dict]:
     """
     Wait for one or all of the events to happen, depending on mode.
 
-    ```
-    # race for first event
-    completed = await wait_for(client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
-    print(f"first done: {completed}")
+    The results are the dicts that each event was triggered with, and the event name stored in the key ``"__event__"``
 
-    # wait for all events
-    completed = await wait_for(
-        client,
-        [
-            "RPL_MOTDSTART",
-            "RPL_MOTD",
-            "RPL_ENDOFMOTD",
-        ],
-        mode="all"
-    )
-    print("collected whole MOTD")
-    ```
+    When waiting for the first event, note that more than one may trigger::
+
+        from bottom import wait_for
+
+        async def on_first():
+            completed = await wait_for(
+                client,
+                ["RPL_ENDOFMOTD", "ERR_NOMOTD"],
+                mode="first"
+            )
+            names = [o["__event__"] for o in completed]
+            print(f"first task(s) done: {names}")
+
+    When waiting for all, the return order is the same as the input order, not necessarily the
+    completion order::
+
+        async def all_events():
+            completed = await wait_for(
+                client,
+                ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD"],
+                mode="all"
+            )
+            print("collected whole MOTD")
+            names = [o["__event__"] for o in completed]
+            assert names == ["RPL_MOTDSTART", "RPL_MOTD", "RPL_ENDOFMOTD"]
     """
     if not events:
         return []
@@ -94,6 +115,8 @@ async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first"
     done, pending = await asyncio.wait(tasks, return_when=return_when)
 
     ret = [future.result() for future in done]
+    if mode == "all":
+        assert not pending
     for future in pending:
         future.cancel()
     return ret

@@ -97,7 +97,7 @@ async def test_unpack_triggers_client(client, client_protocol):
     received = []
 
     @client.on("PRIVMSG")
-    async def receive(nick, user, host, target, message):
+    async def receive(nick, user, host, target, message, **kw):
         received.extend([nick, user, host, target, message])
 
     client_protocol.data_received(b":nick!user@host PRIVMSG #target :this is message\n")
@@ -117,7 +117,9 @@ async def test_wait_for_first_tie(client):
     client.trigger("bar")
     result = await race
 
-    assert set(result) == set(["foo", "bar"])
+    assert len(result) == 2
+    assert {"__event__": "BAR"} in result
+    assert {"__event__": "FOO"} in result
 
 
 async def test_wait_for_first_single(client):
@@ -137,7 +139,7 @@ async def test_wait_for_first_single(client):
     create_task(slower())
     result = await race
 
-    assert result == ["bar"]
+    assert result == [{"__event__": "BAR"}]
 
 
 async def test_wait_for_all(client):
@@ -153,7 +155,9 @@ async def test_wait_for_all(client):
     create_task(slower())
     result = await race
 
-    assert set(result) == set(["foo", "bar"])
+    assert len(result) == 2
+    assert {"__event__": "BAR"} in result
+    assert {"__event__": "FOO"} in result
 
 
 @pytest.mark.parametrize("mode", ["first", "all"])

@@ -84,12 +84,12 @@ class Protocol(asyncio.Protocol):
 
 
 class EventHandler:
-    _event_waiters: dict[str, asyncio.Event]
+    _event_futures: dict[str, asyncio.Future[dict]]
     _event_handlers: dict[str, list[t.Callable[..., t.Coroutine[t.Any, t.Any, t.Any]]]]
 
     def __init__(self) -> None:
         self._event_handlers = collections.defaultdict(list)
-        self._event_waiters = collections.defaultdict(asyncio.Event)
+        self._event_futures = collections.defaultdict(asyncio.Future)
 
     @t.overload
     def on[**P, R](self, event: str, fn: None = None) -> util.Decorator[P, R]: ...
@@ -98,36 +98,61 @@ class EventHandler:
 
     def on[**P, R](self, event: str, fn: t.Callable[P, R] | None = None) -> util.Decorator[P, R] | t.Callable[P, R]:
         """
-        Decorate a function to be invoked when the given event occurs.
+        Decorate a function to handle an event.
 
-        The function may be a coroutine.  Your function should accept **kwargs
-        in case an event is triggered with unexpected kwargs.
+        When an event is triggered, either by the default rfc2812 handler or by your code, all functions registered
+        to that event are triggered.  Your handlers should always accept ``**kwargs`` in case unexpected kwargs are
+        included when the event is triggered.
 
-        ```
-        import asyncio
-        import bottom
+        Event names ignore leading space, trailing space, and case; both when registering and triggering.  So
+        ``" bEgIn  "`` is registered and triggered as ``"BEGIN"``.  Since you can pass any event name, it's easy to
+        :ref:`extend<Extensions>` a client with your own signals.
 
-        client = bottom.Client(...)
-        @client.on("test")
-        async def func(one, two, **kwargs):
-            print(one)
-            print(two)
-            print(kwargs)
+        You don't need to unpack all arguments, but you should always include
+        ``**kwargs`` to collect the rest::
+
+            @client.on("privmsg")
+            async def standby(message, **kwargs):
+                if message == codeword:
+                    await execute_heist()
+
+        While you should prefer ``async`` handlers, it's not required.  Synchronous functions will be wrapped in an
+        async handler so that the event loop is available, which means you can use ``asyncio.create_task`` without
+        checking for a running loop::
+
+            @client.on("privmsg")
+            def handle(message, **kwargs):
+                print(message)
+
+            @client.on("privmsg")
+            async def handle(message, **kwargs):
+                await async_logger.log(message)
+
+        .. note::
+
+            The original function is returned, so you can chain decorators without introducing an async wrapper to your
+            code::
+
+                def original(message, **kwargs):
+                    asyncio.create_task(f"saw msg {message}")
+
+                wrapped = client.on("privmsg")(original)
+                assert wrapped is original
+
+        Finally, you can trigger and catch your your own events.  For example, to forward ``SIGINT``::
+
+            import signal
+            signal.signal(
+                signal.SIGINT,
+                lambda *a: client.trigger("my.plugin.sigint")
+            )
 
 
-        async def test():
-            task = events.trigger("test", **{"one": 1, "two": 2, "extra": "foo"})
-            print("triggered event")
-            await task
-
-        asyncio.run(test())
-
-        # prints:
-        # 1
-        # 2
-        # {'extra': 'foo'}
-        # triggered event
-        ```
+            @client.on("my.plugin.sigint")
+            async def handle(**kwargs):
+                print("saw SIGINT")
+                await send_farewells(client, db.get_friends_list())
+                await client.disconnect()
         """
 
         def decorator(f: t.Callable[P, R]) -> t.Callable[P, R]:
@@ -139,30 +164,65 @@ class EventHandler:
 
     def trigger(self, event: str, **kwargs: t.Any) -> asyncio.Task:
         """
-        Trigger all handlers for an event to asynchronously execute.
+        Manually trigger an event, either a :ref:`supported rfc2812 command<Commands>` or a custom event name.
 
-        You can optionally await the returned task to wait until all handlers
-        have run.
+        Trigger returns a task which you can ``await`` to block until all registered handlers for the event have
+        completed.  You do not have to wait for this task or keep a reference to it.
 
-        Use `await client.wait(event)` to wait for this event to trigger.
 
-        ```
-        # waiting for handlers to run
-        async def simulate_disconnect():
-            print("simulating disconnect")
-            handlers = client.trigger("client_disconnect")
-            await handlers
-            print("all disconnect handlers finished")
+        For example, if you migrate to a third-party extension that expects "!help" but your original command was
+        "!commands" then you can use the following handler to inform users *and* forward to the new handler::
 
-        # fire and forget
-        async def custom_signal():
-            client.trigger("my-signal", some_arg=3, data=b"data")
-            print("triggered my-signal, not waiting for handlers to complete")
-        ```
+            @client.on("privmsg")
+            async def help_compat(nick, target, message, **kwargs):
+                if message != "!commands": return
+
+                # notify
+                client.send(
+                    "privmsg", target=nick,
+                    message="note: !commands was renamed to !help in 1.2")
+
+                # forward
+                client.trigger(
+                    "privmsg", nick=nick,
+                    target=target, message="!help")
+
+
+        Because the ``@on`` decorator returns the original function, you can register a handler for multiple events.
+        It's especially important to use ``**kwargs`` to handle different keywords for each event::
+
+            @client.on("privmsg")
+            @client.on("join")
+            @client.on("part")
+            async def handle(target, message=None, channel=None, **kwargs):
+                if channel:
+                    client.trigger("my.plugin.events.channel", channel=channel, **kwargs)
+                elif message:
+                    client.trigger("my.plugin.events.messages", message=message, **kwargs)
+
+        If you want to trigger an event and then wait until all handlers for that event
+        have run, you can ``await`` the returned task::
+
+            complete = []
+
+            @client.on("my.event")
+            async def fast_processor(data: str, **kwargs):
+                await asyncio.sleep(1)
+                complete.append(f"fast {data}")
+
+            @client.on("my.event")
+            async def slow_processor(data: str, **kwargs):
+                await asyncio.sleep(2)
+                complete.append(f"slow {data}")
+
+            @client.on("part")
+            async def handle_part(channel: str, **kwargs):
+                complete.clear()
+                await client.trigger("my.event", data=channel)
+                assert complete == [f"slow {channel}", f"fast {channel}"]
         """
         event = event.strip().upper()
-        # note: create the asyncio.Event before creating the tasks below
-        async_event = self._event_waiters[event]
+        kwargs["__event__"] = event
 
         tasks = []
         for func in self._event_handlers[event]:
@@ -172,34 +232,52 @@ class EventHandler:
             # note: without this asyncio.sleep(0), anything that started waiting
             # in this loop tick won't see the event fire.
             await asyncio.sleep(0)
-            async_event.set()
-            async_event.clear()
+            self._event_futures.pop(event).set_result({**kwargs})
 
         util.create_task(toggle())
         return util.join_tasks(tasks)
 
-    async def wait(self, event: str) -> str:
+    async def wait(self, event: str) -> dict:
         """
-        Wait for an event to be triggered.  Returns the name of the event that was awaited.
+        Wait for an event to be triggered.  Returns a dict including the kwargs the event was triggered with, as
+        well as the name of the event in the ``"__event__"`` key.
 
-        Useful for blocking an async task until an event occurs, like join or disconnect:
+        Useful for blocking an async task until an event occurs, like join or disconnect::
 
-        ```
-        async def reconnect():
-            while True:
-                print("waiting for disconnect event")
-                await client.wait("client_disconnect")
+            async def reconnect():
+                while True:
+                    print("waiting for disconnect event")
+                    await client.wait("client_disconnect")
 
-                print("reconnecting...")
-                await client.connect()
-                client.send("nick", nick="mybot")
-                client.send("pass", password="hunter2")
+                    print("reconnecting...")
+                    await client.connect()
+                    client.send("nick", nick="mybot")
+                    client.send("pass", password="hunter2")
 
-                print("reconnected!")
-        ```
+                    print("reconnected!")
+
+        You can inspect the kwargs that the event was triggered with, and get the event name from ``"__event__"``::
+
+            async def wait_join():
+                client.join(channel="#chan")
+                kwargs = await client.wait("join")
+
+                assert kwargs["__event__"] == "join"
+                print(f"complete join event: {kwargs}")
+
+        You can use :func:`asyncio.wait_for` or :func:`asyncio.timeout` to add a timeout to your wait::
+
+            async def connect()
+                try:
+                    with asyncio.timeout(5):
+                        await client.connect()
+                except TimeoutError:
+                    print("failed to connect within 5 seconds, is the server available?")
+
+
+        Use :meth:`wait_for<bottom.wait_for>` to wait for multiple events, either the first to complete or all.
         """
-        await self._event_waiters[event.strip().upper()].wait()
-        return event
+        return await self._event_futures[event.strip().upper()]
 
 
 type NextMessageHandler = t.Callable[[str], t.Coroutine[t.Any, t.Any, t.Any]]
@@ -208,22 +286,73 @@ type ClientMessageHandler = t.Callable[[NextMessageHandler, str], t.Coroutine[t.
 
 class BaseClient(EventHandler):
     message_handlers: list[ClientMessageHandler]
-    """
-    Each message_handler must be an async function that takes a next_handler in
-    the handler chain, and the message to handle.
+    """List of message handlers that runs on each incoming IRC line from the server.
 
-    Note that you do not have to invoke the next handler:
+    The first handler is passed the ``next_handler`` in the chain as well as the ``message`` and can choose
+    to process the message, and/or invoke the next handler, or do nothing.
 
-    ```
-    async def ignore_with_prefix(
-        next_handler: bottom.NextMessageHandler, message: str
-    ) -> None:
-        if message.startswith("ignore:"):
-            print(f"ignoring message {message}")
-        else:
-            print(f"processing message {message}")
+    The basic structure of a handler is::
+
+        from bottom import NextHandler
+
+        async def handle_message(next_handler: NextHandler, message: str) -> None:
+            print("before")
             await next_handler(message)
-    ```
+            print("after")
+
+    By default, every client is configured with a ``rfc2812_handler`` which unpacks
+    :ref:`supported rfc2812 commands<Commands>` into events and triggers them, connecting them to handlers you've
+    registered with :meth:`Client.on<bottom.Client.on>`
+
+    You can disable the default functionality by removing that handler::
+
+        from bottom import Client
+        client = Client(host="localhost", port=443)
+        client.message_handlers.clear()
+
+    You can add your own handlers before or after this one, or replace it::
+
+        from bottom import NextMessageHandler
+
+        async def print_everything(next_handler: NextMessageHandler, message: str) -> None:
+            print(f"incoming message: {message}")
+            await next_handler(message)
+
+        client = Client(host="localhost", port=443)
+        # run after other handlers
+        client.message_handlers.append(print_everything)
+
+    Message handlers don't have to call the next handler, and don't have to pass the same message to the next handler::
+
+        from bottom import NextMessageHandler
+
+        async def uno_handler(next_handler: NextMessageHandler, message: str) -> None:
+            if message.startswith("reverse:"):
+                message = message[len("reverse:"):]
+                print(f"reversing {message}")
+                await next_handler(message[::-1])
+            elif message.startswith("skip:"):
+                message = message[len("skip:"):]
+                print(f"skipping: {message}")
+            else:
+                print("passing message through unchanged")
+                await next_handler(message)
+
+        # run before other handlers
+        client.message_handlers.insert(0, uno_handler)
+
+    Modifying :attr:`message_handlers<bottom.Client.message_handlers>` is the primary way to extend or customize the
+    client.  For examples of writing your own router, or replacing these handlers, see the :ref:`extensions<Extensions>`
+    section of the user guide.
+
+    .. note::
+
+        Each incoming message is handled using a copy of the handlers when the message arrived. Changes to the list do
+        not affect handling of that message::
+
+            async def remove_other_handlers(next_handler, message):
+                client.message_handlers.clear()
+                await next_handler(message)  # still uses original handlers
     """
 
     _protocol: Protocol | None = None
@@ -241,6 +370,50 @@ class BaseClient(EventHandler):
         self.message_handlers = []
 
     async def connect(self) -> None:
+        """Connect to the server.
+
+        On successful connection, triggers a ``"client_connect"`` event.
+
+        Returns immediately if the client already has a non-closing connection.  When multiple connect calls are in
+        progress at once, only the first call to establish a connection will trigger a ``"client_connect"`` and the
+        others will silently disconnect their parallel connections to the server.
+
+        Usage::
+
+            async def main():
+                await client.connect()
+                try:
+                    await client.wait("client_disconnect")
+                except asyncio.CancelledError:
+                    await client.disconnect()
+            asyncio.run(main())
+
+            @client.on("client_disconnect")
+            async def reconnect(**kwargs):
+                # don't reconnect immediately
+                await asyncio.sleep(3)
+
+                await client.connect()
+                # Now that we're connected, let everyone know
+                client.send("privmsg", target=client.channel, message="I'm back.")
+
+
+        Or to schedule the connect without blocking::
+
+            from bottom.util import create_task
+
+            @client.on("client_disconnect")
+            async def reconnect(**kwargs):
+                async def run():
+                    await asyncio.sleep(3)
+                    await client.connect()
+
+                # note: you could use asyncio.create_task(), but it may get gc'd if you don't keep a ref.
+                #   bottom.util.create_task handles this for you.
+                #   see: https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task
+                create_task(run())
+                print("Reconnect scheduled.")
+        """
         if self._protocol and not self._protocol.is_closed:
             return
         loop = asyncio.get_running_loop()
@@ -254,11 +427,39 @@ class BaseClient(EventHandler):
         self.trigger("client_connect")
 
     async def disconnect(self) -> None:
+        """Disconnect from the server.
+
+        On successful disconnection, triggers a ``"client_disconnect"`` event.
+
+        Returns immediately if the client is already disconnected or disconnecting.  When multiple connect calls are in
+        progress at once, only the first call to disconnect the client will trigger a ``"client_disconnect"``.
+
+        Usage::
+
+            @client.on("privmsg")
+            async def disconnect_bot(nick, message, **kwargs):
+                if nick == "myNick" and message == "disconnect:hunter2":
+                    await client.disconnect()
+                    logger.log("disconnected client.")
+        """
         if self._protocol:
             self._protocol.close()
             await self.wait("client_disconnect")
 
     def send_message(self, message: str) -> None:
+        """Send a complete IRC line without modification.
+
+        To easily send an rfc 2812 message, consider :meth:`Client.send<bottom.Client.send>`
+
+        ::
+
+            import base64
+
+            def send_encoded(image: bytes):
+                encoded_str = base64.b64encode(image).decode()
+                client.send_message(f"IMG :{encoded_str}")
+
+        """
         if not self._protocol:
             raise RuntimeError("Not connected")
         self._protocol.write(message)

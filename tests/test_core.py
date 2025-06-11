@@ -163,7 +163,7 @@ async def test_trigger_no_handlers(client):
 
 async def test_trigger_one_handler(client):
     called = []
-    client.on("f")(lambda: called.append(1))
+    client.on("f")(lambda **kw: called.append(1))
     client.trigger("f")
     assert not called
 
@@ -175,15 +175,15 @@ async def test_trigger_one_handler(client):
 async def test_trigger_multiple_handlers(client):
     h1, h2 = 0, 0
 
-    def incr(first=True):
+    def incr(first=True, **kw):
         nonlocal h1, h2
         if first:
             h1 += 1  # ty: ignore # https://github.com/astral-sh/ty/issues/220
         else:
             h2 += 1  # ty: ignore # https://github.com/astral-sh/ty/issues/220
 
-    client.on("f")(lambda: incr(first=True))
-    client.on("f")(lambda: incr(first=False))
+    client.on("f")(lambda **kw: incr(first=True))
+    client.on("f")(lambda **kw: incr(first=False))
     client.trigger("f")
     assert h1 == h2 == 0
 
@@ -202,6 +202,7 @@ async def test_trigger_unpacking(client):
         assert kw_only == "kw_only"
         assert kw_default == "default"
         assert kwargs["extra"] == "extra"
+        assert kwargs["__event__"] == "F"
         nonlocal called
         called = True
 
@@ -216,7 +217,7 @@ async def test_bound_method_of_instance(client):
     called = False
 
     class Class(object):
-        def method(self, arg, kw_default="default"):
+        def method(self, arg, kw_default="default", **kw):
             assert arg == "arg"
             assert kw_default == "default"
             nonlocal called
@@ -234,7 +235,7 @@ async def test_bound_async_method_of_instance(client):
     called = False
 
     class Class(object):
-        async def method(self, arg, kw_default="default"):
+        async def method(self, arg, kw_default="default", **kw):
             assert arg == "arg"
             assert kw_default == "default"
             nonlocal called
@@ -253,12 +254,12 @@ async def test_callback_ordering(client):
     call_order = []
     complete_order = []
 
-    async def first():
+    async def first(**kw):
         call_order.append("first")
         await second_complete.wait()
         complete_order.append("first")
 
-    async def second():
+    async def second(**kw):
         call_order.append("second")
         complete_order.append("second")
         second_complete.set()
@@ -297,6 +298,7 @@ async def test_wait_ordering(client):
 async def test_wait_return_value(client):
     """The value returned should be the same as the value given."""
     event_name = "my-event"
+    event_kwargs = {"foo": "bar", "baz": object()}
 
     record = []
 
@@ -310,7 +312,7 @@ async def test_wait_return_value(client):
     record.append("yield1")
     await asyncio.sleep(0)
     record.append("trigger")
-    await client.trigger(event_name)
+    await client.trigger(event_name, **event_kwargs)
     record.append("yield2")
     await asyncio.sleep(0)
 
@@ -320,7 +322,7 @@ async def test_wait_return_value(client):
         "start waiting",
         "trigger",
         "yield2",
-        event_name,
+        {"__event__": event_name.strip().upper(), **event_kwargs},
         "done waiting",
     ]
 
