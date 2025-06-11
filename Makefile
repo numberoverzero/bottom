@@ -37,8 +37,8 @@ docs:
 	@echo RUNNING DOCS
 	rm -rf docs/_build
 	.venv/bin/pip install -q --group docs
-	.venv/bin/python -m sphinx -b linkcheck -D linkcheck_timeout=1 docs/ docs/_build/linkcheck
-	.venv/bin/python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs/ docs/_build/html
+	.venv/bin/python -m sphinx -W -n --keep-going -b linkcheck -D linkcheck_timeout=1 docs/ docs/_build/linkcheck
+	.venv/bin/python -m sphinx -W -n --keep-going -T -b html -d docs/_build/doctrees -D language=en docs/ docs/_build/html
 
 docs-view: docs
 	${BROWSER} docs/_build/html/index.html

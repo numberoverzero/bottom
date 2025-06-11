@@ -44,9 +44,19 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3.12", None),
 }
 
+linkcheck_timeout = 5
 linkcheck_allowed_redirects = {
     r"https://github\.com/.*": r"https://github\.com/login\?return_to=.*",
 }
+
+nitpick_ignore = [
+    ("py:class", "_asyncio.Task"),
+    ("py:class", "P"),
+    ("py:class", "R"),
+    ("py:class", "t.Callable"),
+    ("py:class", "util.Decorator"),
+    ("py:class", "ClientMessageHandler"),
+]
 
 
 def setup(app: Sphinx) -> None:
