@@ -14,12 +14,14 @@ Instead of writing the same ``PING`` handler everywhere, a reusable plugin:
 .. code-block:: python
 
     # my_plugin.py
-    async def keepalive(client):
+    from bottom import Client
+    async def keepalive(client: Client) -> Client:
         @client.on("ping")
         async def handle(message: str, **kwargs):
             print(f"<<< ping {message}")
             await client.send("pong", message=message)
             print(f">>> pong {message}")
+        return client
 
 That's it!  And to use it:
 
@@ -39,6 +41,10 @@ Plugin Registry
 
 In the keepalive example above, we're really just using partial application of :meth:`Client.on<bottom.Client.on>`.
 We can use that idea and a ``dict`` to make a plugin registry!  Let's start with the core ``Registry`` class.
+
+One additional complexity over the previous example is getting a reference to the client within the function.  We
+solve that below by passing the client as the first argument to the handler; our ``keepalive`` from above will be
+slightly different when we're ready to decorate it.
 
 .. code-block:: python
 
@@ -151,6 +157,7 @@ Now, our plugin and client setup look like this:
 
 
     # main.py
+    import plugin  # so that our plugins are registered
     from bottom import Client
     from registry import enable
 

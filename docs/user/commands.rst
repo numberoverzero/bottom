@@ -1,7 +1,10 @@
+RFC2812 Support
+^^^^^^^^^^^^^^^
+
 .. _Commands:
 
-Sending Supported IRC Commands
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Sending IRC Commands
+====================
 
 .. code-block:: python
 
@@ -259,3 +262,37 @@ Sending Supported IRC Commands
 
     await client.send('ISON', nick='WiZ')
     await client.send('ISON', nick=['WiZ', 'WiZ-friend'])
+
+
+.. _Events:
+
+Receiving IRC Events
+====================
+
+.. code-block:: python
+
+    # Local only events
+    client.trigger('CLIENT_CONNECT')
+    client.trigger('CLIENT_DISCONNECT')
+
+* PING
+* JOIN
+* PART
+* PRIVMSG
+* NOTICE
+* USERMODE (renamed from MODE)
+* CHANNELMODE (renamed from MODE)
+* RPL_WELCOME (001)
+* RPL_YOURHOST (002)
+* RPL_CREATED (003)
+* RPL_MYINFO (004)
+* RPL_BOUNCE (005)
+* RPL_MOTDSTART (375)
+* RPL_MOTD (372)
+* RPL_ENDOFMOTD (376)
+* RPL_LUSERCLIENT (251)
+* RPL_LUSERME (255)
+* RPL_LUSEROP (252)
+* RPL_LUSERUNKNOWN (253)
+* RPL_LUSERCHANNELS (254)
+* ERR_NOMOTD (422)

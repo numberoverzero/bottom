@@ -79,13 +79,12 @@ Create an instance:
 Next Steps
 ----------
 
-* Check out some :ref:`simple extensions<Extensions>` to add routing or
-  full message encryption
-* Review the list of :ref:`supported rfc2812 commands<Commands>`
-* Learn :ref:`how to use events<Events>`, the core of the bottom Client,
-  including how to trigger, wait on, and handle them.
-* Something missing?  Want to show off a clever extension?  Contributions welcome!
-  Head over to :ref:`Development<Development>` to get set up (``git pull [..] && make dev && make pr-check``)
+* Check out some :ref:`extensions<Extensions>` that add routing or full message encryption
+* Review the list of :ref:`supported rfc2812 commands<Commands>` and :ref:`supported rfc2812 responses<Events>`
+* Learn how to :meth:`decorate a handler<bottom.Client.on>`, :meth:`manually trigger an event<bottom.Client.trigger>`,
+  or :meth:`wait for an event<bottom.Client.wait>` in the api documentation.
+* Something missing?  Contributions welcome!
+  The :ref:`development<Development>` section will get you set up to ``make dev && make pr-check``
 
 .. toctree::
     :hidden:
@@ -96,7 +95,6 @@ Next Steps
     user/extension
     user/migration
     user/commands
-    user/events
     dev/development
 
 .. _bottom: https://github.com/numberoverzero/bottom

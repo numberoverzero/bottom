@@ -68,7 +68,8 @@ class Protocol(asyncio.Protocol):
 
     def write(self, message: str) -> None:
         """immediately writes the message as a complete line; there is no write buffering"""
-        if not self.transport:
+        # can't use self.is_closed or type checkers complain at self.transport.write() below
+        if self.transport is None or self.transport.is_closing():
             raise RuntimeError(f"Protocol {self} not connected")
         message = message.strip()
         data = message.encode(self.encoding) + DELIM
@@ -78,9 +79,8 @@ class Protocol(asyncio.Protocol):
         if self.transport:
             self.transport.close()
 
-    @property
-    def is_closed(self) -> bool:
-        return self.transport is None
+    def is_closing(self) -> bool:
+        return self.transport is None or self.transport.is_closing()
 
 
 class EventHandler:
@@ -99,6 +99,8 @@ class EventHandler:
     def on[**P, R](self, event: str, fn: t.Callable[P, R] | None = None) -> util.Decorator[P, R] | t.Callable[P, R]:
         """
         Decorate a function to handle an event.
+
+        See :ref:`Events<Events>` for a list of supported rfc2812 events.
 
         When an event is triggered, either by the default rfc2812 handler or by your code, all functions registered
         to that event are triggered.  Your handlers should always accept ``**kwargs`` in case unexpected kwargs are
@@ -247,6 +249,8 @@ class EventHandler:
         """
         Wait for an event to be triggered.  Returns a dict including the kwargs the event was triggered with, as
         well as the name of the event in the ``"__event__"`` key.
+
+        See :ref:`Events<Events>` for a list of supported rfc2812 events.
 
         Useful for blocking an async task until an event occurs, like join or disconnect::
 
@@ -458,7 +462,7 @@ class BaseClient(EventHandler):
                 create_task(run())
                 print("Reconnect scheduled.")
         """
-        if self._protocol and not self._protocol.is_closed:
+        if self._protocol and not self._protocol.is_closing():
             return
         loop = asyncio.get_running_loop()
         _transport, protocol = await loop.create_connection(
@@ -488,7 +492,11 @@ class BaseClient(EventHandler):
         """
         if self._protocol:
             self._protocol.close()
-            await self.wait("client_disconnect")
+            assert self._protocol.is_closing()
+            try:
+                await self.wait("client_disconnect")
+            except asyncio.CancelledError:  # pragma: no cover
+                pass
 
     async def send_message(self, message: str) -> None:
         """Send a complete IRC line without modification.
@@ -504,7 +512,7 @@ class BaseClient(EventHandler):
                 await client.send_message(f"IMG :{encoded_str}")
 
         """
-        if not self._protocol:
+        if not self._protocol or self._protocol.is_closing():
             raise RuntimeError("Not connected")
         self._protocol.write(message)
 
