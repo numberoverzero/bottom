@@ -34,7 +34,7 @@ client.message_handlers.insert(0, print_every_message)
 # (B) periodically calls handle_raw to inject random privmsg
 # FIX: no longer need to pass loop to asyncio.sleep
 # FIX: two options to manually trigger raw messages:
-#   1. subclass Client and implement a method that calls client._protocol.data_received(bytes)
+#   1. subclass Client and implement a method that calls client._protocol.on_message(bytes)
 #   2. subclass Client and provide a custom Protocol
 # the first option is recommended and much easier.
 async def inject_random_messages() -> None:
@@ -45,9 +45,9 @@ async def inject_random_messages() -> None:
             await asyncio.sleep(delay)
             print("injecting fake message")
 
-            msg = f":{FAKE_NICK}!user@host PRIVMSG #{NICK} :spooky ghosts!\r\n"
+            msg = f":{FAKE_NICK}!user@host PRIVMSG #{NICK} :spooky ghosts!"
             assert client._protocol is not None
-            client._protocol.data_received(msg.encode(client._encoding))
+            client._protocol.on_message(msg.encode(client._encoding))
     except asyncio.CancelledError:
         pass
 

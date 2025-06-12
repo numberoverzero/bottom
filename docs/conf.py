@@ -41,7 +41,7 @@ html_theme = "sphinx_rtd_theme"
 html_context = {"favicon": "favicon-cog.ico", "show_sphinx": False}
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.12", None),
+    "py": ("https://docs.python.org/3.12", None),
 }
 
 linkcheck_timeout = 5
