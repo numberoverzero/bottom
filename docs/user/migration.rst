@@ -17,6 +17,110 @@ If you encounter issues migrating, please use either the `existing issue`_  or `
 Summary
 =======
 
+3.0.0 comes with a number of improvements, both in tooling (static typing) and a simpler model (protocol decoupling).
+In return for the breaking changes covered below, bottom now has:
+
+* rich typing that survives subclassing and arbitrary function signatures, taking advantage of:
+
+  * ParamSpec and Concatenate (`PEP 612 <https://docs.python.org/3/library/typing.html#typing.ParamSpec>`_)
+  * Type Parameter Lists and Variance Inference (`PEP 695 <https://typing.python.org/en/latest/spec/generics.html#variance-inference>`_)
+  * Deferred Type Annotations (`PEP 649 <https://peps.python.org/pep-0649/>`_)
+
+  * combined, you can easily maintain the type of your client in a :data:`ClientMessageHandler<bottom.ClientMessageHandler>`
+    to access custom attributes on that client:
+
+    .. code-block:: python
+
+        async def handle_spatial_query(
+            next_handler: NextMessageHandler[SpatialClient],
+            client: SpatialClient,
+            message: bytes
+        ) -> None:
+            if not message.startswith(b"!q"):
+                await next_handler(client, message)
+            else:
+                res = await client.db.process(message.decode(client._encoding)[2:])
+                await client.send_packed_coords(res.coords, res.ctx)
+
+* Decoupling of :class:`Client<bottom.Client>` and ``Protocol`` along the str/bytes boundary:
+
+  * Previously clients and protocols knew about each other, making it hard to subclass one without also reimplementing
+    the other.  Now you can use a Protcol without a Client, or the reverse.
+  * Although not part of the public API, the Protocol can be used on its own with only implementing two callback functions.
+  * Because the protocol no longer has to call ``Client.handle_raw(str)`` it avoids encodings entirely.
+  * Because the Client's :attr:`message_handlers<bottom.Client.message_handlers>` have access to the incoming bytes,
+    they can handle arbitrary bytes, including other encodings and encryptions.
+  * The stack processing functionality has been simplified, and retains narrowed type checking for subclasses of Client.
+
+* consistent behavior between an :meth:`Client.on<bottom.Client.on>` decorated handler and an awaited
+  :meth:`Client.wait<bottom.Client.wait>` return value.  this allows you to not just wait for an event in an arbitrary
+  function, but to also use the same ``**kwargs`` that were sent to each handler:
+
+  .. code-block:: python
+
+      @client.on("privmsg")
+      async def print_nick(nick: str, **kw) -> None:
+          print(f"saw nick {nick}")
+
+
+      async def some_processor() -> None:
+          res = await client.wait("privmsg")
+          nick = res["nick"]
+          print(f"saw nick {nick}")
+
+* Blocking on a :meth:`Client.trigger<bottom.Client.trigger>` call until all handlers have run.  Implementing this
+  before required one of two brittle solutions:
+
+  #. Each handler sets an :py:class:`asyncio.Event` and the waiting code waits on the join of the events.  Clearing
+     and resetting (eg. recursive triggers) gets much harder.
+  #. Each handler trigger its own "ack" event that the waiting code would wait on the join of.  This usually results
+     in a constants file to track all the event names, or a lot of whiteboard space.
+
+  Instead you can wait on the return value from :meth:`trigger<bottom.Client.trigger>` -- when this completes, all
+  handlers have finished running for this instance of the event.  The ``await`` is only on the single execution of
+  each handler at the time you trigger the event, not any additional times the same event is triggered while waiting:
+
+  .. code-block:: python
+
+      import pandas
+
+      @client.on("org.fizzbuzz.process")
+      async def main_proc(cohort: pandas.DataFrame, **kw) -> None:
+          log.debug("starting processing")
+          await asyncio.sleep(60 * 5)
+          log.debug("finished processing")
+
+      @client.on("org.fizzbuzz.process")
+      async def record_cohort(cohort, pandas.DataFrame, nick: str, name: str, **kw) -> None:
+          external_audit_log.info(f"{nick} started processing cohort {name} at {now()}")
+
+
+      concurrent_processes = set()
+
+      @client.on("privmsg")
+      async def process_cohort(nick: str, message: str, **kw) -> None:
+
+          async def notify(msg: str) -> None:
+              await client.send("privmsg", target=nick, message=msg)
+          if not message.startswith("proc:"):
+              return
+          _, cohort_name = message.split(":", 1)
+          if len(concurrent_processes) > MAX_CONCURRENT_PROCESS:
+              log.info(f"")
+              await notify(f"can't process {cohort_name}: no capacity")
+              return
+          frame = await lake.fetch(name=cohort_name)
+          task = client.trigger(
+            "org.fizzbuzz.process",
+              nick=nick,
+              data=frame,
+              name=cohort_name,
+          )
+          task.add_done_callback(concurrent_processes.discard)
+          await notify(f"started processing cohort {cohort_name}")
+          await task
+          await notify(f"finished processing cohort {cohort_name}")
+
 
 Breaking Changes
 ----------------
@@ -89,30 +193,29 @@ These include new features or changes which should not impact your ability to mi
 Example Migration
 =================
 
-The following is a 2.2.0 client with the following features:
-* (A) a raw message handler that prints every incoming message
-* (B) periodically calls handle_raw to inject random privmsg
-* (C, D) triggers blocking and non-blocking custom events
-* (E) sends well-formed rfc2812 commands
-* (F) sends raw messages
-* (G) waits for custom events
-* (H, I) uses sync and async handlers
-* (J) has a poorly formed sync handler
-* (K) races multiple waits and prints the first completed event
+The following is a 2.2.0 client with the following features.  These are referenced in the before and after code so
+that you can copy sections of interest.  You can also view both files in the repo under ``examples/migration``.
 
-Each feature is referenced in the code in comments to highlight how it is changed or impacted in 3.0.0.
+* \(A\) a raw message handler that prints every incoming message
+* \(B\) periodically calls handle_raw to inject random privmsg
+* \(C, D\) triggers blocking and non-blocking custom events
+* \(E\) sends well-formed rfc2812 commands
+* \(F\) sends raw messages
+* \(G\) waits for custom events
+* \(H, I\) uses sync and async handlers
+* \(J\) has a poorly formed sync handler
+* \(K\) races multiple waits and prints the first completed event
 
-This sample was tested with ``python3.8.20`` and bottom commit ``eddceacbaef6fda4160ee7f6f1c375e84fbb99fc`` (`ref0`_)
-which was released to PyPi on 2020-08-06 (`ref1`_)
+This sample was tested with ``python3.8.20`` and bottom commit `eddceacbaef6fda4160ee7f6f1c375e84fbb99fc`_
+which was released to PyPi on `2020-08-06 <https://pypi.org/project/bottom/#history>`_
 
-.. _ref0: https://github.com/numberoverzero/bottom/tree/eddceacbaef6fda4160ee7f6f1c375e84fbb99fc
-.. _ref1: https://pypi.org/project/bottom/#history
+.. _eddceacbaef6fda4160ee7f6f1c375e84fbb99fc: https://github.com/numberoverzero/bottom/tree/eddceacbaef6fda4160ee7f6f1c375e84fbb99fc
 
 
 Before - 2.2.0
 --------------
 
-note: the following is available in the repo under examples/migration/v2.2.0.py
+*(The full source for this file is available at examples/migration/v3.0.0.py)*
 
 .. code-block:: python
 
@@ -300,7 +403,7 @@ note: the following is available in the repo under examples/migration/v2.2.0.py
 After - 3.0.0
 -------------
 
-note: the following is available in the repo under examples/migration/v2.2.0.py
+*(The full source for this file is available at examples/migration/v3.0.0.py)*
 
 .. code-block:: python
 

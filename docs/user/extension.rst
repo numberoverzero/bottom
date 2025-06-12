@@ -38,7 +38,7 @@ That's it!  And to use it:
 Plugin Registry
 ===============
 
-*(The full source for extension is available at examples/registry.py)*
+*(The full source for this extension is available at examples/registry.py)*
 
 In the keepalive example above, we're really just using partial application of :meth:`Client.on<bottom.Client.on>`.
 We can use that idea and a ``dict`` to make a plugin registry!  Let's start with the core ``Registry`` class.
@@ -169,7 +169,7 @@ Now, our plugin and client setup look like this:
 Pattern matching
 ================
 
-*(The full source for extension is available at examples/regex.py)*
+*(The full source for this extension is available at examples/regex.py)*
 
 We can write a simple wrapper class to annotate functions to handle PRIVMSG matching a regex.
 To keep the interface simple, we can use bottom's annotation pattern and pass the regex to match.
@@ -240,7 +240,7 @@ PRIVMSG event:
 Full message encryption
 =======================
 
-*(The full source for extension is available at examples/encryption.py)*
+*(The full source for this extension is available at examples/encryption.py)*
 
 This is a more complex example of a :data:`ClientMessageHandler<bottom.ClientMessageHandler>` where messages are
 encrypted and then base64 encoded.  On the wire their only conformance to the IRC protocol is a newline terminating
