@@ -2,9 +2,9 @@
 
 # https://tools.ietf.org/html/rfc2812
 import re
-from typing import Any, Dict, List, Pattern, Tuple  # noqa
+import typing as t
 
-RE_IRCLINE = re.compile(
+RE_IRCLINE: re.Pattern[str] = re.compile(
     r"""
     ^
     (:(?P<prefix>[^\s]+)\s+)?    # Optional prefix (src, nick!host, etc)
@@ -23,9 +23,9 @@ RE_IRCLINE = re.compile(
     $
     """,
     re.VERBOSE,
-)  # type: Pattern[str]
+)
 
-_2812_synonyms = {}  # type: Dict[str, str]
+_2812_synonyms: dict[str, str] = {}
 for numeric, string in [
     ("001", "RPL_WELCOME"),
     ("002", "RPL_YOURHOST"),
@@ -174,7 +174,7 @@ def synonym(command: str) -> str:
     return _2812_synonyms.get(command, command)
 
 
-def nickmask(prefix: str, kwargs: Dict[str, Any]) -> None:
+def nickmask(prefix: str, kwargs: dict[str, t.Any]) -> None:
     """store nick, user, host in kwargs if prefix is correct format"""
     if "!" in prefix and "@" in prefix:
         # From a user
@@ -185,11 +185,11 @@ def nickmask(prefix: str, kwargs: Dict[str, Any]) -> None:
         kwargs["host"] = prefix
 
 
-def add_nickmask(params: List[str]) -> None:
+def add_nickmask(params: list[str]) -> None:
     params.extend(["nick", "user", "host"])
 
 
-def split_line(msg: str) -> Tuple[str, str, List[str]]:
+def split_line(msg: str) -> tuple[str, str, list[str]]:
     """Parse message according to rfc 2812 for routing"""
     match = RE_IRCLINE.match(msg)
     if not match:
@@ -206,10 +206,10 @@ def split_line(msg: str) -> Tuple[str, str, List[str]]:
     return prefix, command, params
 
 
-def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
+def unpack_command(msg: str) -> tuple[str, dict[str, t.Any]]:
     prefix, command, params = split_line(msg.strip())
     command = synonym(command)
-    kwargs = {}  # type: Dict[str, Any]
+    kwargs: dict[str, t.Any] = {}
 
     if command in ["PING", "ERR_NOMOTD"]:
         kwargs["message"] = params[-1]
@@ -333,7 +333,12 @@ def unpack_command(msg: str) -> Tuple[str, Dict[str, Any]]:
     return command, kwargs
 
 
-def parameters(command: str) -> List[str]:
+def parameters(command: str) -> list[str]:
+    """
+    exclusively used in test code.
+
+    implemented here instead of the test file because it's easier to cross-check one file by hand.
+    """
     command = synonym(command)
     params = []
 
