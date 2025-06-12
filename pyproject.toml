@@ -62,7 +62,9 @@ extend-exclude = [
 
     "bin/*",
     # expected failure - written against bottom 2.2.0
-    "examples/migration/v2.2.0.py"
+    "examples/migration/v2.2.0.py",
+    # non-standard comment formatting for clarity of fixes
+    "examples/migration/v3.0.0.py",
 ]
 
 [tool.ruff.lint]
@@ -87,6 +89,8 @@ known-third-party = ["bottom"]
 # Ignore missing type annotations in tests
 "conftest.py" = ["ANN"]
 "test_*.py" = ["ANN"]
+
+"v3.0.0.py" = ["E402"]
 
 [tool.ruff.lint.flake8-annotations]
 # we take **kwargs: t.Any in a few places because we pass those values through str.format()

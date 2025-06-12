@@ -7,6 +7,7 @@ import sys
 
 exclude = [
     "examples/migration/v2.2.0.py",
+    "examples/migration/v3.0.0.py",
 ]
 roots = [
     "src",
