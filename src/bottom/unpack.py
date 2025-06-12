@@ -197,7 +197,7 @@ def split_line(msg: str) -> tuple[str, str, list[str]]:
 
     prefix = match.group("prefix") or ""
     command = match.group("command")
-    params = (match.group("params") or "").split()
+    params: list[str] = (match.group("params") or "").split()  # ty: ignore
     message = match.group("message") or ""
 
     if message:
