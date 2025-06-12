@@ -45,8 +45,25 @@ dev = [
     {include-group = "dist"},
 ]
 
+[tool.pyright]
+ignore = [
+    # expected failure - written against bottom 2.2.0
+    "examples/migration/v2.2.0.py"
+]
+
 [tool.ruff]
 line-length = 120
+extend-exclude = [
+    ".git",
+    ".mypy_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+
+    "bin/*",
+    # expected failure - written against bottom 2.2.0
+    "examples/migration/v2.2.0.py"
+]
 
 [tool.ruff.lint]
 select = [
@@ -54,13 +71,6 @@ select = [
 ]
 ignore = [
     "E501",  # formatter handles this best effort, don't warn on lines too long
-]
-exclude = [
-    ".git",
-    ".mypy_cache",
-    ".ruff_cache",
-    ".venv",
-    "__pycache__",
 ]
 
 [tool.pytest.ini_options]

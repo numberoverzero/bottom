@@ -23,7 +23,7 @@ dev:
 lint:
 	.venv/bin/pip install -q --group lint
 	.venv/bin/ruff check --fix
-	.venv/bin/ty check
+	./bin/ty-workaround.py
 
 test: lint
 	rm -rf .coverage .pytest_cache
