@@ -3,8 +3,12 @@
 Extending the Client
 ^^^^^^^^^^^^^^^^^^^^
 
-bottom doesn't have any clever import hooks to identify plugins based on name, shape, or other significant
-denomination.  Instead, we can create extensions by using :meth:`Client.on<bottom.Client.on>`.
+bottom doesn't use clever import hooks or implicit magic to find and load plugins or extensions.
+
+Extending the Client is mainly done by registering :meth:`event handlers<bottom.Client.on>`,
+:meth:`triggering<bottom.Client.trigger>`, and :meth:`waiting<bottom.Client.wait>` on events; or modifying the client's
+:attr:`message_handlers<bottom.Client.message_handlers>`.
+
 
 Keepalive
 =========
@@ -164,6 +168,150 @@ Now, our plugin and client setup look like this:
 
     client = Client(host=..., port=...)
     enable(client, "my.keepalive.plugin")
+
+
+Only Handle Whole Lines
+=======================
+
+If you don't want IRC command packing and unpacking then you can remove the default handler
+and insert one that simply forwards the entire line to your handler function:
+
+.. code-block:: python
+
+    from __future__ import annotations
+
+    from bottom import Client, NextMessageHandler
+
+
+    class DirectClient(Client):
+        def __init__(self, *a, **kw) -> None:
+            super().__init__(*a, **kw)
+            self.message_handlers.clear()
+            self.message_handlers.append(self.my_line_handler)
+
+        async def my_line_handler(
+            self, next_handler: NextMessageHandler, client: DirectClient, line: bytes,
+        ) -> None:
+            # TODO process the whole IRC line here
+            # or, pass it somewhere else with self.trigger("...", line=line)
+            print(f"got whole irc line in bytes: {line}")
+
+
+Replication
+===========
+
+We can set up multiple clients to replicate messages from one server to another.  There are a few ways to do this, the
+most obvious being the same :meth:`Client.on<bottom.Client.on>` handling we've used before:
+
+
+.. code-block:: python
+
+    from bottom import Client
+
+
+    def make_replicator(watcher: Client, replicas: list[Client], channel: str):
+        @watcher.on("privmsg")
+        async def forward_messages(nick, target, message, **kw):
+            if target != channel:
+                return
+            message = f"{nick}: {message}"
+            for replica in replicas:
+                if replica.is_closing():
+                    continue
+                await replica.send("privmsg", target=channel, message=message)
+
+This is clear enough but what if we wanted to treat the watcher as more of a router? Anything it forwards to the
+replicas *shouldn't* be emitted as events from the watcher itself.  We can choose which PRIVMSG will be triggered on
+the watcher, and which will be forwarded to the listeners; and we'll never forward pings.
+
+Filtering before messages reach :meth:`Client.on<bottom.Client.on>` handlers is done
+through a :data:`ClientMessageHandler<bottom.ClientMessageHandler>`:
+
+
+.. code-block:: python
+
+    class RoutingClient(Client):
+        nick: str = "replicate-bot"
+        audit_log: str = "#replica-audit"
+        listeners: list[Client]
+
+        def __init__(self, *a, **kw) -> None:
+            super().__init__(*a, **kw)
+            self.listeners = []
+            self.message_handlers.insert(0, possibly_reroute)
+
+        def should_reroute(self, message: str) -> bool:
+            # TODO impl parse_cmd
+            command = parse_cmd(message)
+            if command not in ["PRIVMSG", "PING"]:
+                return True
+            # TODO impl parse_target
+            target = parse_target(message)
+            if target != self.nick:
+                return True
+            return False
+
+        def rewrite(self, message: str) -> list[str]:
+            # TODO - replace nick, change target, add lines?
+            # for now just forward the original message, and
+            # write a copy into the audit log
+            return [
+                f"PRIVMSG {self.audit_log} :{message}",
+                message,
+            ]
+
+        async def broadcast(self, message: str):
+            for listener in self.listeners:
+                if listener.is_closing():
+                    continue
+                await listener.send_message(message)
+
+
+    async def possibly_reroute(
+        next_handler: NextMessageHandler[RoutingClient], client: RoutingClient, message: bytes
+    ) -> None:
+        as_str = message.decode(client._encoding)
+        if client.should_reroute(as_str):
+            messages = client.rewrite(as_str)
+            for each in messages:
+                await client.broadcast(each)
+        else:
+            await next_handler(client, message)
+
+
+And to set up handlers so we can still control the routing client:
+
+.. code-block:: python
+
+    import asyncio
+
+    client = RoutingClient(...)
+    client.listeners.extend(load_listeners())
+
+
+    @client.on("ping")
+    async def keepalive(message, **kw):
+        await client.send("pong", message=message)
+
+
+    @client.on("privmsg")
+    async def handle_command(nick, target, message, **kw):
+        rc = client
+        # because all other privmsg were filtered out,
+        # we know this is sent directly to the routing client
+        assert target == rc.nick
+
+        if message != "shutdown":  # TODO impl other commands
+            return
+
+        if nick == "admin":
+            notice = f"PRIVMSG {rc.audit_log} :!{rc.nick} shutting down"
+            await rc.broadcast(notice)
+            tasks = [c.disconnect() for c in [rc, *rc.listeners]]
+            await asyncio.wait(tasks)
+        else:
+            notice = f"PRIVMSG {rc.audit_log} :!{nick} tried to call shutdown"
+            await rc.broadcast(notice)
 
 
 Pattern matching
