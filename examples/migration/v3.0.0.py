@@ -105,7 +105,7 @@ def send_messages_fix_2() -> None:
 @client.on("PING")
 async def keepalive(message: str, **kwargs: t.Any) -> None:
     print(f"<<< ping {message}")
-    await client.send("PONG", message=message)
+    await client.send("pong", message=message)
     print(f">>> pong {message}")
 
 
@@ -143,14 +143,14 @@ def join(nick: str, user: str, host: str, channel: str, **kw: t.Any) -> None:
 from bottom import wait_for
 @client.on("CLIENT_CONNECT")
 async def connect(**kwargs: t.Any) -> None:
-    await client.send("NICK", nick=NICK)
-    await client.send("USER", user=NICK, realname="https://github.com/numberoverzero/bottom")
+    await client.send("nick", nick=NICK)
+    await client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
 
     first = await wait_for(client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
     names = [x["__event__"] for x in first]
     print(f"first complete events were {names}")
 
-    await client.send("JOIN", channel=CHANNEL)
+    await client.send("join", channel=CHANNEL)
     print("sent join")
 
 

@@ -122,6 +122,8 @@ In return for the breaking changes covered below, bottom now has:
            await task
            await notify(f"finished processing cohort {cohort_name}")
 
+#. :meth:`Client.send<bottom.Client.send>` type hints.  :func:`typing.overload` provides specific kwarg completion for
+   all of the IRC commands that bottom knows how to pack.
 
 Breaking Changes
 ----------------
@@ -300,7 +302,7 @@ Before - 2.2.0
     @client.on("PING")
     def keepalive(message, **kwargs):
         print(f"<<< ping {message}")
-        client.send("PONG", message=message)
+        client.send("pong", message=message)
         print(f">>> pong {message}")
 
 
@@ -329,8 +331,8 @@ Before - 2.2.0
     # (K) races multiple waits and prints the first completed event
     @client.on("CLIENT_CONNECT")
     async def connect(**kwargs):
-        client.send("NICK", nick=NICK)
-        client.send("USER", user=NICK, realname="https://github.com/numberoverzero/bottom")
+        client.send("nick", nick=NICK)
+        client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
 
         # Don't try to join channels until the server has
         # sent the MOTD, or signaled that there's no MOTD.
@@ -347,7 +349,7 @@ Before - 2.2.0
         for future in pending:
             future.cancel()
 
-        client.send("JOIN", channel=CHANNEL)
+        client.send("join", channel=CHANNEL)
         print("sent join")
 
 
@@ -515,7 +517,7 @@ After - 3.0.0
     @client.on("PING")
     async def keepalive(message: str, **kwargs: t.Any) -> None:
         print(f"<<< ping {message}")
-        await client.send("PONG", message=message)
+        await client.send("pong", message=message)
         print(f">>> pong {message}")
 
 
@@ -553,14 +555,14 @@ After - 3.0.0
     from bottom import wait_for
     @client.on("CLIENT_CONNECT")
     async def connect(**kwargs: t.Any) -> None:
-        await client.send("NICK", nick=NICK)
-        await client.send("USER", user=NICK, realname="https://github.com/numberoverzero/bottom")
+        await client.send("nick", nick=NICK)
+        await client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
 
         first = await wait_for(client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
         names = [x["__event__"] for x in first]
         print(f"first complete events were {names}")
 
-        await client.send("JOIN", channel=CHANNEL)
+        await client.send("join", channel=CHANNEL)
         print("sent join")
 
 

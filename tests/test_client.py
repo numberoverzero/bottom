@@ -20,7 +20,7 @@ async def test_ping_pong(client, server):
     @client.on("PING")
     async def pong(message, **kwargs):
         print("sent pong")
-        await client.send("PONG", message=message[::-1])
+        await client.send("pong", message=message[::-1])
 
     async def run():
         await client.connect()
@@ -77,21 +77,21 @@ async def test_send_unknown_command(client):
 async def test_send_before_connect(client):
     """Sending before connected raises"""
     with pytest.raises(RuntimeError):
-        await client.send("PONG")
+        await client.send("pong")
     assert client._protocol is None
 
 
 async def test_send_after_disconnect(client, server):
     """Sending after disconnect does not invoke writer"""
     await client.connect()
-    await client.send("PONG")
+    await client.send("pong")
     await busy_wait(lambda: server.received)
     assert server.received == ["PONG"]
 
     await client.disconnect()
     await busy_wait(lambda: client._protocol is None)
     with pytest.raises(RuntimeError):
-        await client.send("QUIT")
+        await client.send("quit")
     assert server.received == ["PONG"]
 
 

@@ -78,7 +78,7 @@ def send_messages():
 @client.on("PING")
 def keepalive(message, **kwargs):
     print(f"<<< ping {message}")
-    client.send("PONG", message=message)
+    client.send("pong", message=message)
     print(f">>> pong {message}")
 
 
@@ -107,8 +107,8 @@ def join(nick, user, host, channel):
 # (K) races multiple waits and prints the first completed event
 @client.on("CLIENT_CONNECT")
 async def connect(**kwargs):
-    client.send("NICK", nick=NICK)
-    client.send("USER", user=NICK, realname="https://github.com/numberoverzero/bottom")
+    client.send("nick", nick=NICK)
+    client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
 
     # Don't try to join channels until the server has
     # sent the MOTD, or signaled that there's no MOTD.
@@ -125,7 +125,7 @@ async def connect(**kwargs):
     for future in pending:
         future.cancel()
 
-    client.send("JOIN", channel=CHANNEL)
+    client.send("join", channel=CHANNEL)
     print("sent join")
 
 
