@@ -45,9 +45,15 @@ intersphinx_mapping = {
 }
 
 linkcheck_timeout = 5
+linkcheck_retries = 2
 linkcheck_allowed_redirects = {
     r"https://github\.com/.*": r"https://github\.com/login\?return_to=.*",
 }
+linkcheck_anchors_ignore_for_url = [
+    "https://pypi.org/project/.*",
+]
+# https://www.useragents.me/
+user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.10 Safari/605.1.1"
 
 nitpick_ignore = [
     ("py:class", "_asyncio.Task"),
