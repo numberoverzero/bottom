@@ -50,7 +50,9 @@ class Client(BaseClient):
     @t.overload
     async def send(self, command: t.Literal["oper"], *, user: str, password: str, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["usermode"], *, nick: str, modes: str = "", **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["usermode"], *, nick: str | None = None, modes: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
     async def send(
         self, command: t.Literal["service"], *, nick: str, distribution: str, type: str, info: str, **kwargs: t.Any
@@ -62,81 +64,125 @@ class Client(BaseClient):
         self, command: t.Literal["squit"], *, server: str, message: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["join"], *, channel: str, key: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
     async def send(
-        self, command: t.Literal["part"], *, channel: str, message: str | None = None, **kwargs: t.Any
+        self,
+        command: t.Literal["join"],
+        *,
+        channel: str | t.Iterable[str],
+        key: str | t.Iterable[str] | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["channelmode"], *, channel: str, modes: str = "", params: str = "", **kwargs: t.Any
-    ) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["topic"], *, channel: str, modes: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(
-        self, command: t.Literal["names"], *, channel: str | None = None, target: str = "", **kwargs: t.Any
+        self, command: t.Literal["part"], *, channel: str | t.Iterable[str], message: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["list"], *, channel: str | None = None, target: str = "", **kwargs: t.Any
+        self,
+        command: t.Literal["channelmode"],
+        *,
+        channel: str,
+        params: str | t.Iterable[str] | None = None,
+        **kwargs: t.Any,
+    ) -> None: ...
+    @t.overload
+    async def send(
+        self, command: t.Literal["topic"], *, channel: str, message: str | None = None, **kwargs: t.Any
+    ) -> None: ...
+    @t.overload
+    async def send(
+        self,
+        command: t.Literal["names"],
+        *,
+        channel: str | t.Iterable[str] | None = None,
+        target: str | None = None,
+        **kwargs: t.Any,
+    ) -> None: ...
+    @t.overload
+    async def send(
+        self,
+        command: t.Literal["list"],
+        *,
+        channel: str | t.Iterable[str] | None = None,
+        target: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["invite"], *, nick: str, channel: str, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["kick"], *, nick: str, channel: str, message: str | None = None, **kwargs: t.Any
+        self,
+        command: t.Literal["kick"],
+        *,
+        nick: str | t.Iterable[str],
+        channel: str | t.Iterable[str],
+        message: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["privmsg"], *, target: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["notice"], *, target: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["motd"], *, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["lusers"], *, mask: str, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["version"], *, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["stats"], *, query: str, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["motd"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["links"], *, mask: str, remote: str | None = None, **kwargs: t.Any
+        self, command: t.Literal["lusers"], *, mask: str | None = None, target: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["time"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["version"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["connect"], *, target: str, port: int, remote: str = "", **kwargs: t.Any
+        self, command: t.Literal["stats"], *, query: str | None = None, target: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["trace"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["links"], *, mask: str | None = None, remote: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["admin"], *, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["info"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["time"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["servlist"], *, mask: str = "", type: str = "", **kwargs: t.Any
+        self, command: t.Literal["connect"], *, target: str, port: int, remote: str | None = None, **kwargs: t.Any
+    ) -> None: ...
+    @t.overload
+    async def send(self, command: t.Literal["trace"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
+    @t.overload
+    async def send(self, command: t.Literal["admin"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
+    @t.overload
+    async def send(self, command: t.Literal["info"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
+    @t.overload
+    async def send(
+        self, command: t.Literal["servlist"], *, mask: str | None = None, type: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["squery"], *, target: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["who"], *, mask: str = "", o: bool | None = None, **kwargs: t.Any
+        self, command: t.Literal["who"], *, mask: str | None = None, o: bool | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["whois"], *, mask: str = "", target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["whois"], *, mask: str | t.Iterable[str], target: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["whowas"], *, nick: str, count: int | None = None, target: str = "", **kwargs: t.Any
+        self,
+        command: t.Literal["whowas"],
+        *,
+        nick: str | t.Iterable[str],
+        count: int | None = None,
+        target: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["kill"], *, nick: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["ping"], *, message: str, **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["ping"], *, message: str, target: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["pong"], *, message: str, **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["pong"], *, message: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["away"], *, message: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
@@ -147,12 +193,18 @@ class Client(BaseClient):
     async def send(self, command: t.Literal["restart"], **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["summon"], *, nick: str, target: str | None = None, channel: str = "", **kwargs: t.Any
+        self,
+        command: t.Literal["summon"],
+        *,
+        nick: str,
+        target: str | None = None,
+        channel: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["users"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["users"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["wallops"], *, message: str, **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["wallops"], *, message: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["userhost"], *, nick: str | t.Iterable[str], **kwargs: t.Any) -> None: ...
     @t.overload

@@ -9,11 +9,9 @@ def _reset_global_serializer(request: pytest.FixtureRequest) -> t.Iterable[None]
     new: list[tuple[str, CommandSpec]] = []
     original_register = GLOBAL_COMMAND_SERIALIZER.register
 
-    def register(
-        command: str, fmt: str, req: set[str], defaults: dict[str, t.Any], deps: dict[str, str]
-    ) -> CommandSpec:
+    def register(command: str, fmt: str, defaults: dict[str, t.Any], deps: dict[str, str]) -> CommandSpec:
         command = command.strip().upper()
-        spec = original_register(command, fmt=fmt, req=req, defaults=defaults, deps=deps)
+        spec = original_register(command, fmt=fmt, defaults=defaults, deps=deps)
         new.append((command, spec))
         return spec
 

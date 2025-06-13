@@ -10,7 +10,6 @@ from bottom.irc.serialize import serialize as module_serialize
 @dataclass(frozen=True)
 class SerializerTestPattern:
     fmt: str
-    req: set[str] = field(default_factory=set)
     defaults: dict[str, t.Any] = field(default_factory=dict)
     deps: dict[str, str] = field(default_factory=dict)
 
@@ -18,7 +17,6 @@ class SerializerTestPattern:
         serializer.register(
             command,
             fmt=self.fmt,
-            req=self.req,
             defaults=self.defaults,
             deps=self.deps,
         )
@@ -39,8 +37,8 @@ serializer_test_cases: list[SerializerTestCase] = [
     SerializerTestCase(
         # first missing required
         patterns=[
-            stp("1 {a} {b}", req={"a", "b"}),
-            stp("2 {a} {b}", req={"a"}, defaults={"b": "def:b"}),
+            stp("1 {a} {b}"),
+            stp("2 {a} {b}", defaults={"b": "def:b"}),
         ],
         kw_params={"a": "kw:a"},
         expected="2 kw:a def:b",
@@ -48,8 +46,8 @@ serializer_test_cases: list[SerializerTestCase] = [
     SerializerTestCase(
         # on ties, first registered wins
         patterns=[
-            stp("1 {a} {b}", req={"a", "b"}),
-            stp("2 {a} {b}", req={"a", "b"}),
+            stp("1 {a} {b}"),
+            stp("2 {a} {b}"),
         ],
         kw_params={"a": "kw:a", "b": "kw:b"},
         expected="1 kw:a kw:b",
@@ -57,8 +55,8 @@ serializer_test_cases: list[SerializerTestCase] = [
     SerializerTestCase(
         # defaults count towards score, before tie breaks
         patterns=[
-            stp("1 {a} {b}", req={"a", "b"}),
-            stp("2 {a} {b} {c}", req={"a", "b"}, defaults={"c": "def:c"}),
+            stp("1 {a} {b}"),
+            stp("2 {a} {b} {c}", defaults={"c": "def:c"}),
         ],
         kw_params={"a": "kw:a", "b": "kw:b"},
         expected="2 kw:a kw:b def:c",
@@ -67,7 +65,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         # required doesn't score higher than defaults; ordering still tie breaks
         patterns=[
             stp("1 {a} {b}", defaults={"a": "def:a", "b": "def:b"}),
-            stp("2 {b} {c}", req={"b"}, defaults={"c": "def:c"}),
+            stp("2 {b} {c}", defaults={"c": "def:c"}),
         ],
         kw_params={"b": "kw:b"},
         expected="1 def:a kw:b",
@@ -83,32 +81,21 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="2 def:a def:b def:c",
     ),
     SerializerTestCase(
-        # params unused in format string still count (but should probably be a bug)
-        # note: tie breaking on order since both provide all of a, b, c
-        patterns=[
-            stp("1 {a}", req={"a", "b", "c"}),
-            stp("2 {a} {b} {c}", defaults={"a": "def:a", "b": "def:b", "c": "def:c"}),
-        ],
-        kw_params={"a": "kw:a", "b": "kw:b", "c": "kw:c"},
-        expected="1 kw:a",
-    ),
-    SerializerTestCase(
         # first pattern has more matched but missing dependency
         patterns=[
             stp("1 {a} {b} {c}", deps={"a": "c"}),
-            stp("2 {a}", {"a"}),
+            stp("2 {a}"),
         ],
         kw_params={"a": "kw:a", "b": "kw:b"},
         expected="2 kw:a",
     ),
     SerializerTestCase(
-        # dependency-only gets an empty string when not provided
-        # otherwise, the string template would break
+        # opt provides empty strings when missing
         patterns=[
-            stp("1 {a} {b} {c}", req={"a"}, deps={"b": "a", "c": "a"}),
+            stp("1 {a}@{b:opt}@{c}"),
         ],
-        kw_params={"a": "kw:a"},
-        expected="1 kw:a",
+        kw_params={"a": "kw:a", "c": "kw:c"},
+        expected="1 kw:a@@kw:c",
     ),
 ]
 
@@ -128,13 +115,13 @@ def serializer() -> CommandSerializer:
         {"world": str},
     ],
 )
-def test_no_params(serializer, command, kw_params: dict) -> None:
-    serializer.register(command, command, set(), {}, {})
+def test_no_params(serializer: CommandSerializer, command, kw_params: dict) -> None:
+    serializer.register(command, command, {}, {})
     assert serializer.serialize(command, kw_params) == command
 
 
 @pytest.mark.parametrize("case", serializer_test_cases)
-def test_serializer_cases(serializer, case: SerializerTestCase) -> None:
+def test_serializer_cases(serializer: CommandSerializer, case: SerializerTestCase) -> None:
     command = "foo"
     for pattern in case.patterns:
         pattern.register_into(command, serializer)
@@ -146,19 +133,19 @@ def test_serializer_unknown_command(serializer) -> None:
         serializer.serialize("unknown", {})
 
 
-def test_serializer_missing_args(serializer) -> None:
+def test_serializer_missing_args(serializer: CommandSerializer) -> None:
     """knows command but none have all reqs satisfied by kw_params"""
     command = "foo"
-    serializer.register(command, "1 {a} {b}", {"a", "b"}, {}, {})
+    serializer.register(command, "1 {a} {b}", {}, {})
     with pytest.raises(ValueError):
         serializer.serialize(command, {"a": "kw:a"})
 
 
-def test_default_serializer(serializer) -> None:
+def test_default_serializer(serializer: CommandSerializer) -> None:
     """module-level serialize function defaults to a global serializer"""
 
     command = "foo"
-    pattern = stp("1 {a}", req={"a"}, defaults={}, deps={})
+    pattern = stp("1 {a}")
     kw_params = {"a": "kw:a"}
     expected = "1 kw:a"
 
@@ -172,6 +159,6 @@ def test_default_serializer(serializer) -> None:
         module_serialize(command, kw_params)
 
     # register to global handler and it should succeed
-    module_register(command, fmt=pattern.fmt, req=pattern.req, defaults=pattern.defaults, deps=pattern.deps)
+    module_register(command, fmt=pattern.fmt, defaults=pattern.defaults, deps=pattern.deps)
     actual = module_serialize(command, kw_params)
     assert actual == expected
