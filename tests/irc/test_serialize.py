@@ -2,8 +2,8 @@ import typing as t
 from dataclasses import dataclass, field
 
 import pytest
-from bottom.irc.serialize import CommandSerializer, CommandSpec, SerializingTemplate
-from bottom.irc.serialize import register_serializer_pattern as module_register
+from bottom.irc.serialize import CommandSerializer, CommandSpec, SerializerTemplate
+from bottom.irc.serialize import register_pattern as module_register
 from bottom.irc.serialize import serialize as module_serialize
 
 
@@ -109,13 +109,13 @@ serializer_test_cases: list[SerializerTestCase] = [
 
 
 @pytest.fixture
-def formatters() -> dict[str, SerializingTemplate.ComputedStr]:
+def formatters() -> dict[str, SerializerTemplate.ComputedStr]:
     return {}
 
 
 @pytest.fixture
-def serializer(formatters: dict[str, SerializingTemplate.ComputedStr]) -> CommandSerializer:
-    return CommandSerializer(formatters={})
+def serializer(formatters: dict[str, SerializerTemplate.ComputedStr]) -> CommandSerializer:
+    return CommandSerializer(formatters=formatters)
 
 
 @pytest.mark.parametrize(
@@ -129,7 +129,7 @@ def serializer(formatters: dict[str, SerializingTemplate.ComputedStr]) -> Comman
 )
 def test_template_invalid_str(template) -> None:
     with pytest.raises(ValueError):
-        SerializingTemplate.parse(template, {})
+        SerializerTemplate.parse(template, {})
 
 
 @pytest.mark.parametrize(
@@ -142,12 +142,12 @@ def test_template_invalid_str(template) -> None:
     ],
 )
 def test_template_valid_str(template: str, expected_req, expected_opt) -> None:
-    tpl = SerializingTemplate.parse(
+    tpl, req, opt = SerializerTemplate.parse(
         template,
         {"known_fn": lambda _, value: str(value)},
     )
-    assert set(tpl.req) == expected_req
-    assert set(tpl.opt) == expected_opt
+    assert req == expected_req
+    assert opt == expected_opt
 
 
 @pytest.mark.parametrize(
@@ -159,7 +159,7 @@ def test_template_valid_str(template: str, expected_req, expected_opt) -> None:
     [{}, {"foo": "bar"}, {"hello": object()}, {"world": str}],
 )
 def test_template_no_params(template, expected, params: dict) -> None:
-    tpl = SerializingTemplate.parse(template, {})
+    tpl, _, _ = SerializerTemplate.parse(template, {})
     assert tpl.format(params) == expected
 
 
@@ -169,9 +169,9 @@ def test_template_chained_formats() -> None:
 
 
 def test_command_spec_invalid_defaults() -> None:
-    template = SerializingTemplate.parse("{valid} {template}", {})
+    template, req, opt = SerializerTemplate.parse("{valid} {template}", {})
     with pytest.raises(ValueError):
-        CommandSpec.parse("foo", template, defaults={"template": None}, deps={})
+        CommandSpec.parse("foo", template, req=req, opt=opt, defaults={"template": None}, deps={})
 
 
 @pytest.mark.parametrize("case", serializer_test_cases)
@@ -189,8 +189,8 @@ def test_serializer_unknown_command(serializer) -> None:
 
 def test_serializer_missing_args() -> None:
     """command is missing required params"""
-    template = SerializingTemplate.parse("{valid} {template}", {})
-    command = CommandSpec.parse("foo", template, {}, {})
+    template, req, opt = SerializerTemplate.parse("{valid} {template}", {})
+    command = CommandSpec.parse("foo", template=template, req=req, opt=opt, defaults={}, deps={})
     with pytest.raises(ValueError):
         command.serialize({"valid": "kw:a"})
 

@@ -6,20 +6,18 @@ import string
 import typing as t
 from dataclasses import dataclass
 
-__all__ = ["CommandSerializer", "register_serializer_pattern", "serialize"]
+__all__ = ["CommandSerializer", "register_pattern", "serialize"]
 
 type ParamDict = dict[str, t.Any]
 
 
 @dataclass(frozen=True)
-class SerializingTemplate:
+class SerializerTemplate:
     type ComputedStr = t.Callable[[str, t.Any], t.Any]
     type Component = str | tuple[str, tuple[ComputedStr, ...]]
 
     original: str
     components: tuple[Component, ...]
-    opt: tuple[str, ...]
-    req: tuple[str, ...]
 
     def format(self, kwargs: ParamDict) -> str:
         parts = []
@@ -35,10 +33,10 @@ class SerializingTemplate:
         return "".join(parts).strip()
 
     @classmethod
-    def parse(cls, template: str, formatters: dict[str, ComputedStr]) -> SerializingTemplate:
-        required = set()
-        optional = set()
-        components: list[SerializingTemplate.Component] = []
+    def parse(cls, template: str, formatters: dict[str, ComputedStr]) -> tuple[SerializerTemplate, set[str], set[str]]:
+        req = set()
+        opt = set()
+        components: list[SerializerTemplate.Component] = []
         # otherwise "{x}" will fail to format
         formatters.setdefault("", lambda _, value: format(value))
         fields = string.Formatter().parse(template)
@@ -56,23 +54,19 @@ class SerializingTemplate:
                 fnames = format_spec.split("|")
                 if fnames[0] == "opt":
                     fnames.pop(0)
-                    optional.add(field_name)
+                    opt.add(field_name)
                 else:
-                    required.add(field_name)
+                    req.add(field_name)
                 if not fnames or fnames[-1] != "":
                     fnames.append("")
                 if unknown := [fname for fname in fnames if fname not in formatters]:
                     raise ValueError(f"invalid template {template!r} -- unknown formatters {unknown}")
                 field_formatters = tuple([formatters[fname] for fname in fnames])
-                computed: SerializingTemplate.Component = (field_name, field_formatters)
+                computed: SerializerTemplate.Component = (field_name, field_formatters)
                 components.append(computed)
 
-        return SerializingTemplate(
-            original=template,
-            components=tuple(components),
-            req=tuple(required),
-            opt=tuple(optional),
-        )
+        tpl = SerializerTemplate(original=template, components=tuple(components))
+        return tpl, req, opt
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -86,7 +80,7 @@ class ParamSpec[T]:
 class CommandSpec:
     command: str
     params: tuple[ParamSpec, ...]
-    template: SerializingTemplate
+    template: SerializerTemplate
 
     @property
     def max_score(self) -> int:
@@ -104,16 +98,20 @@ class CommandSpec:
 
     @classmethod
     def parse(
-        cls, command: str, template: SerializingTemplate, defaults: dict[str, t.Any], deps: dict[str, str]
+        cls,
+        command: str,
+        template: SerializerTemplate,
+        req: set[str],
+        opt: set[str],
+        defaults: dict[str, t.Any],
+        deps: dict[str, str],
     ) -> CommandSpec:
         params: dict[str, ParamSpec] = dict()
 
         if any(v is None for v in defaults.values()):
             raise ValueError(f"default values must be non-null, but got: {defaults}")
 
-        req = set(template.req)
-        opt = set(template.opt)
-        # remove defaults from req; add defaults to opt
+        # when defaults isn't empty, we might be relaxing some
         req.difference_update(defaults.keys())
         opt.update(defaults.keys())
 
@@ -160,10 +158,10 @@ class CommandSpec:
 
 
 class CommandSerializer:
-    formatters: dict[str, SerializingTemplate.ComputedStr]
+    formatters: dict[str, SerializerTemplate.ComputedStr]
     commands: dict[str, list[CommandSpec]]
 
-    def __init__(self, formatters: dict[str, SerializingTemplate.ComputedStr]) -> None:
+    def __init__(self, formatters: dict[str, SerializerTemplate.ComputedStr]) -> None:
         self.formatters = formatters
         self.commands = {}
 
@@ -175,8 +173,8 @@ class CommandSerializer:
         deps: dict[str, str],
     ) -> CommandSpec:
         command = command.strip().upper()
-        template = SerializingTemplate.parse(fmt, formatters=self.formatters)
-        spec = CommandSpec.parse(command, template=template, defaults=defaults, deps=deps)
+        template, req, opt = SerializerTemplate.parse(fmt, formatters=self.formatters)
+        spec = CommandSpec.parse(command, template=template, req=req, opt=opt, defaults=defaults, deps=deps)
 
         # maintain descending sort by max possible score
         # this way serialize can stop on the first non-error result
@@ -229,20 +227,20 @@ GLOBAL_FORMATTERS = {
     "space": lambda key, value: join_iterable(key, value, " "),
     "": lambda _, value: format(value),
 }
-GLOBAL_COMMAND_SERIALIZER = CommandSerializer(formatters=GLOBAL_FORMATTERS)
+GLOBAL_SERIALIZER = CommandSerializer(formatters=GLOBAL_FORMATTERS)
 
 
-def register_serializer_pattern(
+def register_pattern(
     command: str,
     fmt: str,
     defaults: dict[str, t.Any] | None = None,
     deps: dict[str, str] | None = None,
-    serializer: CommandSerializer = GLOBAL_COMMAND_SERIALIZER,
+    serializer: CommandSerializer = GLOBAL_SERIALIZER,
 ) -> CommandSpec:
     return serializer.register(command, fmt, defaults=defaults or {}, deps=deps or {})
 
 
-def serialize(command: str, params: ParamDict, *, serializer: CommandSerializer = GLOBAL_COMMAND_SERIALIZER) -> str:
+def serialize(command: str, params: ParamDict, *, serializer: CommandSerializer = GLOBAL_SERIALIZER) -> str:
     return serializer.serialize(command, params)
 
 
@@ -251,14 +249,14 @@ def serialize(command: str, params: ParamDict, *, serializer: CommandSerializer 
 # PASS <password>
 # ----------
 # PASS secretpasswordhere
-register_serializer_pattern("PASS", "PASS {password}")
+register_pattern("PASS", "PASS {password}")
 
 # NICK
 # https://tools.ietf.org/html/rfc2812#section-3.1.2
 # NICK <nick>
 # ----------
 # NICK Wiz
-register_serializer_pattern("NICK", "NICK {nick}")
+register_pattern("NICK", "NICK {nick}")
 
 # USER
 # https://tools.ietf.org/html/rfc2812#section-3.1.3
@@ -266,14 +264,14 @@ register_serializer_pattern("NICK", "NICK {nick}")
 # ----------
 # USER guest 8 :Ronnie Reagan
 # USER guest :Ronnie Reagan
-register_serializer_pattern("USER", "USER {user} {mode} * :{realname}", defaults={"mode": 0})
+register_pattern("USER", "USER {user} {mode} * :{realname}", defaults={"mode": 0})
 
 # OPER
 # https://tools.ietf.org/html/rfc2812#section-3.1.4
 # OPER <user> <password>
 # ----------
 # OPER AzureDiamond hunter2
-register_serializer_pattern("OPER", "OPER {user} {password}")
+register_pattern("OPER", "OPER {user} {password}")
 
 # USERMODE (renamed from MODE)
 # https://tools.ietf.org/html/rfc2812#section-3.1.5
@@ -282,14 +280,14 @@ register_serializer_pattern("OPER", "OPER {user} {password}")
 # MODE WiZ -w
 # MODE Angel +i
 # MODE
-register_serializer_pattern("USERMODE", "MODE {nick:opt} {modes:opt}", deps={"modes": "nick"})
+register_pattern("USERMODE", "MODE {nick:opt} {modes:opt}", deps={"modes": "nick"})
 
 # SERVICE
 # https://tools.ietf.org/html/rfc2812#section-3.1.6
 # SERVICE <nick> <distribution> <type> :<info>
 # ----------
 # SERVICE dict *.fr 0 :French
-register_serializer_pattern("SERVICE", "SERVICE {nick} * {distribution} {type} 0 :{info}")
+register_pattern("SERVICE", "SERVICE {nick} * {distribution} {type} 0 :{info}")
 
 # QUIT
 # https://tools.ietf.org/html/rfc2812#section-3.1.7
@@ -297,8 +295,8 @@ register_serializer_pattern("SERVICE", "SERVICE {nick} * {distribution} {type} 0
 # ----------
 # QUIT :Gone to lunch
 # QUIT
-register_serializer_pattern("QUIT", "QUIT :{message:opt}")
-register_serializer_pattern("QUIT", "QUIT")
+register_pattern("QUIT", "QUIT :{message:opt}")
+register_pattern("QUIT", "QUIT")
 
 # SQUIT
 # https://tools.ietf.org/html/rfc2812#section-3.1.8
@@ -306,8 +304,8 @@ register_serializer_pattern("QUIT", "QUIT")
 # ----------
 # SQUIT tolsun.oulu.fi :Bad Link
 # SQUIT tolsun.oulu.fi
-register_serializer_pattern("SQUIT", "SQUIT {server} :{message:opt}")
-register_serializer_pattern("SQUIT", "SQUIT {server}")
+register_pattern("SQUIT", "SQUIT {server} :{message:opt}")
+register_pattern("SQUIT", "SQUIT {server}")
 
 # JOIN
 # https://tools.ietf.org/html/rfc2812#section-3.2.1
@@ -316,7 +314,7 @@ register_serializer_pattern("SQUIT", "SQUIT {server}")
 # JOIN #foo fookey
 # JOIN #foo
 # JOIN 0
-register_serializer_pattern("JOIN", "JOIN {channel:comma} {key:opt|comma}")
+register_pattern("JOIN", "JOIN {channel:comma} {key:opt|comma}")
 
 # PART
 # https://tools.ietf.org/html/rfc2812#section-3.2.2
@@ -324,7 +322,7 @@ register_serializer_pattern("JOIN", "JOIN {channel:comma} {key:opt|comma}")
 # ----------
 # PART #foo :I lost
 # PART #foo
-register_serializer_pattern("PART", "PART {channel:comma} :{message:opt}")
+register_pattern("PART", "PART {channel:comma} :{message:opt}")
 
 # CHANNELMODE (renamed from MODE)
 # https://tools.ietf.org/html/rfc2812#section-3.2.3
@@ -333,7 +331,7 @@ register_serializer_pattern("PART", "PART {channel:comma} :{message:opt}")
 # MODE #Finnish +imI *!*@*.fi
 # MODE #en-ops +v WiZ
 # MODE #Fins -s
-register_serializer_pattern("CHANNELMODE", "MODE {channel} {params:space}")
+register_pattern("CHANNELMODE", "MODE {channel} {params:space}")
 
 # TOPIC
 # https://tools.ietf.org/html/rfc2812#section-3.2.4
@@ -343,8 +341,8 @@ register_serializer_pattern("CHANNELMODE", "MODE {channel} {params:space}")
 # TOPIC #test :
 # TOPIC #test
 
-register_serializer_pattern("TOPIC", "TOPIC {channel} :{message}")
-register_serializer_pattern("TOPIC", "TOPIC {channel}")
+register_pattern("TOPIC", "TOPIC {channel} :{message}")
+register_pattern("TOPIC", "TOPIC {channel}")
 
 # NAMES
 # https://tools.ietf.org/html/rfc2812#section-3.2.5
@@ -353,7 +351,7 @@ register_serializer_pattern("TOPIC", "TOPIC {channel}")
 # NAMES #twilight_zone remote.*.edu
 # NAMES #twilight_zone
 # NAMES
-register_serializer_pattern("NAMES", "NAMES {channel:opt|comma} {target:opt}", deps={"target": "channel"})
+register_pattern("NAMES", "NAMES {channel:opt|comma} {target:opt}", deps={"target": "channel"})
 
 # LIST
 # https://tools.ietf.org/html/rfc2812#section-3.2.6
@@ -362,14 +360,14 @@ register_serializer_pattern("NAMES", "NAMES {channel:opt|comma} {target:opt}", d
 # LIST #twilight_zone remote.*.edu
 # LIST #twilight_zone
 # LIST
-register_serializer_pattern("LIST", "LIST {channel:opt|comma} {target:opt}", deps={"target": "channel"})
+register_pattern("LIST", "LIST {channel:opt|comma} {target:opt}", deps={"target": "channel"})
 
 # INVITE
 # https://tools.ietf.org/html/rfc2812#section-3.2.7
 # INVITE <nick> <channel>
 # ----------
 # INVITE Wiz #Twilight_Zone
-register_serializer_pattern("INVITE", "INVITE {nick} {channel}")
+register_pattern("INVITE", "INVITE {nick} {channel}")
 
 # KICK
 # https://tools.ietf.org/html/rfc2812#section-3.2.8
@@ -378,8 +376,8 @@ register_serializer_pattern("INVITE", "INVITE {nick} {channel}")
 # KICK #Finnish WiZ :Speaking English
 # KICK #Finnish WiZ,Wiz-Bot :Both speaking English
 # KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
-register_serializer_pattern("KICK", "KICK {channel:comma} {nick:comma} :{message}")
-register_serializer_pattern("KICK", "KICK {channel:comma} {nick:comma}")
+register_pattern("KICK", "KICK {channel:comma} {nick:comma} :{message}")
+register_pattern("KICK", "KICK {channel:comma} {nick:comma}")
 
 # PRIVMSG
 # https://tools.ietf.org/html/rfc2812#section-3.3.1
@@ -388,7 +386,7 @@ register_serializer_pattern("KICK", "KICK {channel:comma} {nick:comma}")
 # PRIVMSG Angel :yes I'm receiving it !
 # PRIVMSG $*.fi :Server tolsun.oulu.fi rebooting.
 # PRIVMSG #Finnish :This message is in english
-register_serializer_pattern("PRIVMSG", "PRIVMSG {target} {message}")
+register_pattern("PRIVMSG", "PRIVMSG {target} {message}")
 
 # NOTICE
 # https://tools.ietf.org/html/rfc2812#section-3.3.2
@@ -397,7 +395,7 @@ register_serializer_pattern("PRIVMSG", "PRIVMSG {target} {message}")
 # NOTICE Angel :yes I'm receiving it !
 # NOTICE $*.fi :Server tolsun.oulu.fi rebooting.
 # NOTICE #Finnish :This message is in english
-register_serializer_pattern("NOTICE", "NOTICE {target} {message}")
+register_pattern("NOTICE", "NOTICE {target} {message}")
 
 # MOTD
 # https://tools.ietf.org/html/rfc2812#section-3.4.1
@@ -405,7 +403,7 @@ register_serializer_pattern("NOTICE", "NOTICE {target} {message}")
 # ----------
 # MOTD remote.*.edu
 # MOTD
-register_serializer_pattern("MOTD", "MOTD {target:opt}")
+register_pattern("MOTD", "MOTD {target:opt}")
 
 # LUSERS
 # https://tools.ietf.org/html/rfc2812#section-3.4.2
@@ -414,7 +412,7 @@ register_serializer_pattern("MOTD", "MOTD {target:opt}")
 # LUSERS *.edu remote.*.edu
 # LUSERS *.edu
 # LUSERS
-register_serializer_pattern("LUSERS", "LUSERS {mask:opt} {target:opt}", deps={"target": "mask"})
+register_pattern("LUSERS", "LUSERS {mask:opt} {target:opt}", deps={"target": "mask"})
 
 # VERSION
 # https://tools.ietf.org/html/rfc2812#section-3.4.3
@@ -422,7 +420,7 @@ register_serializer_pattern("LUSERS", "LUSERS {mask:opt} {target:opt}", deps={"t
 # ----------
 # VERSION remote.*.edu
 # VERSION
-register_serializer_pattern("VERSION", "VERSION {target:opt}")
+register_pattern("VERSION", "VERSION {target:opt}")
 
 # STATS
 # https://tools.ietf.org/html/rfc2812#section-3.4.4
@@ -431,7 +429,7 @@ register_serializer_pattern("VERSION", "VERSION {target:opt}")
 # STATS m remote.*.edu
 # STATS m
 # STATS
-register_serializer_pattern("STATS", "STATS {query:opt} {target:opt}", deps={"target": "query"})
+register_pattern("STATS", "STATS {query:opt} {target:opt}", deps={"target": "query"})
 
 # LINKS
 # https://tools.ietf.org/html/rfc2812#section-3.4.5
@@ -440,8 +438,8 @@ register_serializer_pattern("STATS", "STATS {query:opt} {target:opt}", deps={"ta
 # LINKS *.edu *.bu.edu
 # LINKS *.au
 # LINKS
-register_serializer_pattern("LINKS", "LINKS {remote} {mask}")
-register_serializer_pattern("LINKS", "LINKS {mask:opt}")
+register_pattern("LINKS", "LINKS {remote} {mask}")
+register_pattern("LINKS", "LINKS {mask:opt}")
 
 # TIME
 # https://tools.ietf.org/html/rfc2812#section-3.4.6
@@ -449,7 +447,7 @@ register_serializer_pattern("LINKS", "LINKS {mask:opt}")
 # ----------
 # TIME remote.*.edu
 # TIME
-register_serializer_pattern("TIME", "TIME {target:opt}")
+register_pattern("TIME", "TIME {target:opt}")
 
 # CONNECT
 # https://tools.ietf.org/html/rfc2812#section-3.4.7
@@ -457,28 +455,28 @@ register_serializer_pattern("TIME", "TIME {target:opt}")
 # ----------
 # CONNECT tolsun.oulu.fi 6667 *.edu
 # CONNECT tolsun.oulu.fi 6667
-register_serializer_pattern("CONNECT", "CONNECT {target} {port} {remote:opt}")
+register_pattern("CONNECT", "CONNECT {target} {port} {remote:opt}")
 
 # TRACE
 # https://tools.ietf.org/html/rfc2812#section-3.4.8
 # TRACE [<target>]
 # ----------
 # TRACE
-register_serializer_pattern("TRACE", "TRACE {target:opt}")
+register_pattern("TRACE", "TRACE {target:opt}")
 
 # ADMIN
 # https://tools.ietf.org/html/rfc2812#section-3.4.9
 # ADMIN [<target>]
 # ----------
 # ADMIN
-register_serializer_pattern("ADMIN", "ADMIN {target:opt}")
+register_pattern("ADMIN", "ADMIN {target:opt}")
 
 # INFO
 # https://tools.ietf.org/html/rfc2812#section-3.4.10
 # INFO [<target>]
 # ----------
 # INFO
-register_serializer_pattern("INFO", "INFO {target:opt}")
+register_pattern("INFO", "INFO {target:opt}")
 
 # SERVLIST
 # https://tools.ietf.org/html/rfc2812#section-3.5.1
@@ -487,14 +485,14 @@ register_serializer_pattern("INFO", "INFO {target:opt}")
 # SERVLIST *SERV 3
 # SERVLIST *SERV
 # SERVLIST
-register_serializer_pattern("SERVLIST", "SERVLIST {mask:opt} {type:opt}", deps={"type": "mask"})
+register_pattern("SERVLIST", "SERVLIST {mask:opt} {type:opt}", deps={"type": "mask"})
 
 # SQUERY
 # https://tools.ietf.org/html/rfc2812#section-3.5.2
 # SQUERY <target> :<message>
 # ----------
 # SQUERY irchelp :HELP privmsg
-register_serializer_pattern("SQUERY", "SQUERY {target} :{message}")
+register_pattern("SQUERY", "SQUERY {target} :{message}")
 
 # WHO
 # https://tools.ietf.org/html/rfc2812#section-3.6.1
@@ -503,7 +501,7 @@ register_serializer_pattern("SQUERY", "SQUERY {target} :{message}")
 # WHO jto* o
 # WHO *.fi
 # WHO
-register_serializer_pattern("WHO", "WHO {mask:opt} {o:opt|bool}", deps={"o": "mask"})
+register_pattern("WHO", "WHO {mask:opt} {o:opt|bool}", deps={"o": "mask"})
 
 # WHOIS
 # https://tools.ietf.org/html/rfc2812#section-3.6.2
@@ -511,8 +509,8 @@ register_serializer_pattern("WHO", "WHO {mask:opt} {o:opt|bool}", deps={"o": "ma
 # ----------
 # WHOIS WiZ
 # WHOIS eff.org trillian
-register_serializer_pattern("WHOIS", "WHOIS {target} {mask:comma}")
-register_serializer_pattern("WHOIS", "WHOIS {mask:comma}")
+register_pattern("WHOIS", "WHOIS {target} {mask:comma}")
+register_pattern("WHOIS", "WHOIS {mask:comma}")
 
 # WHOWAS
 # https://tools.ietf.org/html/rfc2812#section-3.6.3
@@ -521,14 +519,14 @@ register_serializer_pattern("WHOIS", "WHOIS {mask:comma}")
 # WHOWAS Wiz 9 remote.*.edu
 # WHOWAS Wiz 9
 # WHOWAS Mermaid
-register_serializer_pattern("WHOWAS", "WHOWAS {nick:comma} {count:opt} {target:opt}", deps={"target": "count"})
+register_pattern("WHOWAS", "WHOWAS {nick:comma} {count:opt} {target:opt}", deps={"target": "count"})
 
 # KILL
 # https://tools.ietf.org/html/rfc2812#section-3.7.1
 # KILL <nick> :<message>
 # ----------
 # KILL WiZ :Spamming joins
-register_serializer_pattern("KILL", "KILL {nick} :{message}")
+register_pattern("KILL", "KILL {nick} :{message}")
 
 # PING
 # https://tools.ietf.org/html/rfc2812#section-3.7.2
@@ -538,7 +536,7 @@ register_serializer_pattern("KILL", "KILL {nick} :{message}")
 # PING my-ping-token eff.org
 # note:
 #   https://github.com/ngircd/ngircd/blob/512af135d06e7dad93f51eae51b3979e1d4005cc/doc/Commands.txt#L146-L153
-register_serializer_pattern("PING", "PING {message:nospace} {target:opt}")
+register_pattern("PING", "PING {message:nospace} {target:opt}")
 
 # PONG
 # https://tools.ietf.org/html/rfc2812#section-3.7.3
@@ -546,7 +544,7 @@ register_serializer_pattern("PING", "PING {message:nospace} {target:opt}")
 # ----------
 # PONG :I'm still here
 # PONG
-register_serializer_pattern("PONG", "PONG :{message:opt}")
+register_pattern("PONG", "PONG :{message:opt}")
 
 # AWAY
 # https://tools.ietf.org/html/rfc2812#section-4.1
@@ -554,29 +552,29 @@ register_serializer_pattern("PONG", "PONG :{message:opt}")
 # ----------
 # AWAY :Gone to lunch.
 # AWAY
-register_serializer_pattern("AWAY", "AWAY :{message:opt}")
-register_serializer_pattern("AWAY", "AWAY")
+register_pattern("AWAY", "AWAY :{message:opt}")
+register_pattern("AWAY", "AWAY")
 
 # REHASH
 # https://tools.ietf.org/html/rfc2812#section-4.2
 # REHASH
 # ----------
 # REHASH
-register_serializer_pattern("REHASH", "REHASH")
+register_pattern("REHASH", "REHASH")
 
 # DIE
 # https://tools.ietf.org/html/rfc2812#section-4.3
 # DIE
 # ----------
 # DIE
-register_serializer_pattern("DIE", "DIE")
+register_pattern("DIE", "DIE")
 
 # RESTART
 # https://tools.ietf.org/html/rfc2812#section-4.4
 # RESTART
 # ----------
 # RESTART
-register_serializer_pattern("RESTART", "RESTART")
+register_pattern("RESTART", "RESTART")
 
 # SUMMON
 # https://tools.ietf.org/html/rfc2812#section-4.5
@@ -585,7 +583,7 @@ register_serializer_pattern("RESTART", "RESTART")
 # SUMMON Wiz remote.*.edu #Finnish
 # SUMMON Wiz remote.*.edu
 # SUMMON Wiz
-register_serializer_pattern("SUMMON", "SUMMON {nick} {target:opt} {channel:opt}", deps={"channel": "target"})
+register_pattern("SUMMON", "SUMMON {nick} {target:opt} {channel:opt}", deps={"channel": "target"})
 
 # USERS
 # https://tools.ietf.org/html/rfc2812#section-4.6
@@ -593,14 +591,14 @@ register_serializer_pattern("SUMMON", "SUMMON {nick} {target:opt} {channel:opt}"
 # ----------
 # USERS remote.*.edu
 # USERS
-register_serializer_pattern("USERS", "USERS {target:opt}")
+register_pattern("USERS", "USERS {target:opt}")
 
 # WALLOPS
 # https://tools.ietf.org/html/rfc2812#section-4.7
 # WALLOPS [:<message>]
 # ----------
 # WALLOPS :Maintenance in 5 minutes
-register_serializer_pattern("WALLOPS", "WALLOPS :{message:opt}")
+register_pattern("WALLOPS", "WALLOPS :{message:opt}")
 
 # USERHOST
 # https://tools.ietf.org/html/rfc2812#section-4.8
@@ -608,7 +606,7 @@ register_serializer_pattern("WALLOPS", "WALLOPS :{message:opt}")
 # ----------
 # USERHOST Wiz Michael syrk
 # USERHOST syrk
-register_serializer_pattern("USERHOST", "USERHOST {nick:space}")
+register_pattern("USERHOST", "USERHOST {nick:space}")
 
 # ISON
 # https://tools.ietf.org/html/rfc2812#section-4.9
@@ -616,4 +614,4 @@ register_serializer_pattern("USERHOST", "USERHOST {nick:space}")
 # ----------
 # ISON Wiz Michael syrk
 # ISON syrk
-register_serializer_pattern("USERHOST", "USERHOST {nick:space}")
+register_pattern("USERHOST", "USERHOST {nick:space}")
