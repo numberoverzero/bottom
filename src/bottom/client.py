@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import ssl
 import typing as t
 
-from bottom.core import BaseClient, NextMessageHandler
+from bottom.core import BaseClient
+from bottom.irc import rfc2812_handler
 from bottom.pack import pack_command
-from bottom.unpack import unpack_command
 from bottom.util import create_task
 
-__all__ = ["Client", "rfc2812_handler", "wait_for"]
+__all__ = ["Client", "wait_for"]
 
 
 class Client(BaseClient):
@@ -228,18 +227,6 @@ class Client(BaseClient):
         """
         packed_command = pack_command(command, **kwargs).strip()
         await self.send_message(packed_command)
-
-
-rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
-
-
-async def rfc2812_handler(next_handler: NextMessageHandler[Client], client: Client, message: bytes) -> None:
-    try:
-        event, kwargs = unpack_command(message.decode(client._encoding))
-        client.trigger(event, **kwargs)
-    except ValueError:
-        rfc2812_log.debug("Failed to parse line >>> {}".format(message.decode(client._encoding)))
-    await next_handler(client, message)
 
 
 async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[dict]:

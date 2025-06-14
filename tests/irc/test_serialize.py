@@ -1,3 +1,7 @@
+# ============================================================================
+# tests for serialization primitives
+# specific command tests live in test_serialize_rfc2812.py
+# ============================================================================
 import typing as t
 from dataclasses import dataclass, field
 

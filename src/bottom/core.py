@@ -335,7 +335,8 @@ examples of customizing a :class:`Client<bottom.Client>`'s functionality.
 
 class BaseClient(EventHandler):
     message_handlers: list[ClientMessageHandler]
-    """List of message handlers that runs on each incoming IRC line from the server.
+    """
+    List of message handlers that runs on each incoming IRC line from the server.
 
     The first handler is passed the ``next_handler`` in the chain as well as the ``client`` and ``message``.  The
     handler can choose to process the message, and/or invoke the next handler, or do nothing.
