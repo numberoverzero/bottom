@@ -31,7 +31,7 @@ stp = SerializerTestPattern
 
 @dataclass(frozen=True)
 class SerializerTestCase:
-    kw_params: dict
+    params: dict
     expected: str
     # patterns: list[tuple[str, set[str], dict[str, t.Any], dict[str, str]]]
     patterns: list[SerializerTestPattern]
@@ -44,7 +44,7 @@ serializer_test_cases: list[SerializerTestCase] = [
             stp("1 {a} {b}"),
             stp("2 {a} {b}", defaults={"b": "def:b"}),
         ],
-        kw_params={"a": "kw:a"},
+        params={"a": "kw:a"},
         expected="2 kw:a def:b",
     ),
     SerializerTestCase(
@@ -53,7 +53,7 @@ serializer_test_cases: list[SerializerTestCase] = [
             stp("1 {a} {b}"),
             stp("2 {a} {b}"),
         ],
-        kw_params={"a": "kw:a", "b": "kw:b"},
+        params={"a": "kw:a", "b": "kw:b"},
         expected="1 kw:a kw:b",
     ),
     SerializerTestCase(
@@ -62,7 +62,7 @@ serializer_test_cases: list[SerializerTestCase] = [
             stp("1 {a} {b}"),
             stp("2 {a} {b} {c}", defaults={"c": "def:c"}),
         ],
-        kw_params={"a": "kw:a", "b": "kw:b"},
+        params={"a": "kw:a", "b": "kw:b"},
         expected="2 kw:a kw:b def:c",
     ),
     SerializerTestCase(
@@ -71,7 +71,7 @@ serializer_test_cases: list[SerializerTestCase] = [
             stp("1 {a} {b}", defaults={"a": "def:a", "b": "def:b"}),
             stp("2 {b} {c}", defaults={"c": "def:c"}),
         ],
-        kw_params={"b": "kw:b"},
+        params={"b": "kw:b"},
         expected="1 def:a kw:b",
     ),
     SerializerTestCase(
@@ -81,7 +81,7 @@ serializer_test_cases: list[SerializerTestCase] = [
             stp("1 {a} {b}", defaults={"a": "def:a", "b": "def:b"}),
             stp("2 {a} {b} {c}", defaults={"a": "def:a", "b": "def:b", "c": "def:c"}),
         ],
-        kw_params={},
+        params={},
         expected="2 def:a def:b def:c",
     ),
     SerializerTestCase(
@@ -90,7 +90,7 @@ serializer_test_cases: list[SerializerTestCase] = [
             stp("1 {a} {b} {c}", deps={"a": "c"}),
             stp("2 {a}"),
         ],
-        kw_params={"a": "kw:a", "b": "kw:b"},
+        params={"a": "kw:a", "b": "kw:b"},
         expected="2 kw:a",
     ),
     SerializerTestCase(
@@ -98,7 +98,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         patterns=[
             stp("1 {a}@{b:opt}@{c}"),
         ],
-        kw_params={"a": "kw:a", "c": "kw:c"},
+        params={"a": "kw:a", "c": "kw:c"},
         expected="1 kw:a@@kw:c",
     ),
     SerializerTestCase(
@@ -106,7 +106,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         patterns=[
             stp("1 {a}{b:opt}{c:opt}{z}", deps={"a": "z"}),
         ],
-        kw_params={"a": "kw:a", "z": "kw:z"},
+        params={"a": "kw:a", "z": "kw:z"},
         expected="1 kw:akw:z",
     ),
 ]
@@ -183,7 +183,7 @@ def test_serializer_cases(serializer: CommandSerializer, case: SerializerTestCas
     command = "foo"
     for pattern in case.patterns:
         pattern.register_into(command, serializer)
-    assert serializer.serialize(command, case.kw_params) == case.expected
+    assert serializer.serialize(command, case.params) == case.expected
 
 
 def test_serializer_unknown_command(serializer) -> None:
@@ -204,21 +204,21 @@ def test_default_serializer(serializer: CommandSerializer) -> None:
 
     command = "foo"
     pattern = stp("1 {a}")
-    kw_params = {"a": "kw:a"}
+    params = {"a": "kw:a"}
     expected = "1 kw:a"
 
     # explicitly pass our serializer
     pattern.register_into(command, serializer)
-    actual = module_serialize(command, kw_params, serializer=serializer)
+    actual = module_serialize(command, params, serializer=serializer)
     assert actual == expected
 
     # defaults to a serializer that doesn't know this command
     with pytest.raises(ValueError):
-        module_serialize(command, kw_params)
+        module_serialize(command, params)
 
     # register to global handler and it should succeed
     module_register(command, fmt=pattern.fmt, defaults=pattern.defaults, deps=pattern.deps)
-    actual = module_serialize(command, kw_params)
+    actual = module_serialize(command, params)
     assert actual == expected
 
 

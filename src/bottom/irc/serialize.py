@@ -19,14 +19,14 @@ class SerializerTemplate:
     original: str
     components: tuple[Component, ...]
 
-    def format(self, kwargs: ParamDict) -> str:
+    def format(self, params: ParamDict) -> str:
         parts = []
         for component in self.components:
             if isinstance(component, str):
                 parts.append(component)
             else:
                 key, fns = component
-                value = kwargs[key]
+                value = params[key]
                 for fn in fns:
                     value = fn(key, value)
                 parts.append(value)
