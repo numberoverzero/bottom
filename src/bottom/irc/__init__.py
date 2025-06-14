@@ -293,12 +293,15 @@ register_pattern("WHOIS", "WHOIS {mask:comma}")
 
 # WHOWAS
 # https://tools.ietf.org/html/rfc2812#section-3.6.3
-# WHOWAS <nick> [<count>] [<target>]
+# WHOWAS <nick> [<count> [<target>]]
 # ----------
 # WHOWAS Wiz 9 remote.*.edu
 # WHOWAS Wiz 9
 # WHOWAS Mermaid
-register_pattern("WHOWAS", "WHOWAS {nick:comma} {count:opt} {target:opt}", deps={"target": "count"})
+register_pattern("WHOWAS", "WHOWAS {nick:comma} {count} {target}")
+register_pattern("WHOWAS", "WHOWAS {nick:comma} {count}")
+register_pattern("WHOWAS", "WHOWAS {nick:comma}")
+
 
 # KILL
 # https://tools.ietf.org/html/rfc2812#section-3.7.1

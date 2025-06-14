@@ -3,6 +3,8 @@ import typing as t
 import pytest
 from bottom.irc.serialize import GLOBAL_SERIALIZER, CommandSpec
 
+from tests.helpers.base_classes import pytest_generate_tests as base_cls_gen
+
 
 @pytest.fixture(autouse=True)
 def _reset_global_serializer(request: pytest.FixtureRequest) -> t.Iterable[None]:
@@ -28,3 +30,15 @@ def _reset_global_serializer(request: pytest.FixtureRequest) -> t.Iterable[None]
             except Exception as exc:
                 msg = f"failed to remove spec ({command}, {spec}) while resetting global serializer"
                 raise RuntimeError(msg) from exc
+
+
+# add test generators to this list to avoid fighting over the pytest_generate_tests function.
+# always filter metafunc against your criteria
+generators = [
+    base_cls_gen,
+]
+
+
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
+    for generator in generators:
+        generator(metafunc)
