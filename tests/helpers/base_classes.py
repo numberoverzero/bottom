@@ -9,8 +9,8 @@ type ClassPermutations = dict[tuple | int, str]
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
-    if metafunc.cls and issubclass(metafunc.cls, BaseTest):
-        metafunc.cls.generate_tests(metafunc)
+    if metafunc.cls and issubclass(metafunc.cls, BaseTest):  # ty: ignore
+        metafunc.cls.generate_tests(metafunc)  # ty: ignore
 
 
 class BaseTest:
@@ -20,7 +20,7 @@ class BaseTest:
     The class's `generate_tests` will only be called when a test within that
     class is running.
 
-    That filtering is done in tests/conftest.py::pytest_generate_tests
+    That filtering is done in pytest_generate_tests above
     """
 
     @classmethod
