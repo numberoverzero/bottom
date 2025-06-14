@@ -43,7 +43,8 @@ register_pattern("NICK", "NICK {nick}")
 # ----------
 # USER guest 8 :Ronnie Reagan
 # USER guest :Ronnie Reagan
-register_pattern("USER", "USER {user} {mode} * :{realname}", defaults={"mode": 0})
+register_pattern("USER", "USER {user} {mode} * :{realname}")
+register_pattern("USER", "USER {user} 0 * :{realname}")
 
 # OPER
 # https://tools.ietf.org/html/rfc2812#section-3.1.4
@@ -54,12 +55,14 @@ register_pattern("OPER", "OPER {user} {password}")
 
 # USERMODE (renamed from MODE)
 # https://tools.ietf.org/html/rfc2812#section-3.1.5
-# MODE <nick> [<modes>]
+# MODE [<nick> [<modes>]]
 # ----------
 # MODE WiZ -w
 # MODE Angel +i
 # MODE
-register_pattern("USERMODE", "MODE {nick:opt} {modes:opt}", deps={"modes": "nick"})
+register_pattern("USERMODE", "MODE {nick} {modes}")
+register_pattern("USERMODE", "MODE {nick}")
+register_pattern("USERMODE", "MODE")
 
 # SERVICE
 # https://tools.ietf.org/html/rfc2812#section-3.1.6
@@ -70,20 +73,22 @@ register_pattern("SERVICE", "SERVICE {nick} * {distribution} {type} 0 :{info}")
 
 # QUIT
 # https://tools.ietf.org/html/rfc2812#section-3.1.7
-# QUIT :[<message>]
+# QUIT [:[<message>]]
 # ----------
 # QUIT :Gone to lunch
 # QUIT
-register_pattern("QUIT", "QUIT :{message:opt}")
+# TODO allow empty message
+register_pattern("QUIT", "QUIT :{message}")
 register_pattern("QUIT", "QUIT")
 
 # SQUIT
 # https://tools.ietf.org/html/rfc2812#section-3.1.8
-# SQUIT <server> [<message>]
+# SQUIT <server> [:[<message>]]
 # ----------
 # SQUIT tolsun.oulu.fi :Bad Link
 # SQUIT tolsun.oulu.fi
-register_pattern("SQUIT", "SQUIT {server} :{message:opt}")
+# TODO allow empty message
+register_pattern("SQUIT", "SQUIT {server} :{message}")
 register_pattern("SQUIT", "SQUIT {server}")
 
 # JOIN
@@ -93,19 +98,22 @@ register_pattern("SQUIT", "SQUIT {server}")
 # JOIN #foo fookey
 # JOIN #foo
 # JOIN 0
-register_pattern("JOIN", "JOIN {channel:comma} {key:opt|comma}")
+register_pattern("JOIN", "JOIN {channel:comma} {key:comma}")
+register_pattern("JOIN", "JOIN {channel:comma}")
 
 # PART
 # https://tools.ietf.org/html/rfc2812#section-3.2.2
-# PART <channel> :[<message>]
+# PART <channel> [:[<message>]]
 # ----------
 # PART #foo :I lost
 # PART #foo
-register_pattern("PART", "PART {channel:comma} :{message:opt}")
+# TODO allow empty message
+register_pattern("PART", "PART {channel:comma} :{message}")
+register_pattern("PART", "PART {channel:comma}")
 
 # CHANNELMODE (renamed from MODE)
 # https://tools.ietf.org/html/rfc2812#section-3.2.3
-# MODE <channel> <modes> [<params>]
+# MODE <channel> <modes-and-params>
 # ----------
 # MODE #Finnish +imI *!*@*.fi
 # MODE #en-ops +v WiZ
@@ -114,32 +122,36 @@ register_pattern("CHANNELMODE", "MODE {channel} {params:space}")
 
 # TOPIC
 # https://tools.ietf.org/html/rfc2812#section-3.2.4
-# TOPIC <channel> :[<message>]
+# TOPIC <channel> [:[<message>]]
 # ----------
 # TOPIC #test :New topic
 # TOPIC #test :
 # TOPIC #test
-
+# TODO allow empty message
 register_pattern("TOPIC", "TOPIC {channel} :{message}")
 register_pattern("TOPIC", "TOPIC {channel}")
 
 # NAMES
 # https://tools.ietf.org/html/rfc2812#section-3.2.5
-# NAMES [<channel>] [<target>]
+# NAMES [<channel> [<target>]]
 # ----------
 # NAMES #twilight_zone remote.*.edu
 # NAMES #twilight_zone
 # NAMES
-register_pattern("NAMES", "NAMES {channel:opt|comma} {target:opt}", deps={"target": "channel"})
+register_pattern("NAMES", "NAMES {channel:comma} {target}")
+register_pattern("NAMES", "NAMES {channel:comma}")
+register_pattern("NAMES", "NAMES")
 
 # LIST
 # https://tools.ietf.org/html/rfc2812#section-3.2.6
-# LIST [<channel>] [<target>]
+# LIST [<channel> [<target>]]
 # ----------
 # LIST #twilight_zone remote.*.edu
 # LIST #twilight_zone
 # LIST
-register_pattern("LIST", "LIST {channel:opt|comma} {target:opt}", deps={"target": "channel"})
+register_pattern("LIST", "LIST {channel:comma} {target}")
+register_pattern("LIST", "LIST {channel:comma}")
+register_pattern("LIST", "LIST")
 
 # INVITE
 # https://tools.ietf.org/html/rfc2812#section-3.2.7
@@ -150,11 +162,12 @@ register_pattern("INVITE", "INVITE {nick} {channel}")
 
 # KICK
 # https://tools.ietf.org/html/rfc2812#section-3.2.8
-# KICK <channel> <nick> :[<message>]
+# KICK <channel> <nick> [:[<message>]]
 # ----------
 # KICK #Finnish WiZ :Speaking English
 # KICK #Finnish WiZ,Wiz-Bot :Both speaking English
 # KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
+# TODO allow empty message
 register_pattern("KICK", "KICK {channel:comma} {nick:comma} :{message}")
 register_pattern("KICK", "KICK {channel:comma} {nick:comma}")
 
@@ -182,16 +195,19 @@ register_pattern("NOTICE", "NOTICE {target} {message}")
 # ----------
 # MOTD remote.*.edu
 # MOTD
-register_pattern("MOTD", "MOTD {target:opt}")
+register_pattern("MOTD", "MOTD {target}")
+register_pattern("MOTD", "MOTD")
 
 # LUSERS
 # https://tools.ietf.org/html/rfc2812#section-3.4.2
-# LUSERS [<mask>] [<target>]
+# LUSERS [<mask> [<target>]]
 # ----------
 # LUSERS *.edu remote.*.edu
 # LUSERS *.edu
 # LUSERS
-register_pattern("LUSERS", "LUSERS {mask:opt} {target:opt}", deps={"target": "mask"})
+register_pattern("LUSERS", "LUSERS {mask} {target}")
+register_pattern("LUSERS", "LUSERS {mask}")
+register_pattern("LUSERS", "LUSERS")
 
 # VERSION
 # https://tools.ietf.org/html/rfc2812#section-3.4.3
@@ -199,26 +215,30 @@ register_pattern("LUSERS", "LUSERS {mask:opt} {target:opt}", deps={"target": "ma
 # ----------
 # VERSION remote.*.edu
 # VERSION
-register_pattern("VERSION", "VERSION {target:opt}")
+register_pattern("VERSION", "VERSION {target}")
+register_pattern("VERSION", "VERSION")
 
 # STATS
 # https://tools.ietf.org/html/rfc2812#section-3.4.4
-# STATS [<query>] [<target>]
+# STATS [<query> [<target>]]
 # ----------
 # STATS m remote.*.edu
 # STATS m
 # STATS
-register_pattern("STATS", "STATS {query:opt} {target:opt}", deps={"target": "query"})
+register_pattern("STATS", "STATS {query} {target}")
+register_pattern("STATS", "STATS {query}")
+register_pattern("STATS", "STATS")
 
 # LINKS
 # https://tools.ietf.org/html/rfc2812#section-3.4.5
-# LINKS [<remote>] [<mask>]
+# LINKS [[<remote>] <mask>]
 # ----------
 # LINKS *.edu *.bu.edu
 # LINKS *.au
 # LINKS
 register_pattern("LINKS", "LINKS {remote} {mask}")
-register_pattern("LINKS", "LINKS {mask:opt}")
+register_pattern("LINKS", "LINKS {mask}")
+register_pattern("LINKS", "LINKS")
 
 # TIME
 # https://tools.ietf.org/html/rfc2812#section-3.4.6
@@ -226,7 +246,8 @@ register_pattern("LINKS", "LINKS {mask:opt}")
 # ----------
 # TIME remote.*.edu
 # TIME
-register_pattern("TIME", "TIME {target:opt}")
+register_pattern("TIME", "TIME {target}")
+register_pattern("TIME", "TIME")
 
 # CONNECT
 # https://tools.ietf.org/html/rfc2812#section-3.4.7
@@ -234,37 +255,43 @@ register_pattern("TIME", "TIME {target:opt}")
 # ----------
 # CONNECT tolsun.oulu.fi 6667 *.edu
 # CONNECT tolsun.oulu.fi 6667
-register_pattern("CONNECT", "CONNECT {target} {port} {remote:opt}")
+register_pattern("CONNECT", "CONNECT {target} {port} {remote}")
+register_pattern("CONNECT", "CONNECT {target} {port}")
 
 # TRACE
 # https://tools.ietf.org/html/rfc2812#section-3.4.8
 # TRACE [<target>]
 # ----------
 # TRACE
-register_pattern("TRACE", "TRACE {target:opt}")
+register_pattern("TRACE", "TRACE {target}")
+register_pattern("TRACE", "TRACE")
 
 # ADMIN
 # https://tools.ietf.org/html/rfc2812#section-3.4.9
 # ADMIN [<target>]
 # ----------
 # ADMIN
-register_pattern("ADMIN", "ADMIN {target:opt}")
+register_pattern("ADMIN", "ADMIN {target}")
+register_pattern("ADMIN", "ADMIN")
 
 # INFO
 # https://tools.ietf.org/html/rfc2812#section-3.4.10
 # INFO [<target>]
 # ----------
 # INFO
-register_pattern("INFO", "INFO {target:opt}")
+register_pattern("INFO", "INFO {target}")
+register_pattern("INFO", "INFO")
 
 # SERVLIST
 # https://tools.ietf.org/html/rfc2812#section-3.5.1
-# SERVLIST [<mask>] [<type>]
+# SERVLIST [<mask> [<type>]]
 # ----------
 # SERVLIST *SERV 3
 # SERVLIST *SERV
 # SERVLIST
-register_pattern("SERVLIST", "SERVLIST {mask:opt} {type:opt}", deps={"type": "mask"})
+register_pattern("SERVLIST", "SERVLIST {mask} {type}")
+register_pattern("SERVLIST", "SERVLIST {mask}")
+register_pattern("SERVLIST", "SERVLIST")
 
 # SQUERY
 # https://tools.ietf.org/html/rfc2812#section-3.5.2
@@ -275,12 +302,14 @@ register_pattern("SQUERY", "SQUERY {target} :{message}")
 
 # WHO
 # https://tools.ietf.org/html/rfc2812#section-3.6.1
-# WHO [<mask>] ["o"]
+# WHO [<mask> ["o"]]
 # ----------
 # WHO jto* o
 # WHO *.fi
 # WHO
-register_pattern("WHO", "WHO {mask:opt} {o:opt|bool}", deps={"o": "mask"})
+register_pattern("WHO", "WHO {mask} {o:bool}")
+register_pattern("WHO", "WHO {mask}")
+register_pattern("WHO", "WHO")
 
 # WHOIS
 # https://tools.ietf.org/html/rfc2812#section-3.6.2
@@ -318,23 +347,27 @@ register_pattern("KILL", "KILL {nick} :{message}")
 # PING my-ping-token eff.org
 # note:
 #   https://github.com/ngircd/ngircd/blob/512af135d06e7dad93f51eae51b3979e1d4005cc/doc/Commands.txt#L146-L153
-register_pattern("PING", "PING {message:nospace} {target:opt}")
+register_pattern("PING", "PING {message:nospace} {target}")
+register_pattern("PING", "PING {message:nospace}")
 
 # PONG
 # https://tools.ietf.org/html/rfc2812#section-3.7.3
-# PONG :[<message>]
+# PONG [:[<message>]]
 # ----------
 # PONG :I'm still here
 # PONG
-register_pattern("PONG", "PONG :{message:opt}")
+# TODO allow empty message
+register_pattern("PONG", "PONG :{message}")
+register_pattern("PONG", "PONG")
 
 # AWAY
 # https://tools.ietf.org/html/rfc2812#section-4.1
-# AWAY [:<message>]
+# AWAY [:[<message>]]
 # ----------
 # AWAY :Gone to lunch.
 # AWAY
-register_pattern("AWAY", "AWAY :{message:opt}")
+# TODO allow empty message
+register_pattern("AWAY", "AWAY :{message}")
 register_pattern("AWAY", "AWAY")
 
 # REHASH
@@ -360,12 +393,14 @@ register_pattern("RESTART", "RESTART")
 
 # SUMMON
 # https://tools.ietf.org/html/rfc2812#section-4.5
-# SUMMON <nick> [<target>] [<channel>]
+# SUMMON <nick> [<target> [<channel>]]
 # ----------
 # SUMMON Wiz remote.*.edu #Finnish
 # SUMMON Wiz remote.*.edu
 # SUMMON Wiz
-register_pattern("SUMMON", "SUMMON {nick} {target:opt} {channel:opt}", deps={"channel": "target"})
+register_pattern("SUMMON", "SUMMON {nick} {target} {channel}")
+register_pattern("SUMMON", "SUMMON {nick} {target}")
+register_pattern("SUMMON", "SUMMON {nick}")
 
 # USERS
 # https://tools.ietf.org/html/rfc2812#section-4.6
@@ -373,14 +408,16 @@ register_pattern("SUMMON", "SUMMON {nick} {target:opt} {channel:opt}", deps={"ch
 # ----------
 # USERS remote.*.edu
 # USERS
-register_pattern("USERS", "USERS {target:opt}")
+register_pattern("USERS", "USERS {target}")
+register_pattern("USERS", "USERS")
 
 # WALLOPS
 # https://tools.ietf.org/html/rfc2812#section-4.7
-# WALLOPS [:<message>]
+# WALLOPS :<message>
 # ----------
 # WALLOPS :Maintenance in 5 minutes
-register_pattern("WALLOPS", "WALLOPS :{message:opt}")
+# TODO allow empty message
+register_pattern("WALLOPS", "WALLOPS :{message}")
 
 # USERHOST
 # https://tools.ietf.org/html/rfc2812#section-4.8
