@@ -10,6 +10,12 @@ __all__ = ["CommandSerializer", "register_pattern", "serialize"]
 
 type ParamDict = dict[str, t.Any]
 
+EFFECTIVELY_MISSING = (None, "")
+
+
+def filter_params(params: ParamDict) -> ParamDict:
+    return {k: v for (k, v) in params.items() if v not in EFFECTIVELY_MISSING}
+
 
 @dataclass(frozen=True)
 class SerializerTemplate:
@@ -86,7 +92,9 @@ class CommandSpec:
     def max_score(self) -> int:
         return len(self.params)
 
-    def serialize(self, params: ParamDict) -> str:
+    def serialize(self, params: ParamDict, filtered: bool = False) -> str:
+        if not filtered:
+            params = filter_params(params)
         loaded = {}
         for param in self.params:
             key = param.name
@@ -188,13 +196,12 @@ class CommandSerializer:
         if command not in self.commands:
             raise ValueError(f"Unknown command {command!r}")
 
-        # None is the same as not passing a value
-        params = {key: value for (key, value) in params.items() if value is not None}
+        params = filter_params(params)
 
         last_err = None
         for candidate in self.commands[command]:
             try:
-                return candidate.serialize(params)
+                return candidate.serialize(params, filtered=True)
             except Exception as err:
                 last_err = err
 

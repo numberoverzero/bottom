@@ -31,6 +31,7 @@ stp = SerializerTestPattern
 
 @dataclass(frozen=True)
 class SerializerTestCase:
+    id: str
     params: dict
     expected: str
     # patterns: list[tuple[str, set[str], dict[str, t.Any], dict[str, str]]]
@@ -39,7 +40,7 @@ class SerializerTestCase:
 
 serializer_test_cases: list[SerializerTestCase] = [
     SerializerTestCase(
-        # first missing required
+        "first missing required",
         patterns=[
             stp("1 {a} {b}"),
             stp("2 {a} {b}", defaults={"b": "def:b"}),
@@ -48,7 +49,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="2 kw:a def:b",
     ),
     SerializerTestCase(
-        # on ties, first registered wins
+        "register order breaks ties",
         patterns=[
             stp("1 {a} {b}"),
             stp("2 {a} {b}"),
@@ -57,7 +58,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="1 kw:a kw:b",
     ),
     SerializerTestCase(
-        # defaults count towards score, before tie breaks
+        "total count before tie breaks",
         patterns=[
             stp("1 {a} {b}"),
             stp("2 {a} {b} {c}", defaults={"c": "def:c"}),
@@ -66,17 +67,25 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="2 kw:a kw:b def:c",
     ),
     SerializerTestCase(
-        # required doesn't score higher than defaults; ordering still tie breaks
+        "repetition doesn't tiebreak",
         patterns=[
-            stp("1 {a} {b}", defaults={"a": "def:a", "b": "def:b"}),
-            stp("2 {b} {c}", defaults={"c": "def:c"}),
+            stp("1 {c}"),
+            stp("2 {c} {c} {c}"),
         ],
-        params={"b": "kw:b"},
-        expected="1 def:a kw:b",
+        params={"a": "kw:a", "c": "kw:c"},
+        expected="1 kw:c",
     ),
     SerializerTestCase(
-        # when no params given, highest score is whichever has no reqs and
-        # most defaults
+        "max score takes first match",
+        patterns=[
+            stp("1 {a} {b} {d}", defaults={"a": "def:a", "b": "def:b"}),
+            stp("2 {c} {b} {d}", defaults={"c": "def:c"}),
+        ],
+        params={"b": "kw:b", "d": "kw:d"},
+        expected="1 def:a kw:b kw:d",
+    ),
+    SerializerTestCase(
+        "req==default when scoring",
         patterns=[
             stp("1 {a} {b}", defaults={"a": "def:a", "b": "def:b"}),
             stp("2 {a} {b} {c}", defaults={"a": "def:a", "b": "def:b", "c": "def:c"}),
@@ -85,7 +94,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="2 def:a def:b def:c",
     ),
     SerializerTestCase(
-        # first pattern has more matched but missing dependency
+        "missing dependency overcomes match count",
         patterns=[
             stp("1 {a} {b} {c}", deps={"a": "c"}),
             stp("2 {a}"),
@@ -94,7 +103,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="2 kw:a",
     ),
     SerializerTestCase(
-        # opt provides empty strings when missing
+        "opt provides empty strings",
         patterns=[
             stp("1 {a}@{b:opt}@{c}"),
         ],
@@ -102,7 +111,7 @@ serializer_test_cases: list[SerializerTestCase] = [
         expected="1 kw:a@@kw:c",
     ),
     SerializerTestCase(
-        # forward dependency - relies on sorting the input to the deque
+        "forward dependency still resolves",
         patterns=[
             stp("1 {a}{b:opt}{c:opt}{z}", deps={"a": "z"}),
         ],
@@ -178,7 +187,7 @@ def test_command_spec_invalid_defaults() -> None:
         CommandSpec.parse("foo", template, req=req, opt=opt, defaults={"template": None}, deps={})
 
 
-@pytest.mark.parametrize("case", serializer_test_cases)
+@pytest.mark.parametrize("case", serializer_test_cases, ids=lambda case: case.id)
 def test_serializer_cases(serializer: CommandSerializer, case: SerializerTestCase) -> None:
     command = "foo"
     for pattern in case.patterns:
@@ -191,12 +200,27 @@ def test_serializer_unknown_command(serializer) -> None:
         serializer.serialize("unknown", {})
 
 
-def test_serializer_missing_args() -> None:
+@pytest.mark.parametrize(
+    "params",
+    [
+        {},
+        {"valid": "", "template": ""},
+        {"valid": None, "template": None},
+        {"valid": "valid"},
+        {"valid": "valid", "template": ""},
+        {"valid": "valid", "template": None},
+        {"template": "template"},
+        {"template": "template", "valid": ""},
+        {"template": "template", "valid": None},
+    ],
+    ids=str,
+)
+def test_serializer_missing_args(params) -> None:
     """command is missing required params"""
     template, req, opt = SerializerTemplate.parse("{valid} {template}", {})
     command = CommandSpec.parse("foo", template=template, req=req, opt=opt, defaults={}, deps={})
     with pytest.raises(ValueError):
-        command.serialize({"valid": "kw:a"})
+        command.serialize(params)
 
 
 def test_default_serializer(serializer: CommandSerializer) -> None:
@@ -230,14 +254,12 @@ def test_default_serializer(serializer: CommandSerializer) -> None:
         ("{a:bool}", {"a": "foo"}, "a"),
         ("{a:bool}", {"a": ["foo"]}, "a"),
         ("{a:bool}b", {"a": False}, "b"),
-        ("{a:bool}b", {"a": ""}, "b"),
         ("{a:bool}b", {"a": []}, "b"),
         # default formatter (str)
         ("{a:}", {"a": False}, "False"),
         ("{a:}", {"a": []}, "[]"),
         # join formatter -> "".join(param[name])
         ("{a:join}", {"a": []}, ""),
-        ("{a:join}", {"a": ""}, ""),
         # join leaves non-str, non-iterable intact
         ("{a:join}", {"a": False}, "False"),
         # join leaves str intact
@@ -247,7 +269,6 @@ def test_default_serializer(serializer: CommandSerializer) -> None:
         ("{a:join}", {"a": [1, 2]}, "12"),
         # comma formatter -> ",".join(param[name])
         ("{a:comma}", {"a": []}, ""),
-        ("{a:comma}", {"a": ""}, ""),
         # comma leaves non-str, non-iterable intact
         ("{a:comma}", {"a": False}, "False"),
         # comma leaves str intact
@@ -257,7 +278,6 @@ def test_default_serializer(serializer: CommandSerializer) -> None:
         ("{a:comma}", {"a": [1, 2]}, "1,2"),
         # space formatter -> " ".join(param[name])
         ("{a:space}", {"a": []}, ""),
-        ("{a:space}", {"a": ""}, ""),
         # space leaves non-str, non-iterable intact
         ("{a:space}", {"a": False}, "False"),
         # space leaves str intact
@@ -266,7 +286,6 @@ def test_default_serializer(serializer: CommandSerializer) -> None:
         # space converts non-str before joining
         ("{a:space}", {"a": [1, 2]}, "1 2"),
         # successful guards
-        ("{a:nospace}", {"a": ""}, ""),
         ("{a:nospace}", {"a": "ab"}, "ab"),
         ("{a:nospace}", {"a": True}, "True"),
     ],
