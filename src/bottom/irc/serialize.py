@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import collections.abc
-import math
 import string
 import typing as t
 from dataclasses import dataclass
@@ -19,8 +18,10 @@ class SerializingTemplate:
 
     original: str
     components: tuple[Component, ...]
+    opt: tuple[str, ...]
+    req: tuple[str, ...]
 
-    def format(self, **kwargs: t.Any) -> str:
+    def format(self, kwargs: ParamDict) -> str:
         parts = []
         for component in self.components:
             if isinstance(component, str):
@@ -34,11 +35,12 @@ class SerializingTemplate:
         return "".join(parts).strip()
 
     @classmethod
-    def from_str(cls, template: str, fns: dict[str, ComputedStr]) -> tuple[SerializingTemplate, set[str], set[str]]:
+    def parse(cls, template: str, formatters: dict[str, ComputedStr]) -> SerializingTemplate:
         required = set()
         optional = set()
         components: list[SerializingTemplate.Component] = []
-
+        # otherwise "{x}" will fail to format
+        formatters.setdefault("", lambda _, value: format(value))
         fields = string.Formatter().parse(template)
         for literal_text, field_name, format_spec, conversion in fields:
             format_spec = format_spec or ""
@@ -51,21 +53,26 @@ class SerializingTemplate:
             components.append(literal_text)
 
             if field_name is not None:
-                formatters = format_spec.split("|")
-                if formatters[0] == "opt":
-                    formatters.pop(0)
+                fnames = format_spec.split("|")
+                if fnames[0] == "opt":
+                    fnames.pop(0)
                     optional.add(field_name)
                 else:
                     required.add(field_name)
-                if unknown := [f for f in formatters if f not in fns]:
+                if not fnames or fnames[-1] != "":
+                    fnames.append("")
+                if unknown := [fname for fname in fnames if fname not in formatters]:
                     raise ValueError(f"invalid template {template!r} -- unknown formatters {unknown}")
-                if not formatters or formatters[-1] != "":
-                    formatters.append("")
-                field_formatters = tuple([fns[formatter_name] for formatter_name in formatters])
+                field_formatters = tuple([formatters[fname] for fname in fnames])
                 computed: SerializingTemplate.Component = (field_name, field_formatters)
                 components.append(computed)
 
-        return SerializingTemplate(original=template, components=tuple(components)), required, optional
+        return SerializingTemplate(
+            original=template,
+            components=tuple(components),
+            req=tuple(required),
+            opt=tuple(optional),
+        )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -74,9 +81,6 @@ class ParamSpec[T]:
     default: T | None
     depends_on: tuple[ParamSpec, ...]
 
-    def has_dependencies(self, available: dict[ParamSpec, t.Any]) -> bool:
-        return all(dep in available for dep in self.depends_on)
-
 
 @dataclass(frozen=True, kw_only=True)
 class CommandSpec:
@@ -84,61 +88,84 @@ class CommandSpec:
     params: tuple[ParamSpec, ...]
     template: SerializingTemplate
 
-    def score(self, kw_params: ParamDict) -> int:
-        """returns -1 if kw_params are missing required or missing dependencies, otherwise sum(available params)"""
-        # TODO combine with pack?
-        total = 0
-        available: dict[ParamSpec, t.Any] = {}
-        for param in self.params:
-            value = kw_params.get(param.name)
-            # required param is missing
-            if value is None and param.default is None:
-                return -1
-            elif value is not None:
-                available[param] = value
-            elif param.default not in (None, ""):
-                available[param] = param.default
-            elif param.default is None:
-                raise RuntimeError("programming error, all defaults should be non-None")
-        for param in self.params:
-            # already filtered out missing requirements
-            if param in available:
-                # ok: param and deps available
-                if param.has_dependencies(available):
-                    total += 1
-                # error: missing dependency
-                else:
-                    return -1
-        return total
+    @property
+    def max_score(self) -> int:
+        return len(self.params)
 
-    def pack(self, kw_params: ParamDict) -> str:
-        # TODO combine with score?
-        filtered: ParamDict = {}
+    def serialize(self, params: ParamDict) -> str:
+        loaded = {}
         for param in self.params:
-            value = kw_params.get(param.name)
+            key = param.name
+            value = params.get(key, param.default)
             if value is None:
-                value = param.default
-            if value is not None:
-                filtered[param.name] = value
-            else:
-                print("TODO: unexpected entry into failsafe branch")
-                filtered[param.name] = ""
-        return self.template.format(**filtered)
+                raise ValueError(f"missing required param {key}")
+            loaded[key] = value
+        return self.template.format(loaded)
 
-    def __repr__(self) -> str:  # pragma: no cover
-        required = ", ".join(param.name for param in self.params if param.default is None)
-        defaults = ", ".join(param.name for param in self.params if param.default in (None, ""))
-        return f"CommandSpec({self.template!r}, req=({required}), def=({defaults}))"
+    @classmethod
+    def parse(
+        cls, command: str, template: SerializingTemplate, defaults: dict[str, t.Any], deps: dict[str, str]
+    ) -> CommandSpec:
+        params: dict[str, ParamSpec] = dict()
+
+        if any(v is None for v in defaults.values()):
+            raise ValueError(f"default values must be non-null, but got: {defaults}")
+
+        req = set(template.req)
+        opt = set(template.opt)
+        # remove defaults from req; add defaults to opt
+        req.difference_update(defaults.keys())
+        opt.update(defaults.keys())
+
+        # all deps known
+        known = req.union(opt)
+
+        if __debug__:  # ty: ignore https://github.com/astral-sh/ty/issues/577
+            # no overlap
+            assert not req.intersection(opt)
+
+            # known includes all template variables, provided defaults, and all dependency information
+            dep_refs = set(deps.keys()).union(deps.values())
+            def_refs = set(defaults.keys())
+            assert known.issuperset(dep_refs)
+            assert known.issuperset(def_refs)
+
+        # WARN: no circular dependency detection.  don't do that.
+        # note: sorted so tests can ensure dependency deferral
+        names = collections.deque(sorted(known))
+        while names:
+            name = names.popleft()
+            depends_on = ()
+            if dependency_name := deps.get(name):
+                if maybe_dependency := params.get(dependency_name):
+                    depends_on = (maybe_dependency,)
+                else:
+                    # has a dependency but we haven't defined it yet.
+                    # process the next name.
+                    names.append(name)
+                    continue
+
+            if name in req:
+                default = None
+            else:
+                # optionals use "" unless we provided an explicit default
+                default = defaults.get(name, "")
+
+            params[name] = ParamSpec(
+                name=name,
+                default=default,
+                depends_on=depends_on,
+            )
+        return CommandSpec(command=command, params=tuple(params.values()), template=template)
 
 
 class CommandSerializer:
+    formatters: dict[str, SerializingTemplate.ComputedStr]
     commands: dict[str, list[CommandSpec]]
 
-    def __init__(self, formatters: dict[str, SerializingTemplate.ComputedStr] | None = None) -> None:
-        self.commands = {}
-        if formatters is None:
-            formatters = dict(DEFAULT_FORMATTERS)
+    def __init__(self, formatters: dict[str, SerializingTemplate.ComputedStr]) -> None:
         self.formatters = formatters
+        self.commands = {}
 
     def register(
         self,
@@ -148,67 +175,35 @@ class CommandSerializer:
         deps: dict[str, str],
     ) -> CommandSpec:
         command = command.strip().upper()
-        params: dict[str, ParamSpec] = dict()
-        template, req, opt = SerializingTemplate.from_str(fmt, fns=self.formatters)
+        template = SerializingTemplate.parse(fmt, formatters=self.formatters)
+        spec = CommandSpec.parse(command, template=template, defaults=defaults, deps=deps)
 
-        # remove defaults from req; add defaults to opt
-        req.difference_update(defaults.keys())
-        opt.update(defaults.keys())
-
-        # no overlap
-        assert not req.intersection(opt)
-        # all deps known
-        known = req.union(opt)
-        dep_refs = set(deps.keys()).union(deps.values())
-        def_refs = set(defaults.keys())
-        assert known.issuperset(dep_refs)
-        assert known.issuperset(def_refs)
-
-        # WARN: no circular dependency detection.  don't do that.
-        names = collections.deque(known)
-        while names:
-            name = names.popleft()
-            depends_on = ()
-            if dependency_name := deps.get(name):
-                if dependency := params.get(dependency_name):
-                    depends_on = (dependency,)
-                else:
-                    # missing dependency for this param
-                    # don't make a new param, just go around again
-                    names.append(name)
-                    continue
-
-            if name in req:
-                default = None
-            else:
-                default = defaults.get(name, "")
-                assert default is not None
-
-            param = ParamSpec(
-                name=name,
-                default=default,
-                depends_on=depends_on,
-            )
-            params[name] = param
-        spec = CommandSpec(command=command, params=tuple(params.values()), template=template)
-        self.commands.setdefault(command, []).append(spec)
+        # maintain descending sort by max possible score
+        # this way serialize can stop on the first non-error result
+        commands = self.commands.setdefault(command, [])
+        commands.append(spec)
+        commands.sort(key=lambda x: x.max_score, reverse=True)
         return spec
 
-    def serialize(self, command: str, kw_params: ParamDict) -> str:
+    def serialize(self, command: str, params: ParamDict) -> str:
         command = command.strip().upper()
         if command not in self.commands:
             raise ValueError(f"Unknown command {command!r}")
-        spec, highest = None, -math.inf
+
+        # None is the same as not passing a value
+        params = {key: value for (key, value) in params.items() if value is not None}
+
+        last_err = None
         for candidate in self.commands[command]:
-            score = candidate.score(kw_params)
-            # on tie, first registered wins
-            if score > highest:
-                highest = score
-                spec = candidate
-        assert spec is not None
-        if highest < 0:
-            raise ValueError(f"Missing arguments for command {command!r}.  Closest match: {spec}")
-        return spec.pack(kw_params).strip()
+            try:
+                return candidate.serialize(params)
+            except Exception as err:
+                last_err = err
+
+        # last err was from the command with the least params that didn't match
+        n = len(self.commands[command])
+        summary = ValueError(f"params were invalid for {n} forms of the command {command}")
+        raise summary from last_err
 
 
 def join_iterable[T: t.Iterable | t.Any](_key: str, value: T, delim: str) -> T | str:
@@ -219,14 +214,14 @@ def join_iterable[T: t.Iterable | t.Any](_key: str, value: T, delim: str) -> T |
     return value
 
 
-def guard_no_spaces[T: t.Any](key: str, value: T, delim: str) -> T | str:
+def guard_no_spaces[T: t.Any](key: str, value: T) -> T | str:
     as_str = str(value)
     if " " in as_str:
         raise ValueError(f"error: {key} cannot contain spaces")
     return as_str
 
 
-DEFAULT_FORMATTERS = {
+GLOBAL_FORMATTERS = {
     "bool": lambda key, value: key if value else "",
     "nospace": guard_no_spaces,
     "join": lambda key, value: join_iterable(key, value, ""),
@@ -234,7 +229,7 @@ DEFAULT_FORMATTERS = {
     "space": lambda key, value: join_iterable(key, value, " "),
     "": lambda _, value: format(value),
 }
-GLOBAL_COMMAND_SERIALIZER = CommandSerializer(formatters=DEFAULT_FORMATTERS)
+GLOBAL_COMMAND_SERIALIZER = CommandSerializer(formatters=GLOBAL_FORMATTERS)
 
 
 def register_serializer_pattern(
@@ -247,8 +242,8 @@ def register_serializer_pattern(
     return serializer.register(command, fmt, defaults=defaults or {}, deps=deps or {})
 
 
-def serialize(command: str, kw_params: ParamDict, *, serializer: CommandSerializer = GLOBAL_COMMAND_SERIALIZER) -> str:
-    return serializer.serialize(command, kw_params)
+def serialize(command: str, params: ParamDict, *, serializer: CommandSerializer = GLOBAL_COMMAND_SERIALIZER) -> str:
+    return serializer.serialize(command, params)
 
 
 # PASS
