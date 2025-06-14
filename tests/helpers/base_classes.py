@@ -5,7 +5,7 @@ from bottom.irc.serialize import serialize
 
 type ClassArgs = list[tuple[str, t.Any]]
 type ClassExpected = dict[str, str | type[Exception]]
-type ClassPermutations = dict[tuple | int, str]
+type ClassPermutations = dict[tuple, str]
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -46,14 +46,17 @@ class BaseSerializeTest(BaseTest):
     def generate_tests(cls, metafunc: pytest.Metafunc) -> None:
         argnames = ("params", "expected")
         argvalues = []
+        ids = []
         for param_keys, expected_key in cls.permutations.items():
+            params = cls.build_params(param_keys)
+            ids.append(", ".join([f"{k}={v}" for (k, v) in sorted(params.items())]))
             argvalues.append(
                 (
-                    cls.build_params(param_keys),
+                    params,
                     cls.expected_map[expected_key],
                 )
             )
-        metafunc.parametrize(argnames, argvalues)
+        metafunc.parametrize(argnames, argvalues, ids=ids)
 
     @classmethod
     def build_params(cls, param_keys: int | tuple[int, ...]) -> dict[str, t.Any]:
@@ -74,4 +77,5 @@ class BaseSerializeTest(BaseTest):
                 loc = f"{cls.__name__}.arg_map[{index}]"
                 raise RuntimeError(f"{loc} had unexpected arg_spec: {arg_spec!r}")
             params[name] = value
+
         return params

@@ -3,6 +3,7 @@
 # serialization primitives tests live in test_serialize.py
 # ============================================================================
 from tests.helpers.base_classes import BaseSerializeTest
+from tests.helpers.fns import base_permutations
 
 
 class Test_WHOWAS(BaseSerializeTest):
@@ -19,13 +20,12 @@ class Test_WHOWAS(BaseSerializeTest):
         "count": "WHOWAS n0 3",
         "all": "WHOWAS n0 3 eff.org",
     }
-    permutations = {
-        (): "ERR",
-        (1): "ERR",
-        (2): "ERR",
-        (1, 2): "ERR",
-        (0): "nick",
-        (0, 1): "count",
-        (0, 2): "nick",
-        (0, 1, 2): "all",
-    }
+    permutations = base_permutations([0, 1, 2], "ERR")
+    permutations.update(
+        {
+            (0,): "nick",
+            (0, 1): "count",
+            (0, 2): "nick",
+            (0, 1, 2): "all",
+        }
+    )
