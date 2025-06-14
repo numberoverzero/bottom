@@ -4,7 +4,7 @@ import pytest
 from bottom.core import Protocol
 from bottom.util import create_task, join_tasks
 
-from tests.conftest import busy_wait
+from tests.helpers.fns import busy_wait
 
 
 async def test_multiple_connect_protocol(client_protocol):

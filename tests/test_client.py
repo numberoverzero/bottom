@@ -5,7 +5,7 @@ from bottom.client import wait_for
 from bottom.core import Protocol
 from bottom.util import create_task
 
-from tests.conftest import busy_wait
+from tests.helpers.fns import busy_wait
 
 
 async def test_connect(client):
@@ -19,7 +19,6 @@ async def test_ping_pong(client, server):
 
     @client.on("PING")
     async def pong(message, **kwargs):
-        print("sent pong")
         await client.send("pong", message=message[::-1])
 
     async def run():

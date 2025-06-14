@@ -94,7 +94,7 @@ known-third-party = ["bottom"]
 [tool.ruff.lint.per-file-ignores]
 # Ignore missing type annotations in tests
 "conftest.py" = ["ANN"]
-"test_*.py" = ["ANN"]
+"test_*.py" = ["ANN", "RUF012"]
 
 "v3.0.0.py" = ["E402"]
 
