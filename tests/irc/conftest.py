@@ -1,19 +1,19 @@
 import typing as t
 
 import pytest
-from bottom.irc.serialize import GLOBAL_SERIALIZER, CommandSpec
+from bottom.irc.serialize import GLOBAL_SERIALIZER, SerializerTemplate
 
 from tests.helpers.base_classes import pytest_generate_tests as base_cls_gen
 
 
 @pytest.fixture(autouse=True)
 def _reset_global_serializer(request: pytest.FixtureRequest) -> t.Iterable[None]:
-    new: list[tuple[str, CommandSpec]] = []
+    new: list[tuple[str, SerializerTemplate]] = []
     original_register = GLOBAL_SERIALIZER.register
 
-    def register(command: str, fmt: str, defaults: dict[str, t.Any], deps: dict[str, str]) -> CommandSpec:
+    def register(command: str, template: str | SerializerTemplate) -> SerializerTemplate:
         command = command.strip().upper()
-        spec = original_register(command, fmt=fmt, defaults=defaults, deps=deps)
+        spec = original_register(command, template=template)
         new.append((command, spec))
         return spec
 
@@ -22,14 +22,13 @@ def _reset_global_serializer(request: pytest.FixtureRequest) -> t.Iterable[None]
         yield
     finally:
         GLOBAL_SERIALIZER.register = original_register  # ty: ignore
-        to_cleanup = new[:]
-        new.clear()
-        for command, spec in to_cleanup:
+        for command, template in new:
             try:
-                GLOBAL_SERIALIZER.commands[command].remove(spec)
+                GLOBAL_SERIALIZER.templates[command].remove(template)
             except Exception as exc:
-                msg = f"failed to remove spec ({command}, {spec}) while resetting global serializer"
+                msg = f"failed to remove spec ({command}, {template}) while resetting global serializer"
                 raise RuntimeError(msg) from exc
+        new.clear()
 
 
 # add test generators to this list to avoid fighting over the pytest_generate_tests function.

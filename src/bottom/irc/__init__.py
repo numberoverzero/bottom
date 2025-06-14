@@ -77,7 +77,6 @@ register_pattern("SERVICE", "SERVICE {nick} * {distribution} {type} 0 :{info}")
 # ----------
 # QUIT :Gone to lunch
 # QUIT
-# TODO allow empty message
 register_pattern("QUIT", "QUIT :{message}")
 register_pattern("QUIT", "QUIT")
 
@@ -87,7 +86,6 @@ register_pattern("QUIT", "QUIT")
 # ----------
 # SQUIT tolsun.oulu.fi :Bad Link
 # SQUIT tolsun.oulu.fi
-# TODO allow empty message
 register_pattern("SQUIT", "SQUIT {server} :{message}")
 register_pattern("SQUIT", "SQUIT {server}")
 
@@ -107,7 +105,6 @@ register_pattern("JOIN", "JOIN {channel:comma}")
 # ----------
 # PART #foo :I lost
 # PART #foo
-# TODO allow empty message
 register_pattern("PART", "PART {channel:comma} :{message}")
 register_pattern("PART", "PART {channel:comma}")
 
@@ -127,7 +124,6 @@ register_pattern("CHANNELMODE", "MODE {channel} {params:space}")
 # TOPIC #test :New topic
 # TOPIC #test :
 # TOPIC #test
-# TODO allow empty message
 register_pattern("TOPIC", "TOPIC {channel} :{message}")
 register_pattern("TOPIC", "TOPIC {channel}")
 
@@ -167,7 +163,6 @@ register_pattern("INVITE", "INVITE {nick} {channel}")
 # KICK #Finnish WiZ :Speaking English
 # KICK #Finnish WiZ,Wiz-Bot :Both speaking English
 # KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
-# TODO allow empty message
 register_pattern("KICK", "KICK {channel:comma} {nick:comma} :{message}")
 register_pattern("KICK", "KICK {channel:comma} {nick:comma}")
 
@@ -356,7 +351,6 @@ register_pattern("PING", "PING {message:nospace}")
 # ----------
 # PONG :I'm still here
 # PONG
-# TODO allow empty message
 register_pattern("PONG", "PONG :{message}")
 register_pattern("PONG", "PONG")
 
@@ -366,7 +360,6 @@ register_pattern("PONG", "PONG")
 # ----------
 # AWAY :Gone to lunch.
 # AWAY
-# TODO allow empty message
 register_pattern("AWAY", "AWAY :{message}")
 register_pattern("AWAY", "AWAY")
 
@@ -416,7 +409,6 @@ register_pattern("USERS", "USERS")
 # WALLOPS :<message>
 # ----------
 # WALLOPS :Maintenance in 5 minutes
-# TODO allow empty message
 register_pattern("WALLOPS", "WALLOPS :{message}")
 
 # USERHOST
