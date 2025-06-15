@@ -753,21 +753,6 @@ KNOWN_COMMANDS = [
         ],
     ),
     Command(
-        bottom="USERHOST",
-        irc="USERHOST",
-        refs=[
-            "https://tools.ietf.org/html/rfc2812#section-4.8",
-        ],
-        syntax="USERHOST <nick>",
-        examples=[
-            "USERHOST Wiz Michael syrk",
-            "USERHOST syrk",
-        ],
-        patterns=[
-            "USERHOST {nick:space}",
-        ],
-    ),
-    Command(
         bottom="ISON",
         irc="ISON",
         refs=[
