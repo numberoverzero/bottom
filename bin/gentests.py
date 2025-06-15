@@ -6,10 +6,12 @@
 # out the permutation matrix.
 
 # if the command has a new param name, add it to GLOBAL_ARGS below.
-import typing as t
-import re
+import itertools
 import os
+import re
+import typing as t
 from pathlib import Path
+
 from bottom.irc import KNOWN_COMMANDS, Command
 
 HEADER = """
@@ -46,11 +48,9 @@ class Test_{command.bottom}(BaseSerializeTest):
         "ERR": ValueError,
     }}
     permutations = base_permutations({permutation_index_list}, "ERR")
-    permutations.update(
-        {{
-            {permutation_index_tuple}: "TODO",
-        }}
-    )
+    permutations.update({{
+        {permutations}
+    }})
 """
 
 GLOBAL_ARGS: dict[str, tuple[str, t.Any]] = {
@@ -101,17 +101,33 @@ def lookup_arg(arg: str) -> str:
     return f"{raw!r},"
 
 
+def gen_permutations(n: int) -> t.Iterable[tuple]:
+    ids = list(range(n))
+    for r in range(n + 1):
+        yield from itertools.combinations(ids, r)
+
+
+def render_permutations(arguments: list[str], indent: int, placeholder: str) -> str:
+    out = []
+    for permutation in gen_permutations(len(arguments)):
+        out.append(f"{permutation!r}: {placeholder!r},")
+    sep = "\n" + " " * indent
+    return sep.join(out)
+
+
 def render_test_class(command: Command) -> str:
     arguments = [lookup_arg(arg) for arg in gather_args(command)]
-    permutation_list = list(range(len(arguments)))
+    permutation_index_list = repr(list(range(len(arguments))))
+    permutations = render_permutations(arguments, indent=8, placeholder="TODO")
     return TEMPLATE.format(
         command=command,
         argument_map_list="\n        ".join(arguments),
         patterns="\n    #   ".join(command.patterns),
         examples="\n    #   ".join(command.examples),
-        permutation_index_list=repr(permutation_list),
-        permutation_index_tuple=repr(tuple(permutation_list)),
+        permutation_index_list=permutation_index_list,
+        permutations=permutations,
     )
+
 
 def check_commands(commands: list[Command]) -> None:
     n = len(commands)
@@ -121,7 +137,7 @@ def check_commands(commands: list[Command]) -> None:
     n_collide = sum((1 for v in group.values() if len(v) > 1))
     print(f"{n} commands defined, {n_collide} collisions")
     if n_collide:
-        print(f"ERROR: following commands collide on Command.bottom:")
+        print("ERROR: following commands collide on Command.bottom:")
         for each in group.values():
             if len(each) > 1:
                 for command in each:

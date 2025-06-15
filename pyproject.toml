@@ -60,7 +60,6 @@ extend-exclude = [
     ".venv",
     "__pycache__",
 
-    "bin/*",
     # expected failure - written against bottom 2.2.0
     "examples/migration/v2.2.0.py",
     # non-standard comment formatting for clarity of fixes

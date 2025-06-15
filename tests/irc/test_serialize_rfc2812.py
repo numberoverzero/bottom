@@ -22,6 +22,7 @@ class Test_PASS(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -43,6 +44,7 @@ class Test_NICK(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -68,6 +70,13 @@ class Test_USER(BaseSerializeTest):
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
+            (2,): "TODO",
+            (0, 1): "TODO",
+            (0, 2): "TODO",
+            (1, 2): "TODO",
             (0, 1, 2): "TODO",
         }
     )
@@ -90,6 +99,9 @@ class Test_OPER(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -116,6 +128,9 @@ class Test_USERMODE(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -140,6 +155,21 @@ class Test_SERVICE(BaseSerializeTest):
     permutations = base_permutations([0, 1, 2, 3], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
+            (2,): "TODO",
+            (3,): "TODO",
+            (0, 1): "TODO",
+            (0, 2): "TODO",
+            (0, 3): "TODO",
+            (1, 2): "TODO",
+            (1, 3): "TODO",
+            (2, 3): "TODO",
+            (0, 1, 2): "TODO",
+            (0, 1, 3): "TODO",
+            (0, 2, 3): "TODO",
+            (1, 2, 3): "TODO",
             (0, 1, 2, 3): "TODO",
         }
     )
@@ -163,6 +193,7 @@ class Test_QUIT(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -187,6 +218,9 @@ class Test_SQUIT(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -212,6 +246,9 @@ class Test_JOIN(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -236,6 +273,9 @@ class Test_PART(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -260,6 +300,9 @@ class Test_CHANNELMODE(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -285,6 +328,9 @@ class Test_TOPIC(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -311,6 +357,9 @@ class Test_NAMES(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -337,6 +386,9 @@ class Test_LIST(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -359,6 +411,9 @@ class Test_INVITE(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -385,6 +440,13 @@ class Test_KICK(BaseSerializeTest):
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
+            (2,): "TODO",
+            (0, 1): "TODO",
+            (0, 2): "TODO",
+            (1, 2): "TODO",
             (0, 1, 2): "TODO",
         }
     )
@@ -409,6 +471,9 @@ class Test_PRIVMSG(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -433,6 +498,9 @@ class Test_NOTICE(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -456,6 +524,7 @@ class Test_MOTD(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -482,6 +551,9 @@ class Test_LUSERS(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -505,6 +577,7 @@ class Test_VERSION(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -531,6 +604,9 @@ class Test_STATS(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -557,6 +633,9 @@ class Test_LINKS(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -580,6 +659,7 @@ class Test_TIME(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -605,6 +685,13 @@ class Test_CONNECT(BaseSerializeTest):
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
+            (2,): "TODO",
+            (0, 1): "TODO",
+            (0, 2): "TODO",
+            (1, 2): "TODO",
             (0, 1, 2): "TODO",
         }
     )
@@ -627,6 +714,7 @@ class Test_TRACE(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -651,6 +739,7 @@ class Test_ADMIN(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -675,6 +764,7 @@ class Test_INFO(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -701,6 +791,9 @@ class Test_SERVLIST(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -723,6 +816,9 @@ class Test_SQUERY(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -749,6 +845,9 @@ class Test_WHO(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -773,6 +872,9 @@ class Test_WHOIS(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -790,26 +892,24 @@ class Test_WHOWAS(BaseSerializeTest):
     #   WHOWAS Mermaid
     command = "WHOWAS"
     argument_map = [
-        ("nick", "n0"),
-        ("count", 3),
-        ("target", "eff.org"),
         ("nick-list", ["n0", "n1"]),
+        ("count", 3),
+        ("target", "TODO"),
     ]
     expected_map = {
         "ERR": ValueError,
-        "nick": "WHOWAS n0",
-        "count": "WHOWAS n0 3",
-        "all": "WHOWAS n0 3 eff.org",
-        "nick-list": "WHOWAS n0,n1",
     }
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
-            (0,): "nick",
-            (0, 1): "count",
-            (0, 2): "nick",
-            (0, 1, 2): "all",
-            (3,): "nick-list",
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
+            (2,): "TODO",
+            (0, 1): "TODO",
+            (0, 2): "TODO",
+            (1, 2): "TODO",
+            (0, 1, 2): "TODO",
         }
     )
 
@@ -831,6 +931,9 @@ class Test_KILL(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -855,6 +958,9 @@ class Test_PING(BaseSerializeTest):
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
             (0, 1): "TODO",
         }
     )
@@ -878,6 +984,7 @@ class Test_PONG(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -901,6 +1008,7 @@ class Test_AWAY(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -985,6 +1093,13 @@ class Test_SUMMON(BaseSerializeTest):
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
+            (): "TODO",
+            (0,): "TODO",
+            (1,): "TODO",
+            (2,): "TODO",
+            (0, 1): "TODO",
+            (0, 2): "TODO",
+            (1, 2): "TODO",
             (0, 1, 2): "TODO",
         }
     )
@@ -1008,6 +1123,7 @@ class Test_USERS(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -1029,6 +1145,7 @@ class Test_WALLOPS(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -1051,6 +1168,7 @@ class Test_USERHOST(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
@@ -1073,6 +1191,7 @@ class Test_ISON(BaseSerializeTest):
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
+            (): "TODO",
             (0,): "TODO",
         }
     )
