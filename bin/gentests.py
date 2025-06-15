@@ -66,7 +66,7 @@ GLOBAL_ARGS: dict[str, tuple[str, t.Any]] = {
     "nick": ("nick", "n0"),
     "nick:comma": ("nick-list", ["n0", "n1"]),
     "nick:space": ("nick-list", ["n0", "n1"]),
-    "o:bool": ("o:bool", True),
+    "o:bool": ("o", True),
     "params:space": ("params-list", ["+imI", "*!*@*.fi"]),
     "password": ("password", "hunter2"),
     "port": ("port", 1024),

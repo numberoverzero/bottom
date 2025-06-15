@@ -328,7 +328,7 @@ KNOWN_COMMANDS = [
             "NOTICE #Finnish :This message is in english",
         ],
         patterns=[
-            "NOTICE {target} {message}",
+            "NOTICE {target} :{message}",
         ],
     ),
     Command(

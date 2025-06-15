@@ -438,13 +438,13 @@ class Test_MOTD(BaseSerializeTest):
     #   MOTD
     command = "MOTD"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "MOTD",
+            (0,): "MOTD remote.*.edu",
         }
     )
 
@@ -461,16 +461,16 @@ class Test_LUSERS(BaseSerializeTest):
     #   LUSERS
     command = "LUSERS"
     argument_map = [
-        ("mask", "TODO"),
-        ("target", "TODO"),
+        ("mask", "*.edu"),
+        ("target", "remote.*.edu"),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "LUSERS",
+            (0,): "LUSERS *.edu",
+            (1,): "LUSERS",  # note: target is ignored
+            (0, 1): "LUSERS *.edu remote.*.edu",
         }
     )
 
@@ -485,13 +485,13 @@ class Test_VERSION(BaseSerializeTest):
     #   VERSION
     command = "VERSION"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "VERSION",
+            (0,): "VERSION remote.*.edu",
         }
     )
 
@@ -509,15 +509,15 @@ class Test_STATS(BaseSerializeTest):
     command = "STATS"
     argument_map = [
         ("query", "m"),
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "STATS",
+            (0,): "STATS m",
+            (1,): "STATS",  # note: target is ignored
+            (0, 1): "STATS m remote.*.edu",
         }
     )
 
@@ -535,15 +535,15 @@ class Test_LINKS(BaseSerializeTest):
     command = "LINKS"
     argument_map = [
         ("remote", "*.edu"),
-        ("mask", "TODO"),
+        ("mask", "*.au"),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "LINKS",
+            (0,): "LINKS",  # note: remote is ignored
+            (1,): "LINKS *.au",
+            (0, 1): "LINKS *.edu *.au",
         }
     )
 
@@ -558,13 +558,13 @@ class Test_TIME(BaseSerializeTest):
     #   TIME
     command = "TIME"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "TIME",
+            (0,): "TIME remote.*.edu",
         }
     )
 
@@ -579,21 +579,15 @@ class Test_CONNECT(BaseSerializeTest):
     #   CONNECT tolsun.oulu.fi 6667
     command = "CONNECT"
     argument_map = [
-        ("target", "TODO"),
-        ("port", 1024),
+        ("target", "tolsun.oulu.fi"),
+        ("port", 6667),
         ("remote", "*.edu"),
     ]
     permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (2,): "TODO",
-            (0, 1): "TODO",
-            (0, 2): "TODO",
-            (1, 2): "TODO",
-            (0, 1, 2): "TODO",
+            (0, 1): "CONNECT tolsun.oulu.fi 6667",
+            (0, 1, 2): "CONNECT tolsun.oulu.fi 6667 *.edu",
         }
     )
 
@@ -607,13 +601,13 @@ class Test_TRACE(BaseSerializeTest):
     #   TRACE
     command = "TRACE"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "*.oulu.fi"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "TRACE",
+            (0,): "TRACE *.oulu.fi",
         }
     )
 
@@ -629,13 +623,13 @@ class Test_ADMIN(BaseSerializeTest):
     #   ADMIN
     command = "ADMIN"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "eff.org"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "ADMIN",
+            (0,): "ADMIN eff.org",
         }
     )
 
@@ -651,13 +645,13 @@ class Test_INFO(BaseSerializeTest):
     #   INFO
     command = "INFO"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "eff.org"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "INFO",
+            (0,): "INFO eff.org",
         }
     )
 
@@ -674,16 +668,16 @@ class Test_SERVLIST(BaseSerializeTest):
     #   SERVLIST
     command = "SERVLIST"
     argument_map = [
-        ("mask", "TODO"),
+        ("mask", "*SERV"),
         ("type", 3),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "SERVLIST",
+            (0,): "SERVLIST *SERV",
+            (1,): "SERVLIST",  # note: type is ignored
+            (0, 1): "SERVLIST *SERV 3",
         }
     )
 
@@ -696,16 +690,13 @@ class Test_SQUERY(BaseSerializeTest):
     #   SQUERY irchelp :HELP privmsg
     command = "SQUERY"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "irchelp"),
         ("message", "msg msg"),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "SQUERY irchelp :msg msg",
         }
     )
 
@@ -722,16 +713,16 @@ class Test_WHO(BaseSerializeTest):
     #   WHO
     command = "WHO"
     argument_map = [
-        ("mask", "TODO"),
-        ("o:bool", True),
+        ("mask", "*.fi"),
+        ("o", True),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "WHO",
+            (0,): "WHO *.fi",
+            (1,): "WHO",  # note: o is ignored
+            (0, 1): "WHO *.fi o",
         }
     )
 
@@ -746,16 +737,17 @@ class Test_WHOIS(BaseSerializeTest):
     #   WHOIS eff.org trillian
     command = "WHOIS"
     argument_map = [
-        ("target", "TODO"),
-        ("mask-list", "TODO"),
+        ("target", "eff.org"),
+        ("mask", "n0"),
+        ("mask", ["n0", "n1"]),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (1,): "WHOIS n0",
+            (2,): "WHOIS n0,n1",
+            (0, 1): "WHOIS eff.org n0",
+            (0, 2): "WHOIS eff.org n0,n1",
         }
     )
 
