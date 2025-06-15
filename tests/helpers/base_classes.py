@@ -47,7 +47,9 @@ class BaseSerializeTest(BaseTest):
         ids = []
         for param_keys, expected in cls.permutations.items():
             params = cls.build_params(param_keys)
-            ids.append(", ".join([f"{k}={v}" for (k, v) in sorted(params.items())]))
+            id_params = ", ".join([f"{k}={v}" for (k, v) in sorted(params.items())])
+            id_params = id_params or {}
+            ids.append(f"{param_keys} -> {id_params}")
             argvalues.append((params, expected))
         metafunc.parametrize(argnames, argvalues, ids=ids)
 
