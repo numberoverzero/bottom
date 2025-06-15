@@ -5,10 +5,27 @@ from bottom.core import BaseClient, NextMessageHandler
 from bottom.irc.serialize import register_pattern, serialize
 from bottom.unpack import unpack_command
 
-__all__ = ["register_pattern", "rfc2812_handler", "serialize"]
+__all__ = ["disable_first_run_message", "register_pattern", "rfc2812_handler", "serialize"]
 
 
 rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
+_suggest_issue = {
+    "is_first_run": True,
+    "extra_lines": [
+        "Please consider filing an issue for the missing command:",
+        "  https://github.com/numberoverzero/bottom/issues/new",
+        "To prevent this message in the future:",
+        "  from bottom.irc import disable_first_run_msg",
+        "  disable_first_run_msg()",
+        "To disable the logger entirely:",
+        "  from bottom.irc import rfc2812_log",
+        "  rfc2812_log.disabled = True",
+    ],
+}
+
+
+def disable_first_run_message() -> None:
+    _suggest_issue["is_first_run"] = False
 
 
 async def rfc2812_handler(next_handler: NextMessageHandler[BaseClient], client: BaseClient, message: bytes) -> None:
@@ -16,7 +33,14 @@ async def rfc2812_handler(next_handler: NextMessageHandler[BaseClient], client: 
         event, kwargs = unpack_command(message.decode(client._encoding))
         client.trigger(event, **kwargs)
     except ValueError:
-        rfc2812_log.debug("Failed to parse line >>> {}".format(message.decode(client._encoding)))
+        msg = f"Failed to parse: {message.decode(client._encoding)}"
+        if _suggest_issue["is_first_run"]:
+            disable_first_run_message()
+            lines = [msg] + _suggest_issue["extra_lines"]
+            rfc2812_log.info("\n".join(lines))
+        else:
+            rfc2812_log.info(msg)
+
     await next_handler(client, message)
 
 

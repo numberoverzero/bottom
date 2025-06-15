@@ -3,6 +3,31 @@ import itertools
 import time
 import typing as t
 
+from bottom.core import BaseClient, NextMessageHandler
+
+
+async def recv_bytes(client: BaseClient, message: bytes) -> bytes:
+    """
+    Sends a message through the client's protocol and waits for it to pass through the handler stack.
+    Returns the awaited message.
+    """
+    received: asyncio.Future[bytes] = asyncio.Future()
+
+    async def trigger_raw_handler(
+        next_handler: NextMessageHandler[BaseClient], client: BaseClient, message: bytes
+    ) -> None:
+        await next_handler(client, message)
+        received.set_result(message)
+
+    client.message_handlers.append(trigger_raw_handler)
+    try:
+        assert client._protocol, "client must be connected first"
+        client._protocol.data_received(message)  # ty: ignore
+        result = await received
+    finally:
+        client.message_handlers.remove(trigger_raw_handler)
+    return result
+
 
 async def busy_wait(criteria: t.Callable[[], t.Any], timeout_ms: int = 200) -> None:
     """

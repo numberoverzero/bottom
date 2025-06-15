@@ -497,10 +497,11 @@ class BaseClient(EventHandler):
                     logger.log("disconnected client.")
         """
         if self._protocol:
-            self._protocol.close()
-            assert self._protocol.is_closing()
             try:
-                await self.wait("client_disconnect")
+                waiter = self.wait("client_disconnect")
+                self._protocol.close()
+                assert self._protocol.is_closing()
+                await waiter
             except asyncio.CancelledError:  # pragma: no cover
                 pass
 

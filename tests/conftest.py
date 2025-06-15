@@ -11,9 +11,17 @@ import bottom
 import bottom.core
 import pytest
 import pytest_asyncio
+from bottom.irc import _suggest_issue, rfc2812_log
 
 # allow imports using "from tests.package import foo"
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+
+
+@pytest.fixture(autouse=True)
+def _reset_rfc2812_logging() -> None:
+    """each test should see its log messages as first"""
+    rfc2812_log.disabled = False
+    _suggest_issue["is_first_run"] = True
 
 
 class ServerProtocol(asyncio.Protocol):

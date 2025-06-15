@@ -1,11 +1,13 @@
 import asyncio
+import logging
 
 import pytest
-from bottom.client import wait_for
+from bottom.client import Client, wait_for
 from bottom.core import Protocol
+from bottom.irc import _suggest_issue, rfc2812_log
 from bottom.util import create_task
 
-from tests.helpers.fns import busy_wait
+from tests.helpers.fns import busy_wait, recv_bytes
 
 
 async def test_connect(client):
@@ -170,3 +172,84 @@ async def test_wait_for_nothing(mode, client):
     assert asyncio.iscoroutine(race)
     result = await race
     assert result == []
+
+
+async def test_unknown_logs_first_run(client: Client, caplog: pytest.LogCaptureFixture):
+    """protocol pushes messages to the client"""
+    command = "UNKNOWN-FOO-BAR"
+    msg = f":nick!user@host {command} #target :this is message\n".encode(client._encoding)
+
+    await client.connect()
+
+    with caplog.at_level(level=logging.INFO):
+        # nothing logged yet
+        assert not caplog.records
+
+        # first message sees full notice
+        await recv_bytes(client, msg)
+        [(logger_name, _, message)] = caplog.record_tuples
+        assert logger_name == rfc2812_log.name
+        assert command in message
+        for line in _suggest_issue["extra_lines"]:
+            assert line in message
+
+        # second message sees only the command
+        caplog.clear()
+        await recv_bytes(client, msg)
+        [(logger_name, _, message)] = caplog.record_tuples
+        assert logger_name == rfc2812_log.name
+        assert command in message
+        for line in _suggest_issue["extra_lines"]:
+            assert line not in message
+
+    # disable_first_run_message
+
+
+async def test_disable_first_run_logger(client: Client, caplog: pytest.LogCaptureFixture):
+    """disabling the first run prevents log message"""
+    command = "UNKNOWN-FOO-BAR"
+    msg = f":nick!user@host {command} #target :this is message\n".encode(client._encoding)
+
+    await client.connect()
+
+    with caplog.at_level(level=logging.INFO):
+        # nothing logged yet
+        assert not caplog.records
+
+        # import here so that we don't implicitly rely on import order for some logger configuration
+        from bottom.irc import disable_first_run_message
+
+        disable_first_run_message()
+
+        # first message doesn't see notice
+        await recv_bytes(client, msg)
+        [(logger_name, _, message)] = caplog.record_tuples
+        assert logger_name == rfc2812_log.name
+        # should still see the log for unknown command
+        assert command in message
+
+        # ensure the for loop below is actually checking something
+        assert len(_suggest_issue["extra_lines"]) > 0
+
+        for line in _suggest_issue["extra_lines"]:
+            assert line not in message
+
+
+async def test_disable_rfc2812_logger(client: Client, caplog: pytest.LogCaptureFixture):
+    """disabling the whole logger"""
+    command = "UNKNOWN-FOO-BAR"
+    msg = f":nick!user@host {command} #target :this is message\n".encode(client._encoding)
+
+    await client.connect()
+
+    with caplog.at_level(level=logging.INFO):
+        # nothing logged yet
+        assert not caplog.records
+
+        assert rfc2812_log.disabled is False
+
+        rfc2812_log.disabled = True
+
+        # shouldn't see _anything_ here
+        await recv_bytes(client, msg)
+        assert not caplog.record_tuples

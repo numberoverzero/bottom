@@ -30,7 +30,7 @@ class BaseTest:
 
 class BaseSerializeTest(BaseTest):
     command: t.ClassVar[str]
-    arg_map: t.ClassVar[ClassArgs]
+    argument_map: t.ClassVar[ClassArgs]
     expected_map: t.ClassVar[ClassExpected]
     permutations: t.ClassVar[ClassPermutations]
 
@@ -70,7 +70,7 @@ class BaseSerializeTest(BaseTest):
             param_keys = (param_keys,)
 
         for index in param_keys:
-            arg_spec = cls.arg_map[index]
+            arg_spec = cls.argument_map[index]
             if len(arg_spec) == 2:
                 name, value = arg_spec
             else:

@@ -9,7 +9,7 @@ from tests.helpers.fns import base_permutations
 class Test_WHOWAS(BaseSerializeTest):
     # WHOWAS <nick> [<count> [<target>]]
     command = "WHOWAS"
-    arg_map = [
+    argument_map = [
         ("nick", "n0"),
         ("count", 3),
         ("target", "eff.org"),
