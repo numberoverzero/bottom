@@ -148,6 +148,7 @@ def main(dst: Path) -> None:
     all = "\n\n\n".join(out) + "\n"
     dst.parent.mkdir(exist_ok=True)
     dst.write_text(all)
+    print(dst.resolve())
     check_commands(KNOWN_COMMANDS)
 
 

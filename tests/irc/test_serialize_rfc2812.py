@@ -1,6 +1,10 @@
 # ============================================================================
 # tests for specific commands
 # serialization primitives tests live in test_serialize.py
+#
+# note: you can generate a new test template with bin/gentests.py
+#   copy the generated test (not the whole file) for your new command into this file
+#   then fill out the argument map and add any permutations.
 # ============================================================================
 from tests.helpers.base_classes import BaseSerializeTest
 from tests.helpers.fns import base_permutations
@@ -764,21 +768,20 @@ class Test_WHOWAS(BaseSerializeTest):
     #   WHOWAS Mermaid
     command = "WHOWAS"
     argument_map = [
-        ("nick-list", ["n0", "n1"]),
+        ("nick", ["n0", "n1"]),
         ("count", 3),
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
+        ("nick", "n0"),
     ]
     permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (2,): "TODO",
-            (0, 1): "TODO",
-            (0, 2): "TODO",
-            (1, 2): "TODO",
-            (0, 1, 2): "TODO",
+            (0,): "WHOWAS n0,n1",
+            (0, 1): "WHOWAS n0,n1 3",
+            (0, 2): "WHOWAS n0,n1",  # note: target is ignored
+            (0, 1, 2): "WHOWAS n0,n1 3 remote.*.edu",
+            (3,): "WHOWAS n0",
+            (3, 1): "WHOWAS n0 3",
         }
     )
 
@@ -797,10 +800,7 @@ class Test_KILL(BaseSerializeTest):
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "KILL n0 :msg msg",
         }
     )
 
@@ -815,16 +815,16 @@ class Test_PING(BaseSerializeTest):
     #   PING my-ping-token eff.org
     command = "PING"
     argument_map = [
-        ("message-nospace", "msg.msg"),
-        ("target", "TODO"),
+        ("message", "msg.msg"),
+        ("target", "eff.org"),
+        ("message", "has a space"),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0,): "PING msg.msg",
+            (0, 1): "PING msg.msg eff.org",
+            (2, 1): ValueError,
         }
     )
 
@@ -840,12 +840,14 @@ class Test_PONG(BaseSerializeTest):
     command = "PONG"
     argument_map = [
         ("message", "msg msg"),
+        ("message", ""),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "PONG",
+            (0,): "PONG :msg msg",
+            (1,): "PONG :",
         }
     )
 
@@ -861,12 +863,14 @@ class Test_AWAY(BaseSerializeTest):
     command = "AWAY"
     argument_map = [
         ("message", "msg msg"),
+        ("message", ""),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "AWAY",
+            (0,): "AWAY :msg msg",
+            (1,): "AWAY :",
         }
     )
 
@@ -882,7 +886,7 @@ class Test_REHASH(BaseSerializeTest):
     permutations = base_permutations([], ValueError)
     permutations.update(
         {
-            (): "TODO",
+            (): "REHASH",
         }
     )
 
@@ -898,7 +902,7 @@ class Test_DIE(BaseSerializeTest):
     permutations = base_permutations([], ValueError)
     permutations.update(
         {
-            (): "TODO",
+            (): "DIE",
         }
     )
 
@@ -914,7 +918,7 @@ class Test_RESTART(BaseSerializeTest):
     permutations = base_permutations([], ValueError)
     permutations.update(
         {
-            (): "TODO",
+            (): "RESTART",
         }
     )
 
@@ -932,20 +936,16 @@ class Test_SUMMON(BaseSerializeTest):
     command = "SUMMON"
     argument_map = [
         ("nick", "n0"),
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
         ("channel", "#chan"),
     ]
     permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (2,): "TODO",
-            (0, 1): "TODO",
-            (0, 2): "TODO",
-            (1, 2): "TODO",
-            (0, 1, 2): "TODO",
+            (0,): "SUMMON n0",
+            (0, 1): "SUMMON n0 remote.*.edu",
+            (0, 2): "SUMMON n0",  # note: channel is ignored
+            (0, 1, 2): "SUMMON n0 remote.*.edu #chan",
         }
     )
 
@@ -960,13 +960,13 @@ class Test_USERS(BaseSerializeTest):
     #   USERS
     command = "USERS"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "remote.*.edu"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "USERS",
+            (0,): "USERS remote.*.edu",
         }
     )
 
@@ -984,8 +984,7 @@ class Test_WALLOPS(BaseSerializeTest):
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (0,): "WALLOPS :msg msg",
         }
     )
 
@@ -999,13 +998,14 @@ class Test_USERHOST(BaseSerializeTest):
     #   USERHOST syrk
     command = "USERHOST"
     argument_map = [
-        ("nick-list", ["n0", "n1"]),
+        ("nick", ["n0", "n1"]),
+        ("nick", "n0"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (0,): "USERHOST n0 n1",
+            (1,): "USERHOST n0",
         }
     )
 
@@ -1019,12 +1019,13 @@ class Test_ISON(BaseSerializeTest):
     #   ISON syrk
     command = "ISON"
     argument_map = [
-        ("nick-list", ["n0", "n1"]),
+        ("nick", ["n0", "n1"]),
+        ("nick", "n0"),
     ]
     permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (0,): "ISON n0 n1",
+            (1,): "ISON n0",
         }
     )
