@@ -48,7 +48,7 @@ class Test_{command.bottom}(BaseSerializeTest):
     permutations = base_permutations({permutation_index_list}, "ERR")
     permutations.update(
         {{
-            (0,): "TODO",
+            {permutation_index_tuple}: "TODO",
         }}
     )
 """
@@ -103,12 +103,14 @@ def lookup_arg(arg: str) -> str:
 
 def render_test_class(command: Command) -> str:
     arguments = [lookup_arg(arg) for arg in gather_args(command)]
+    permutation_list = list(range(len(arguments)))
     return TEMPLATE.format(
         command=command,
         argument_map_list="\n        ".join(arguments),
         patterns="\n    #   ".join(command.patterns),
         examples="\n    #   ".join(command.examples),
-        permutation_index_list=repr(list(range(len(arguments)))),
+        permutation_index_list=repr(permutation_list),
+        permutation_index_tuple=repr(tuple(permutation_list)),
     )
 
 def check_commands(commands: list[Command]) -> None:
