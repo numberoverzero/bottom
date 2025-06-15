@@ -44,10 +44,7 @@ class Test_{command.bottom}(BaseSerializeTest):
     argument_map = [
         {argument_map_list}
     ]
-    expected_map = {{
-        "ERR": ValueError,
-    }}
-    permutations = base_permutations({permutation_index_list}, "ERR")
+    permutations = base_permutations({permutation_index_list}, ValueError)
     permutations.update({{
         {permutations}
     }})

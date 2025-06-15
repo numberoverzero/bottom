@@ -4,8 +4,7 @@ import pytest
 from bottom.irc.serialize import serialize
 
 type ClassArgs = list[tuple[str, t.Any]]
-type ClassExpected = dict[str, str | type[Exception]]
-type ClassPermutations = dict[tuple, str]
+type ClassPermutations = dict[tuple[int, ...], str | type[Exception]]
 
 
 def pytest_generate_tests(metafunc: pytest.Metafunc) -> None:
@@ -31,7 +30,6 @@ class BaseTest:
 class BaseSerializeTest(BaseTest):
     command: t.ClassVar[str]
     argument_map: t.ClassVar[ClassArgs]
-    expected_map: t.ClassVar[ClassExpected]
     permutations: t.ClassVar[ClassPermutations]
 
     def test_permutation(self, params: dict, expected: str | type[Exception]) -> None:
@@ -47,15 +45,10 @@ class BaseSerializeTest(BaseTest):
         argnames = ("params", "expected")
         argvalues = []
         ids = []
-        for param_keys, expected_key in cls.permutations.items():
+        for param_keys, expected in cls.permutations.items():
             params = cls.build_params(param_keys)
             ids.append(", ".join([f"{k}={v}" for (k, v) in sorted(params.items())]))
-            argvalues.append(
-                (
-                    params,
-                    cls.expected_map[expected_key],
-                )
-            )
+            argvalues.append((params, expected))
         metafunc.parametrize(argnames, argvalues, ids=ids)
 
     @classmethod

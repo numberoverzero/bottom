@@ -16,14 +16,10 @@ class Test_PASS(BaseSerializeTest):
     argument_map = [
         ("password", "hunter2"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "PASS hunter2",
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (0,): "ok",
+            (0,): "PASS hunter2",
         }
     )
 
@@ -38,14 +34,10 @@ class Test_NICK(BaseSerializeTest):
     argument_map = [
         ("nick", "n0"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "NICK n0",
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (0,): "ok",
+            (0,): "NICK n0",
         }
     )
 
@@ -65,18 +57,12 @@ class Test_USER(BaseSerializeTest):
         ("realname", "my.realname"),
         ("realname", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "USER n0 +i :my.realname",
-        "ok-empty": "USER n0 +i :",
-        "no-mode": "USER n0 :my.realname",
-    }
-    permutations = base_permutations([0, 1, 2], "ERR")
+    permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
-            (0, 2): "ok",
-            (0, 1, 2): "ok",
-            (0, 1, 3): "ok-empty",
+            (0, 2): "USER n0 0 * :my.realname",
+            (0, 1, 2): "USER n0 +i * :my.realname",
+            (0, 1, 3): "USER n0 +i * :",
         }
     )
 
@@ -92,14 +78,10 @@ class Test_OPER(BaseSerializeTest):
         ("nick", "n0"),
         ("password", "hunter2"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "OPER n0 hunter2",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0, 1): "ok",
+            (0, 1): "OPER n0 hunter2",
         }
     )
 
@@ -119,18 +101,12 @@ class Test_USERMODE(BaseSerializeTest):
         ("nick", "n0"),
         ("modes", "-io"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "none": "MODE",
-        "self": "MODE -io",
-        "other": "MODE n0 -io",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "none",
-            (1,): "self",
-            (0, 1): "other",
+            (): "MODE",
+            (1,): "MODE -io",
+            (0, 1): "MODE n0 -io",
         }
     )
 
@@ -148,14 +124,10 @@ class Test_SERVICE(BaseSerializeTest):
         ("type", 0),
         ("info", "French"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "SERVICE dict *.fr 0 :French",
-    }
-    permutations = base_permutations([0, 1, 2, 3], "ERR")
+    permutations = base_permutations([0, 1, 2, 3], ValueError)
     permutations.update(
         {
-            (0, 1, 2, 3): "ok",
+            (0, 1, 2, 3): "SERVICE dict *.fr 0 :French",
         }
     )
 
@@ -173,18 +145,12 @@ class Test_QUIT(BaseSerializeTest):
         ("message", "msg msg"),
         ("message", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "QUIT :msg msg",
-        "ok-empty": "QUIT :",
-        "ok-none": "QUIT",
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
-            (): "ok-none",
-            (0,): "ok",
-            (1,): "ok-empty",
+            (): "QUIT",
+            (0,): "QUIT :msg msg",
+            (1,): "QUIT :",
         }
     )
 
@@ -203,18 +169,12 @@ class Test_SQUIT(BaseSerializeTest):
         ("message", "msg msg"),
         ("message", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "SQUIT tolsun.oulu.fi :msg msg",
-        "ok-empty": "SQUIT tolsun.oulu.fi :",
-        "ok-none": "SQUIT tolsun.oulu.fi",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0,): "ok-none",
-            (0, 1): "ok",
-            (0, 2): "ok-empty",
+            (0,): "SQUIT tolsun.oulu.fi",
+            (0, 1): "SQUIT tolsun.oulu.fi :msg msg",
+            (0, 2): "SQUIT tolsun.oulu.fi :",
         }
     )
 
@@ -235,20 +195,13 @@ class Test_JOIN(BaseSerializeTest):
         ("channel", "#chan"),
         ("key", "key"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "list": "JOIN #one,#two key1,key2",
-        "key": "JOIN #chan key",
-        "nokey-list": "JOIN #one,#two",
-        "nokey": "JOIN #chan",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0,): "nokey-list",
-            (0, 1): "list",
-            (2,): "nokey",
-            (2, 3): "key",
+            (0,): "JOIN #one,#two",
+            (0, 1): "JOIN #one,#two key1,key2",
+            (2,): "JOIN #chan",
+            (2, 3): "JOIN #chan key",
         }
     )
 
@@ -268,22 +221,14 @@ class Test_PART(BaseSerializeTest):
         ("channel", "#chan"),
         ("message", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "list": "PART #one,#two",
-        "list-msg": "PART #one,#two :msg msg",
-        "ok-none": "PART #chan",
-        "ok-empty": "PART #chan :",
-        "ok-msg": "PART #chan :msg msg",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0,): "list",
-            (0, 1): "list-msg",
-            (2,): "ok-none",
-            (2, 1): "ok-msg",
-            (2, 3): "ok-empty",
+            (0,): "PART #one,#two",
+            (0, 1): "PART #one,#two :msg msg",
+            (2,): "PART #chan",
+            (2, 1): "PART #chan :msg msg",
+            (2, 3): "PART #chan :",
         }
     )
 
@@ -302,15 +247,12 @@ class Test_CHANNELMODE(BaseSerializeTest):
         ("params", ["+imI", "*!*@*.fi"]),
         ("params", "+imI *!*@*.fi"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "MODE #chan +imI *!*@*.fi",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0, 1): "ok",
-            (0, 2): "ok",
+            (0, 1): "MODE #chan +imI *!*@*.fi",
+            (0, 2): "MODE #chan +imI *!*@*.fi",
         }
     )
 
@@ -330,18 +272,12 @@ class Test_TOPIC(BaseSerializeTest):
         ("message", "msg msg"),
         ("message-empty", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "set": "TOPIC #chan :msg msg",
-        "clear": "TOPIC #chan :",
-        "get": "TOPIC #chan",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0,): "get",
-            (0, 1): "set",
-            (0, 2): "clear",
+            (0,): "TOPIC #chan",
+            (0, 1): "TOPIC #chan :msg msg",
+            (0, 2): "TOPIC #chan :",
         }
     )
 
@@ -362,20 +298,13 @@ class Test_NAMES(BaseSerializeTest):
         ("target", "remote.*.edu"),
         ("channel", "#chan"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok-target": "NAMES #one,#two remote.*.edu",
-        "ok-list": "NAMES #one,#two",
-        "ok": "NAMES #chan",
-        "ok-none": "NAMES",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "ok-none",
-            (0,): "ok-list",
-            (0, 1): "ok-target",
-            (2,): "ok",
+            (): "NAMES",
+            (0,): "NAMES #one,#two",
+            (0, 1): "NAMES #one,#two remote.*.edu",
+            (2,): "NAMES #chan",
         }
     )
 
@@ -396,20 +325,13 @@ class Test_LIST(BaseSerializeTest):
         ("target", "remote.*.edu"),
         ("channel", "#chan"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok-target": "LIST #one,#two remote.*.edu",
-        "ok-list": "LIST #one,#two",
-        "ok": "LIST #chan",
-        "ok-none": "LIST",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "ok-none",
-            (0,): "ok-list",
-            (0, 1): "ok-target",
-            (2,): "ok",
+            (): "LIST",
+            (0,): "LIST #one,#two",
+            (0, 1): "LIST #one,#two remote.*.edu",
+            (2,): "LIST #chan",
         }
     )
 
@@ -425,14 +347,10 @@ class Test_INVITE(BaseSerializeTest):
         ("nick", "n0"),
         ("channel", "#chan"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "INVITE n0 #chan",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0, 1): "ok",
+            (0, 1): "INVITE n0 #chan",
         }
     )
 
@@ -455,24 +373,14 @@ class Test_KICK(BaseSerializeTest):
         ("nick", "n0"),
         ("message", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "msg": "KICK #one,#two n0,n1 :msg msg",
-        "msg-empty": "KICK #one,#two n0,n1 :",
-        "msg-none": "KICK #one,#two n0,n1",
-        "channels-nick": "KICK #one,#two n0",
-        "channel-nicks": "KICK #chan n0,n1",
-        "channel-nick": "KICK #chan n0",
-    }
-    permutations = base_permutations([0, 1, 2], "ERR")
+    permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
-            (0, 1): "msg-none",
-            (0, 1, 2): "msg",
-            (0, 1, 5): "msg-empty",
-            (0, 4): "channels-nick",
-            (3, 1): "channel-nicks",
-            (3, 4): "channel-nick",
+            (0, 1): "KICK #one,#two n0,n1",
+            (0, 1, 2): "KICK #one,#two n0,n1 :msg msg",
+            (3, 4, 5): "KICK #chan n0 :",
+            (0, 4): "KICK #one,#two n0",
+            (1, 3): "KICK #chan n0,n1",
         }
     )
 
@@ -491,16 +399,11 @@ class Test_PRIVMSG(BaseSerializeTest):
         ("message", "msg msg"),
         ("message", ""),
     ]
-    expected_map = {
-        "ERR": ValueError,
-        "ok": "PRIVMSG n0 :msg msg",
-        "ok-empty": "PRIVMSG n0 :",
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (0, 1): "ok",
-            (0, 2): "ok-empty",
+            (0, 1): "PRIVMSG n0 :msg msg",
+            (0, 2): "PRIVMSG n0 :",
         }
     )
 
@@ -518,10 +421,7 @@ class Test_NOTICE(BaseSerializeTest):
         ("target", "TODO"),
         ("message", "msg msg"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -544,10 +444,7 @@ class Test_MOTD(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -571,10 +468,7 @@ class Test_LUSERS(BaseSerializeTest):
         ("mask", "TODO"),
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -597,10 +491,7 @@ class Test_VERSION(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -624,10 +515,7 @@ class Test_STATS(BaseSerializeTest):
         ("query", "m"),
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -653,10 +541,7 @@ class Test_LINKS(BaseSerializeTest):
         ("remote", "*.edu"),
         ("mask", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -679,10 +564,7 @@ class Test_TIME(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -705,10 +587,7 @@ class Test_CONNECT(BaseSerializeTest):
         ("port", 1024),
         ("remote", "*.edu"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1, 2], "ERR")
+    permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -734,10 +613,7 @@ class Test_TRACE(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -759,10 +635,7 @@ class Test_ADMIN(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -784,10 +657,7 @@ class Test_INFO(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -811,10 +681,7 @@ class Test_SERVLIST(BaseSerializeTest):
         ("mask", "TODO"),
         ("type", 3),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -836,10 +703,7 @@ class Test_SQUERY(BaseSerializeTest):
         ("target", "TODO"),
         ("message", "msg msg"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -865,10 +729,7 @@ class Test_WHO(BaseSerializeTest):
         ("mask", "TODO"),
         ("o:bool", True),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -892,10 +753,7 @@ class Test_WHOIS(BaseSerializeTest):
         ("target", "TODO"),
         ("mask-list", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -922,10 +780,7 @@ class Test_WHOWAS(BaseSerializeTest):
         ("count", 3),
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1, 2], "ERR")
+    permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -951,10 +806,7 @@ class Test_KILL(BaseSerializeTest):
         ("nick", "n0"),
         ("message", "msg msg"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -978,10 +830,7 @@ class Test_PING(BaseSerializeTest):
         ("message-nospace", "msg.msg"),
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1], "ERR")
+    permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1004,10 +853,7 @@ class Test_PONG(BaseSerializeTest):
     argument_map = [
         ("message", "msg msg"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1028,10 +874,7 @@ class Test_AWAY(BaseSerializeTest):
     argument_map = [
         ("message", "msg msg"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1048,10 +891,7 @@ class Test_REHASH(BaseSerializeTest):
     #   REHASH
     command = "REHASH"
     argument_map = []
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([], "ERR")
+    permutations = base_permutations([], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1067,10 +907,7 @@ class Test_DIE(BaseSerializeTest):
     #   DIE
     command = "DIE"
     argument_map = []
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([], "ERR")
+    permutations = base_permutations([], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1086,10 +923,7 @@ class Test_RESTART(BaseSerializeTest):
     #   RESTART
     command = "RESTART"
     argument_map = []
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([], "ERR")
+    permutations = base_permutations([], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1113,10 +947,7 @@ class Test_SUMMON(BaseSerializeTest):
         ("target", "TODO"),
         ("channel", "#chan"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0, 1, 2], "ERR")
+    permutations = base_permutations([0, 1, 2], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1143,10 +974,7 @@ class Test_USERS(BaseSerializeTest):
     argument_map = [
         ("target", "TODO"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1165,10 +993,7 @@ class Test_WALLOPS(BaseSerializeTest):
     argument_map = [
         ("message", "msg msg"),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1188,10 +1013,7 @@ class Test_USERHOST(BaseSerializeTest):
     argument_map = [
         ("nick-list", ["n0", "n1"]),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
@@ -1211,10 +1033,7 @@ class Test_ISON(BaseSerializeTest):
     argument_map = [
         ("nick-list", ["n0", "n1"]),
     ]
-    expected_map = {
-        "ERR": ValueError,
-    }
-    permutations = base_permutations([0], "ERR")
+    permutations = base_permutations([0], ValueError)
     permutations.update(
         {
             (): "TODO",
