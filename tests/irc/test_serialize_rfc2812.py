@@ -358,19 +358,24 @@ class Test_NAMES(BaseSerializeTest):
     #   NAMES
     command = "NAMES"
     argument_map = [
-        ("channel-list", ["#one", "#two"]),
-        ("target", "TODO"),
+        ("channel", ["#one", "#two"]),
+        ("target", "remote.*.edu"),
+        ("channel", "#chan"),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok-target": "NAMES #one,#two remote.*.edu",
+        "ok-list": "NAMES #one,#two",
+        "ok": "NAMES #chan",
+        "ok-none": "NAMES",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "ok-none",
+            (0,): "ok-list",
+            (0, 1): "ok-target",
+            (2,): "ok",
         }
     )
 
@@ -387,19 +392,24 @@ class Test_LIST(BaseSerializeTest):
     #   LIST
     command = "LIST"
     argument_map = [
-        ("channel-list", ["#one", "#two"]),
-        ("target", "TODO"),
+        ("channel", ["#one", "#two"]),
+        ("target", "remote.*.edu"),
+        ("channel", "#chan"),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok-target": "LIST #one,#two remote.*.edu",
+        "ok-list": "LIST #one,#two",
+        "ok": "LIST #chan",
+        "ok-none": "LIST",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "ok-none",
+            (0,): "ok-list",
+            (0, 1): "ok-target",
+            (2,): "ok",
         }
     )
 
@@ -417,14 +427,12 @@ class Test_INVITE(BaseSerializeTest):
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "INVITE n0 #chan",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "ok",
         }
     )
 
@@ -440,24 +448,31 @@ class Test_KICK(BaseSerializeTest):
     #   KICK #Finnish,#English WiZ,ZiW :Speaking wrong language
     command = "KICK"
     argument_map = [
-        ("channel-list", ["#one", "#two"]),
-        ("nick-list", ["n0", "n1"]),
+        ("channel", ["#one", "#two"]),
+        ("nick", ["n0", "n1"]),
         ("message", "msg msg"),
+        ("channel", "#chan"),
+        ("nick", "n0"),
+        ("message", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "msg": "KICK #one,#two n0,n1 :msg msg",
+        "msg-empty": "KICK #one,#two n0,n1 :",
+        "msg-none": "KICK #one,#two n0,n1",
+        "channels-nick": "KICK #one,#two n0",
+        "channel-nicks": "KICK #chan n0,n1",
+        "channel-nick": "KICK #chan n0",
     }
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (2,): "TODO",
-            (0, 1): "TODO",
-            (0, 2): "TODO",
-            (1, 2): "TODO",
-            (0, 1, 2): "TODO",
+            (0, 1): "msg-none",
+            (0, 1, 2): "msg",
+            (0, 1, 5): "msg-empty",
+            (0, 4): "channels-nick",
+            (3, 1): "channel-nicks",
+            (3, 4): "channel-nick",
         }
     )
 
@@ -472,19 +487,20 @@ class Test_PRIVMSG(BaseSerializeTest):
     #   PRIVMSG #Finnish :This message is in english
     command = "PRIVMSG"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "n0"),
         ("message", "msg msg"),
+        ("message", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "PRIVMSG n0 :msg msg",
+        "ok-empty": "PRIVMSG n0 :",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "ok",
+            (0, 2): "ok-empty",
         }
     )
 
