@@ -18,12 +18,12 @@ class Test_PASS(BaseSerializeTest):
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "PASS hunter2",
     }
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (0,): "ok",
         }
     )
 
@@ -40,12 +40,12 @@ class Test_NICK(BaseSerializeTest):
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "NICK n0",
     }
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (0,): "ok",
         }
     )
 
@@ -63,21 +63,20 @@ class Test_USER(BaseSerializeTest):
         ("nick", "n0"),
         ("mode", "+i"),
         ("realname", "my.realname"),
+        ("realname", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "USER n0 +i :my.realname",
+        "ok-empty": "USER n0 +i :",
+        "no-mode": "USER n0 :my.realname",
     }
     permutations = base_permutations([0, 1, 2], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (2,): "TODO",
-            (0, 1): "TODO",
-            (0, 2): "TODO",
-            (1, 2): "TODO",
-            (0, 1, 2): "TODO",
+            (0, 2): "ok",
+            (0, 1, 2): "ok",
+            (0, 1, 3): "ok-empty",
         }
     )
 
@@ -95,14 +94,12 @@ class Test_OPER(BaseSerializeTest):
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "OPER n0 hunter2",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "ok",
         }
     )
 
@@ -124,14 +121,16 @@ class Test_USERMODE(BaseSerializeTest):
     ]
     expected_map = {
         "ERR": ValueError,
+        "none": "MODE",
+        "self": "MODE -io",
+        "other": "MODE n0 -io",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (): "none",
+            (1,): "self",
+            (0, 1): "other",
         }
     )
 
@@ -144,33 +143,19 @@ class Test_SERVICE(BaseSerializeTest):
     #   SERVICE dict *.fr 0 :French
     command = "SERVICE"
     argument_map = [
-        ("nick", "n0"),
+        ("nick", "dict"),
         ("distribution", "*.fr"),
-        ("type", 3),
-        ("info", "my-info"),
+        ("type", 0),
+        ("info", "French"),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "SERVICE dict *.fr 0 :French",
     }
     permutations = base_permutations([0, 1, 2, 3], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (2,): "TODO",
-            (3,): "TODO",
-            (0, 1): "TODO",
-            (0, 2): "TODO",
-            (0, 3): "TODO",
-            (1, 2): "TODO",
-            (1, 3): "TODO",
-            (2, 3): "TODO",
-            (0, 1, 2): "TODO",
-            (0, 1, 3): "TODO",
-            (0, 2, 3): "TODO",
-            (1, 2, 3): "TODO",
-            (0, 1, 2, 3): "TODO",
+            (0, 1, 2, 3): "ok",
         }
     )
 
@@ -186,15 +171,20 @@ class Test_QUIT(BaseSerializeTest):
     command = "QUIT"
     argument_map = [
         ("message", "msg msg"),
+        ("message", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "QUIT :msg msg",
+        "ok-empty": "QUIT :",
+        "ok-none": "QUIT",
     }
     permutations = base_permutations([0], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
+            (): "ok-none",
+            (0,): "ok",
+            (1,): "ok-empty",
         }
     )
 
@@ -211,17 +201,20 @@ class Test_SQUIT(BaseSerializeTest):
     argument_map = [
         ("server", "tolsun.oulu.fi"),
         ("message", "msg msg"),
+        ("message", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "SQUIT tolsun.oulu.fi :msg msg",
+        "ok-empty": "SQUIT tolsun.oulu.fi :",
+        "ok-none": "SQUIT tolsun.oulu.fi",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0,): "ok-none",
+            (0, 1): "ok",
+            (0, 2): "ok-empty",
         }
     )
 
@@ -237,19 +230,25 @@ class Test_JOIN(BaseSerializeTest):
     #   JOIN 0
     command = "JOIN"
     argument_map = [
-        ("channel-list", ["#one", "#two"]),
-        ("key-list", ["key1", "key2"]),
+        ("channel", ["#one", "#two"]),
+        ("key", ["key1", "key2"]),
+        ("channel", "#chan"),
+        ("key", "key"),
     ]
     expected_map = {
         "ERR": ValueError,
+        "list": "JOIN #one,#two key1,key2",
+        "key": "JOIN #chan key",
+        "nokey-list": "JOIN #one,#two",
+        "nokey": "JOIN #chan",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0,): "nokey-list",
+            (0, 1): "list",
+            (2,): "nokey",
+            (2, 3): "key",
         }
     )
 
@@ -264,19 +263,27 @@ class Test_PART(BaseSerializeTest):
     #   PART #foo
     command = "PART"
     argument_map = [
-        ("channel-list", ["#one", "#two"]),
+        ("channel", ["#one", "#two"]),
         ("message", "msg msg"),
+        ("channel", "#chan"),
+        ("message", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "list": "PART #one,#two",
+        "list-msg": "PART #one,#two :msg msg",
+        "ok-none": "PART #chan",
+        "ok-empty": "PART #chan :",
+        "ok-msg": "PART #chan :msg msg",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0,): "list",
+            (0, 1): "list-msg",
+            (2,): "ok-none",
+            (2, 1): "ok-msg",
+            (2, 3): "ok-empty",
         }
     )
 
@@ -292,18 +299,18 @@ class Test_CHANNELMODE(BaseSerializeTest):
     command = "CHANNELMODE"
     argument_map = [
         ("channel", "#chan"),
-        ("params-list", ["+imI", "*!*@*.fi"]),
+        ("params", ["+imI", "*!*@*.fi"]),
+        ("params", "+imI *!*@*.fi"),
     ]
     expected_map = {
         "ERR": ValueError,
+        "ok": "MODE #chan +imI *!*@*.fi",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "ok",
+            (0, 2): "ok",
         }
     )
 
@@ -321,17 +328,20 @@ class Test_TOPIC(BaseSerializeTest):
     argument_map = [
         ("channel", "#chan"),
         ("message", "msg msg"),
+        ("message-empty", ""),
     ]
     expected_map = {
         "ERR": ValueError,
+        "set": "TOPIC #chan :msg msg",
+        "clear": "TOPIC #chan :",
+        "get": "TOPIC #chan",
     }
     permutations = base_permutations([0, 1], "ERR")
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0,): "get",
+            (0, 1): "set",
+            (0, 2): "clear",
         }
     )
 
