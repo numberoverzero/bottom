@@ -122,16 +122,14 @@ KNOWN_COMMANDS = [
         refs=[
             "https://tools.ietf.org/html/rfc2812#section-3.1.5",
         ],
-        syntax="MODE [<nick> [<modes>]]",
+        syntax="MODE <nick> [<modes>]",
         examples=[
             "MODE WiZ -w",
-            "MODE Angel +i",
-            "MODE",
+            "MODE Angel",
         ],
         patterns=[
             "MODE {nick} {modes}",
             "MODE {nick}",
-            "MODE",
         ],
     ),
     Command(
@@ -314,7 +312,7 @@ KNOWN_COMMANDS = [
             "PRIVMSG #Finnish :This message is in english",
         ],
         patterns=[
-            "PRIVMSG {target} {message}",
+            "PRIVMSG {target} :{message}",
         ],
     ),
     Command(

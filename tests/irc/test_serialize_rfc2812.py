@@ -87,15 +87,13 @@ class Test_OPER(BaseSerializeTest):
 
 
 class Test_USERMODE(BaseSerializeTest):
-    # MODE [<nick> [<modes>]]
+    # MODE <nick> [<modes>]
     # patterns:
     #   MODE {nick} {modes}
     #   MODE {nick}
-    #   MODE
     # examples:
     #   MODE WiZ -w
-    #   MODE Angel +i
-    #   MODE
+    #   MODE Angel
     command = "USERMODE"
     argument_map = [
         ("nick", "n0"),
@@ -104,8 +102,7 @@ class Test_USERMODE(BaseSerializeTest):
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "MODE",
-            (1,): "MODE -io",
+            (0,): "MODE n0",
             (0, 1): "MODE n0 -io",
         }
     )
@@ -121,13 +118,13 @@ class Test_SERVICE(BaseSerializeTest):
     argument_map = [
         ("nick", "dict"),
         ("distribution", "*.fr"),
-        ("type", 0),
+        ("type", 3),
         ("info", "French"),
     ]
     permutations = base_permutations([0, 1, 2, 3], ValueError)
     permutations.update(
         {
-            (0, 1, 2, 3): "SERVICE dict *.fr 0 :French",
+            (0, 1, 2, 3): "SERVICE dict * *.fr 3 0 :French",
         }
     )
 
@@ -270,7 +267,7 @@ class Test_TOPIC(BaseSerializeTest):
     argument_map = [
         ("channel", "#chan"),
         ("message", "msg msg"),
-        ("message-empty", ""),
+        ("message", ""),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
@@ -303,6 +300,7 @@ class Test_NAMES(BaseSerializeTest):
         {
             (): "NAMES",
             (0,): "NAMES #one,#two",
+            (1,): "NAMES",  # note: target is ignored
             (0, 1): "NAMES #one,#two remote.*.edu",
             (2,): "NAMES #chan",
         }
@@ -330,6 +328,7 @@ class Test_LIST(BaseSerializeTest):
         {
             (): "LIST",
             (0,): "LIST #one,#two",
+            (1,): "LIST",  # note: target is ignored
             (0, 1): "LIST #one,#two remote.*.edu",
             (2,): "LIST #chan",
         }
@@ -418,16 +417,13 @@ class Test_NOTICE(BaseSerializeTest):
     #   NOTICE #Finnish :This message is in english
     command = "NOTICE"
     argument_map = [
-        ("target", "TODO"),
+        ("target", "n0"),
         ("message", "msg msg"),
     ]
     permutations = base_permutations([0, 1], ValueError)
     permutations.update(
         {
-            (): "TODO",
-            (0,): "TODO",
-            (1,): "TODO",
-            (0, 1): "TODO",
+            (0, 1): "NOTICE n0 :msg msg",
         }
     )
 
