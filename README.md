@@ -98,9 +98,12 @@ if __name__ == "__main__":
 
 # API
 
-The public API is fairly small, and built around sending commands with
-`send(cmd, **kw)` (or `send_message(msg)` for raw IRC lines) and processing
+The public API that you'll typically interact with is small: the ``Client`` class and possibly ``register_pattern``.
+It is built around sending commands with `send(cmd, **kw)` (or `send_message(msg)` for raw IRC lines) and processing
 events with `@on(event)` and `wait(event)`.
+
+If you need to customize serialization, message handling, or signal processing, those are all available with examples
+in the [Extensions](https://bottom-docs.readthedocs.io/user/extension.html) documentation.
 
 ```py
 class Client:
@@ -140,11 +143,41 @@ class Client:
     # events caught by @Client.on
     message_handlers: list[ClientMessageHandler]
 
+# register a new pattern for outbound serialization eg.
+#   register_pattern("MYCMD", "MYCMD {nick} {target}")
+#   client.send("MYCMD", nick="n0", target="remote.net")
+def register_pattern(command: str, template: str)
+
 # wait for the client to emit one or more events.  when mode is "first"
 # this returns the events that finished first (more than one event can be triggered
 # in a single loop step) and cancels the rest.  when mode is "all" this waits
 # for all events to trigger.
 async def wait_for(client, events: list[str], mode: "first"|"all") -> list[dict]
+
+
+# helper classes to customize [de]serializing `dict <--> IRC line`
+class CommandSerializer:
+    # register a new serialization pattern.  these are sorted and looked up
+    # when trying to match input params against a valid command format.
+    # (some commands have multiple formats, like "TOPIC")
+
+    def register(command: str, template: str) -> SerializedTemplate
+
+    # format a dict of params into the best match template for a given command.
+    # searches all registered templates for that command from most args -> least args
+    # until a match is found and applied.
+    def serialize(command: str, params: dict) -> str
+
+class SerializedTemplate:
+    # like string.format() but less overhead.  applies custom formatters.
+    def format(params: dict) -> str
+
+    # returns an optimized version of string.format() that can use custom formatters
+    # eg. "{foo:myfunc} said {bar:join_commas}"
+    @classmethod
+    def parse(template: str, formatters: dict[str, Callable]) -> SerializedTemplate
+
+
 
 # type hints for message handlers
 type NextMessageHandler[T: Client] = Callable[[bytes], T, Coroutine[Any, Any, Any]]

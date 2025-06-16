@@ -1,19 +1,20 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 import ssl
 import typing as t
 
-from bottom.core import BaseClient, NextMessageHandler
-from bottom.pack import pack_command
-from bottom.unpack import unpack_command
+from bottom.core import BaseClient
+from bottom.irc import rfc2812_handler
+from bottom.irc.serialize import GLOBAL_SERIALIZER, CommandSerializer
 from bottom.util import create_task
 
-__all__ = ["Client", "rfc2812_handler", "wait_for"]
+__all__ = ["Client", "wait_for"]
 
 
 class Client(BaseClient):
+    _serializer: CommandSerializer
+
     def __init__(
         self,
         host: str,
@@ -21,6 +22,7 @@ class Client(BaseClient):
         *,
         encoding: str = "utf-8",
         ssl: bool | ssl.SSLContext = True,
+        serializer: CommandSerializer | None = None,
     ) -> None:
         """
         Create a new client that can interact with an IRC server.
@@ -35,9 +37,13 @@ class Client(BaseClient):
                 over the wire.  This is almost always "utf-8"
             ssl: ``True`` to create an ssl context, ``False`` to not use ssl,
                 or provide your own ssl context.
+            serializer: A command serializer that processes the kwargs from :meth:`Client.send<bottom.Client.send>`
+                into a string that is sent through the client's protocol.  Defaults to a global serializer
+                that knows RFC2812 commands.
         """
         super().__init__(host, port, encoding=encoding, ssl=ssl)
         self.message_handlers.append(rfc2812_handler)
+        self._serializer = serializer or GLOBAL_SERIALIZER
 
     @t.overload
     async def send(self, command: t.Literal["pass"], *, password: str, **kwargs: t.Any) -> None: ...
@@ -50,7 +56,9 @@ class Client(BaseClient):
     @t.overload
     async def send(self, command: t.Literal["oper"], *, user: str, password: str, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["usermode"], *, nick: str, modes: str = "", **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["usermode"], *, nick: str | None = None, modes: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
     async def send(
         self, command: t.Literal["service"], *, nick: str, distribution: str, type: str, info: str, **kwargs: t.Any
@@ -62,81 +70,125 @@ class Client(BaseClient):
         self, command: t.Literal["squit"], *, server: str, message: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["join"], *, channel: str, key: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
     async def send(
-        self, command: t.Literal["part"], *, channel: str, message: str | None = None, **kwargs: t.Any
+        self,
+        command: t.Literal["join"],
+        *,
+        channel: str | t.Iterable[str],
+        key: str | t.Iterable[str] | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["channelmode"], *, channel: str, modes: str = "", params: str = "", **kwargs: t.Any
-    ) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["topic"], *, channel: str, modes: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(
-        self, command: t.Literal["names"], *, channel: str | None = None, target: str = "", **kwargs: t.Any
+        self, command: t.Literal["part"], *, channel: str | t.Iterable[str], message: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["list"], *, channel: str | None = None, target: str = "", **kwargs: t.Any
+        self,
+        command: t.Literal["channelmode"],
+        *,
+        channel: str,
+        params: str | t.Iterable[str] | None = None,
+        **kwargs: t.Any,
+    ) -> None: ...
+    @t.overload
+    async def send(
+        self, command: t.Literal["topic"], *, channel: str, message: str | None = None, **kwargs: t.Any
+    ) -> None: ...
+    @t.overload
+    async def send(
+        self,
+        command: t.Literal["names"],
+        *,
+        channel: str | t.Iterable[str] | None = None,
+        target: str | None = None,
+        **kwargs: t.Any,
+    ) -> None: ...
+    @t.overload
+    async def send(
+        self,
+        command: t.Literal["list"],
+        *,
+        channel: str | t.Iterable[str] | None = None,
+        target: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["invite"], *, nick: str, channel: str, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["kick"], *, nick: str, channel: str, message: str | None = None, **kwargs: t.Any
+        self,
+        command: t.Literal["kick"],
+        *,
+        nick: str | t.Iterable[str],
+        channel: str | t.Iterable[str],
+        message: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["privmsg"], *, target: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["notice"], *, target: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["motd"], *, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["lusers"], *, mask: str, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["version"], *, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["stats"], *, query: str, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["motd"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["links"], *, mask: str, remote: str | None = None, **kwargs: t.Any
+        self, command: t.Literal["lusers"], *, mask: str | None = None, target: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["time"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["version"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["connect"], *, target: str, port: int, remote: str = "", **kwargs: t.Any
+        self, command: t.Literal["stats"], *, query: str | None = None, target: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["trace"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["links"], *, mask: str | None = None, remote: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["admin"], *, target: str = "", **kwargs: t.Any) -> None: ...
-    @t.overload
-    async def send(self, command: t.Literal["info"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["time"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["servlist"], *, mask: str = "", type: str = "", **kwargs: t.Any
+        self, command: t.Literal["connect"], *, target: str, port: int, remote: str | None = None, **kwargs: t.Any
+    ) -> None: ...
+    @t.overload
+    async def send(self, command: t.Literal["trace"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
+    @t.overload
+    async def send(self, command: t.Literal["admin"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
+    @t.overload
+    async def send(self, command: t.Literal["info"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
+    @t.overload
+    async def send(
+        self, command: t.Literal["servlist"], *, mask: str | None = None, type: str | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["squery"], *, target: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["who"], *, mask: str = "", o: bool | None = None, **kwargs: t.Any
+        self, command: t.Literal["who"], *, mask: str | None = None, o: bool | None = None, **kwargs: t.Any
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["whois"], *, mask: str = "", target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["whois"], *, mask: str | t.Iterable[str], target: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["whowas"], *, nick: str, count: int | None = None, target: str = "", **kwargs: t.Any
+        self,
+        command: t.Literal["whowas"],
+        *,
+        nick: str | t.Iterable[str],
+        count: int | None = None,
+        target: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["kill"], *, nick: str, message: str, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["ping"], *, message: str, **kwargs: t.Any) -> None: ...
+    async def send(
+        self, command: t.Literal["ping"], *, message: str, target: str | None = None, **kwargs: t.Any
+    ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["pong"], *, message: str, **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["pong"], *, message: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["away"], *, message: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
@@ -147,12 +199,18 @@ class Client(BaseClient):
     async def send(self, command: t.Literal["restart"], **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(
-        self, command: t.Literal["summon"], *, nick: str, target: str | None = None, channel: str = "", **kwargs: t.Any
+        self,
+        command: t.Literal["summon"],
+        *,
+        nick: str,
+        target: str | None = None,
+        channel: str | None = None,
+        **kwargs: t.Any,
     ) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["users"], *, target: str = "", **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["users"], *, target: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
-    async def send(self, command: t.Literal["wallops"], *, message: str, **kwargs: t.Any) -> None: ...
+    async def send(self, command: t.Literal["wallops"], *, message: str | None = None, **kwargs: t.Any) -> None: ...
     @t.overload
     async def send(self, command: t.Literal["userhost"], *, nick: str | t.Iterable[str], **kwargs: t.Any) -> None: ...
     @t.overload
@@ -171,23 +229,21 @@ class Client(BaseClient):
             await client.send("join", target="#mychan")
             await client.send("part", target="#mychan")
 
-        See :ref:`Commands<Commands>` for the list of supported rfc2812 commands.
+        See :ref:`Commands<Commands>` for the list of commands supported by default.
+
+        To add your own commands to the global default serializer, use::
+
+            from bottom import register_pattern
+            register_pattern("MYCOMMAND", "MYCOMMAND {some} {args} :{here}")
+
+        To add commands to this client's serializer, user::
+            client._serializer.register("MYCOMMAND", "MYCOMMAND {some} {args} :{here}")
+
+        See also: :class:`CommandSerializer<bottom.irc.serialize.CommandSerializer>`
 
         """
-        packed_command = pack_command(command, **kwargs).strip()
-        await self.send_message(packed_command)
-
-
-rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
-
-
-async def rfc2812_handler(next_handler: NextMessageHandler[Client], client: Client, message: bytes) -> None:
-    try:
-        event, kwargs = unpack_command(message.decode(client._encoding))
-        client.trigger(event, **kwargs)
-    except ValueError:
-        rfc2812_log.debug("Failed to parse line >>> {}".format(message.decode(client._encoding)))
-    await next_handler(client, message)
+        serialized = self._serializer.serialize(command, kwargs)
+        await self.send_message(serialized)
 
 
 async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[dict]:

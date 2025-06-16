@@ -16,7 +16,19 @@ Public API
     :special-members: __init__
     :member-order: groupwise
 
+.. autoclass:: bottom.irc.serialize.CommandSerializer
+    :members: formatters, register, serialize
+    :special-members: __init__
+    :member-order: groupwise
+
+.. autoclass:: bottom.irc.serialize.SerializerTemplate
+    :members: format, parse, original, params, score
+    :member-order: groupwise
+
+
 .. autofunction:: bottom.wait_for
+
+.. autofunction:: bottom.register_pattern
 
 .. py:data:: bottom.NextMessageHandler
 
@@ -86,7 +98,7 @@ Incoming Messages
 #. This is connected to the Protocol in ``src/bottom/core.py::make_protocol_factory``
 #. The chaining and implementation of ``next_handler`` is in ``src/bottom/util.py::stack_process`` which passes
    its own ``next_processor`` function into the handlers in order
-#. The public :class:`Client<bottom.Client>` has a default handler at ``src/bottom/client.py::rfc2812_handler``
+#. The public :class:`Client<bottom.Client>` has a default handler at ``src/bottom/irc/__init__.py::rfc2812_handler``
    which calls ``unpack_command`` to unpack a dict, then calls :meth:`Client.trigger<bottom.Client.trigger>` to
    schedule a task to invoke any handlers annotated with :meth:`Client.on<bottom.Client.on>`
 #. In ``src/bottom/unpack.py::unpack_command`` the broad structure of an IRC line is split with a regex, then

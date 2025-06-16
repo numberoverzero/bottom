@@ -3,13 +3,11 @@ lightweight asyncio IRC client
 
 bottom_ is a small no-dependency library for running simple or complex IRC clients.
 
-It's easy to get started with built-in support for common commands, and extensible
-enough to support any capabilities, including custom encryption, local events,
-bridging, replication, and more.
+It's easy to get started with built-in support for common commands, and extensible enough to support any
+capabilities, including custom encryption, local events, bridging, replication, and more.
 
-Explicit is better than implicit: no magic importing or naming to remember for
-plugins.  :ref:`Extend<Extensions>` the client with the same ``@on``
-decorator.
+Explicit is better than implicit: no magic importing or naming to remember for plugins.  :ref:`Extend<Extensions>`
+the client with the same :meth:`@Client.on<bottom.Client.on>` decorator.
 
 
 Quickstart
