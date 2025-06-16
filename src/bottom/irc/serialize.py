@@ -42,7 +42,7 @@ class SerializerTemplate:
     .. note::
 
         Do not instantiate SerializerTemplate directly.
-        Use :meth:`SerializerTemplate.parse<bottom.irc.serialize.SerializerTemplate.parse>` instead.
+        Use :meth:`SerializerTemplate.parse<bottom.SerializerTemplate.parse>` instead.
 
     This is an optimized version of string.format() that can apply custom formatting functions::
 
@@ -206,7 +206,7 @@ class CommandSerializer:
         serializer.register("LIST", "LIST")
 
 
-    See: :meth:`serialize<bottom.irc.serialize.CommandSerializer.serialize>`
+    See: :meth:`serialize<bottom.CommandSerializer.serialize>`
     """
 
     formatters: dict[str, t.Callable[[str, t.Any], t.Any]]
@@ -239,15 +239,28 @@ class CommandSerializer:
         serializer = CommandSerializer(formatters={"noadmin": not_admin})
 
     """
-    _templates: dict[str, list[SerializerTemplate]]
+
+    templates: dict[str, list[SerializerTemplate]]
+    """
+    a mapping of command -> list[template] that this serializer knows.
+
+    you can use this to make a new command serializer from an existing one::
+
+        from bottom.irc.serialize import GLOBAL_SERIALIZER
+        from copy import deepcopy
+
+        my_serializer = deepcopy(GLOBAL_SERIALIZER)
+        del my_serializer["AWAY"]
+        my_serializer.register("AWAY", "AWAY {my} {args}")
+    """
 
     def __init__(self, formatters: dict[str, t.Callable[[str, t.Any], t.Any]] | None = None) -> None:
         """
         Args:
-            formatters: dict of functions that can be referenced in templates.  See :attr:`formatters<bottom.irc.serialize.CommandSerializer>`
+            formatters: dict of functions that can be referenced in templates.  See :attr:`formatters<bottom.CommandSerializer>`
         """
         self.formatters = formatters or {}
-        self._templates = {}
+        self.templates = {}
 
     def register(
         self,
@@ -275,7 +288,7 @@ class CommandSerializer:
 
         # maintain descending sort by max possible score
         # this way serialize can stop on the first non-error result
-        commands = self._templates.setdefault(command, [])
+        commands = self.templates.setdefault(command, [])
         commands.append(template)
         commands.sort(key=lambda x: x.score, reverse=True)
         return template
@@ -300,13 +313,13 @@ class CommandSerializer:
             # prints A -> B
         """
         command = command.strip().upper()
-        if command not in self._templates:
+        if command not in self.templates:
             raise ValueError(f"Unknown command {command!r}")
 
         params = {k: v for (k, v) in params.items() if v is not None}
 
         last_err = None
-        for candidate in self._templates[command]:
+        for candidate in self.templates[command]:
             if candidate.score > len(params):
                 continue
             try:
@@ -320,7 +333,7 @@ class CommandSerializer:
                 last_err = err
 
         # last err was from the command with the least params that didn't match
-        n = len(self._templates[command])
+        n = len(self.templates[command])
         summary = ValueError(f"params were invalid for {n} forms of the command {command}")
         raise summary from last_err
 
@@ -360,8 +373,9 @@ def register_pattern(
 ) -> SerializerTemplate:
     """
     register a template for the given command into the provided serializer (default: global).
+    this is a thin wrapper around :meth:`CommandSerializer.register<bottom.CommandSerializer.register>`
 
-    see: :meth:`CommandSerializer.register<bottom.irc.serialize.CommandSerializer.register>`
+    see also: :ref:`Custom Serialization<ex-serialize>`.
     """
     return (serializer or GLOBAL_SERIALIZER).register(command, template)
 

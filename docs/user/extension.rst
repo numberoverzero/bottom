@@ -197,6 +197,77 @@ and insert one that simply forwards the entire line to your handler function:
             print(f"got whole irc line in bytes: {line}")
 
 
+.. _ex-serialize:
+
+Custom Serialization
+====================
+
+Every :class:`Client<bottom.Client>` is configured with the global default
+:class:`CommandSerializer<bottom.CommandSerializer>`.  You can register new commands using
+:meth:`register_pattern<bottom.register_pattern>` or you can replace the default serializer entirely.
+
+Let's say we're talking to an IRC server with a custom PASS syntax, which requires a challenge and the hex digest of
+HMAC-SHA256(password, challenge) to authenticate.
+
+Since our parameters don't overlap with any of the existing ``PASS`` patterns, we can simply register a new pattern::
+
+    from bottom import Client, register_pattern
+
+    # it's ok to create the client first; it will use the GLOBAL_SERIALIZER by default
+    client = Client("localhost", 6667)
+
+    register_pattern("PASS", "PASS {challenge} {hmac}")
+
+    challenge = "123abc"
+    password = "hunter2"
+    hmac = security_lib.hmac(password, challenge)
+
+    # our new pattern is the highest match for these params, not the original "PASS {password}" pattern
+    client.send("pass", challenge=challenge, hmac=hmac.hexdigest())
+
+
+Note that registering a pattern with global serializer can cause problems if the serializer is shared across multiple
+clients talking to servers with different syntax (eg. :ref:`Replication<ex-replication>` below).  It's safer
+to copy the serializer and then modify the copy::
+
+    from bottom import Client
+    from bottom.irc.serializer import GLOBAL_SERIALIZER
+    from copy import deepcopy
+
+    my_serializer = deepcopy(GLOBAL_SERIALIZER)
+    register_pattern("PASS", "PASS {challenge} {hmac}", serializer=my_serializer)
+
+    # pass into new clients, or update an existing client
+    new_client = Client("host", 6667, serializer=my_serializer)
+    existing_client._serializer = my_serializer
+
+
+Finally, you may provide custom formatters to your serializer.  These may be used when rendering each param within the
+template string.  Instead of copying an existing serializer, let's start from scratch and build up the formatters,
+serializer, and client::
+
+    from bottom import CommandSerializer, Client
+
+    def upper(id: str, value: str) -> t.Any:
+        """
+        first argument is the name of the param (eg. 'message')
+        second argument is the value that is going into the template for that param
+        """
+        return value.upper()
+
+    formatters = {
+        "up": upper,
+        "down": lambda _id, val: val.lower(),
+    }
+    serializer = CommandSerializer(formatters=formatters)
+    client = Client("localhost", 6667, serializer=serializer)
+
+    serializer.register("PONG", "PONG {message}")
+    serializer.register("PRIVMSG", "PRIVMSG {target} :{message:down} ({message:up})")
+
+
+.. _ex-replication:
+
 Replication
 ===========
 

@@ -129,7 +129,8 @@ In return for the breaking changes covered below, bottom now has:
    :class:`CommandSerializer<bottom.irc.serialize.CommandSerializer>` and
    :class:`SerializerTemplate<bottom.irc.serialize.SerializerTemplate>` which replace the very hardcoded ``pack_command``
    function from 2.2.0.  You can register new patterns to the default serializer with
-   :meth:`register_pattern<bottom.register_pattern>` or create your own.
+   :meth:`register_pattern<bottom.register_pattern>` or create your own.  See
+   :ref:`Custom Serialization<ex-serialize>` for examples.
 
 
 Breaking Changes

@@ -143,10 +143,12 @@ class Client:
     # events caught by @Client.on
     message_handlers: list[ClientMessageHandler]
 
+
 # register a new pattern for outbound serialization eg.
 #   register_pattern("MYCMD", "MYCMD {nick} {target}")
 #   client.send("MYCMD", nick="n0", target="remote.net")
 def register_pattern(command: str, template: str)
+
 
 # wait for the client to emit one or more events.  when mode is "first"
 # this returns the events that finished first (more than one event can be triggered
@@ -176,7 +178,6 @@ class SerializedTemplate:
     # eg. "{foo:myfunc} said {bar:join_commas}"
     @classmethod
     def parse(template: str, formatters: dict[str, Callable]) -> SerializedTemplate
-
 
 
 # type hints for message handlers

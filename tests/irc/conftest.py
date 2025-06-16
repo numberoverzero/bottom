@@ -24,7 +24,7 @@ def _reset_global_serializer(request: pytest.FixtureRequest) -> t.Iterable[None]
         GLOBAL_SERIALIZER.register = original_register  # ty: ignore
         for command, template in new:
             try:
-                GLOBAL_SERIALIZER._templates[command].remove(template)
+                GLOBAL_SERIALIZER.templates[command].remove(template)
             except Exception as exc:
                 msg = f"failed to remove spec ({command}, {template}) while resetting global serializer"
                 raise RuntimeError(msg) from exc

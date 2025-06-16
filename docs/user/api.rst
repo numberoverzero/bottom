@@ -16,12 +16,12 @@ Public API
     :special-members: __init__
     :member-order: groupwise
 
-.. autoclass:: bottom.irc.serialize.CommandSerializer
-    :members: formatters, register, serialize
+.. autoclass:: bottom.CommandSerializer
+    :members: formatters, register, serialize, templates
     :special-members: __init__
     :member-order: groupwise
 
-.. autoclass:: bottom.irc.serialize.SerializerTemplate
+.. autoclass:: bottom.SerializerTemplate
     :members: format, parse, original, params, score
     :member-order: groupwise
 
