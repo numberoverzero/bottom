@@ -16,7 +16,19 @@ Public API
     :special-members: __init__
     :member-order: groupwise
 
+.. autoclass:: bottom.irc.serialize.CommandSerializer
+    :members: formatters, register, serialize
+    :special-members: __init__
+    :member-order: groupwise
+
+.. autoclass:: bottom.irc.serialize.SerializerTemplate
+    :members: format, parse, original, params, score
+    :member-order: groupwise
+
+
 .. autofunction:: bottom.wait_for
+
+.. autofunction:: bottom.register_pattern
 
 .. py:data:: bottom.NextMessageHandler
 

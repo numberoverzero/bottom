@@ -62,6 +62,8 @@ nitpick_ignore = [
     ("py:class", "t.Callable"),
     ("py:class", "util.Decorator"),
     ("py:class", "ClientMessageHandler"),
+    ("py:class", "Component"),
+    ("py:class", "ComputedStr"),
 ]
 
 

@@ -125,6 +125,13 @@ In return for the breaking changes covered below, bottom now has:
 #. :meth:`Client.send<bottom.Client.send>` type hints.  :func:`typing.overload` provides specific kwarg completion for
    all of the IRC commands that bottom knows how to pack.
 
+#. Extensibility for message packing through the new public classes
+  :class:`CommandSerializer<bottom.irc.serialize.CommandSerializer>` and
+  :class:`SerializerTemplate<bottom.irc.serialize.SerializerTemplate>` which replace the very hardcoded ``pack_command``
+  function from 2.2.0.  You can register new patterns to the default serializer with
+  :meth:`register_pattern<bottom.register_pattern>` or create your own.
+
+
 Breaking Changes
 ----------------
 
