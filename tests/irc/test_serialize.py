@@ -3,7 +3,7 @@
 # specific command tests live in test_serialize_rfc2812.py
 # ============================================================================
 import pytest
-from bottom.irc.serialize import GLOBAL_FORMATTERS, CommandSerializer, SerializerTemplate
+from bottom.irc.serialize import GLOBAL_FORMATTERS, CommandSerializer, FormattingError, SerializerTemplate
 from bottom.irc.serialize import register_pattern as module_register
 from bottom.irc.serialize import serialize as module_serialize
 
@@ -85,6 +85,34 @@ def test_template_missing_args(params) -> None:
     template = SerializerTemplate.parse("{valid} {template}")
     with pytest.raises(KeyError):
         template.format(params)
+
+
+def test_template_raises_inner() -> None:
+    """when wrap_exc is False, any exception from a formatter is raised directly"""
+    exc = Exception()
+
+    def fail(id: str, val: str) -> str:
+        raise exc
+
+    serializer = SerializerTemplate.parse("{x:fail}", {"fail": fail})
+    with pytest.raises(Exception) as caught:
+        serializer.format({"x": "ok"})
+        assert caught.value is exc
+
+
+def test_template_wraps_inner() -> None:
+    """when wrap_exc is True, any exception from a formatter is raised inside a wrapper"""
+    exc = Exception()
+
+    def fail(id: str, val: str) -> str:
+        raise exc
+
+    serializer = SerializerTemplate.parse("{x:fail}", {"fail": fail})
+    with pytest.raises(Exception) as caught:
+        serializer.format({"x": "ok"})
+        outer = caught.value
+        assert isinstance(outer, FormattingError)
+        assert outer.cause is exc
 
 
 @pytest.mark.parametrize(
