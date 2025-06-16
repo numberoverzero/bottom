@@ -4,7 +4,7 @@ import typing as t
 from bottom import Client
 from bottom.client import wait_for
 
-host = "chat.freenode.net"
+host = "irc.libera.chat"
 port = 6697
 ssl = True
 

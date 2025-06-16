@@ -8,7 +8,7 @@ from bottom import Client, NextMessageHandler
 # note: this is trivially implemented in your own code, feel free to copy from github or the migration guide
 from bottom.util import create_task
 
-HOST = "chat.freenode.net"
+HOST = "irc.libera.chat"
 PORT = 6697
 SSL = True
 

@@ -236,7 +236,7 @@ Before - 2.2.0
 
     from bottom import Client
 
-    HOST = "chat.freenode.net"
+    HOST = "irc.libera.chat"
     PORT = 6697
     SSL = True
 
@@ -341,6 +341,10 @@ Before - 2.2.0
     @client.on("CLIENT_CONNECT")
     async def connect(**kwargs):
         client.send("nick", nick=NICK)
+        # WARN: argument changes to "nick" in v3.0.0
+        #       |
+        #       +-------------+
+        #                     V
         client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
 
         # Don't try to join channels until the server has
@@ -429,7 +433,7 @@ After - 3.0.0
     # note: this is trivially implemented in your own code, feel free to copy from github or the migration guide
     from bottom.util import create_task
 
-    HOST = "chat.freenode.net"
+    HOST = "irc.libera.chat"
     PORT = 6697
     SSL = True
 
@@ -565,7 +569,11 @@ After - 3.0.0
     @client.on("CLIENT_CONNECT")
     async def connect(**kwargs: t.Any) -> None:
         await client.send("nick", nick=NICK)
-        await client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
+        # WARN: argument changed from "user" to "nick"
+        #       |
+        #       +-------------------+
+        #                           V
+        await client.send("user", nick=NICK, realname="https://github.com/numberoverzero/bottom")
 
         first = await wait_for(client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
         names = [x["__event__"] for x in first]

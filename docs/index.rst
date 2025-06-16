@@ -20,7 +20,7 @@ Create an instance:
     import asyncio
     import bottom
 
-    host = 'chat.freenode.net'
+    host = "irc.libera.chat"
     port = 6697
     ssl = True
 

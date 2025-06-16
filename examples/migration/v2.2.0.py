@@ -3,7 +3,7 @@ import random
 
 from bottom import Client
 
-HOST = "chat.freenode.net"
+HOST = "irc.libera.chat"
 PORT = 6697
 SSL = True
 
@@ -108,6 +108,10 @@ def join(nick, user, host, channel):
 @client.on("CLIENT_CONNECT")
 async def connect(**kwargs):
     client.send("nick", nick=NICK)
+    # WARN: argument changes to "nick" in v3.0.0
+    #       |
+    #       +-------------+
+    #                     V
     client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
 
     # Don't try to join channels until the server has
