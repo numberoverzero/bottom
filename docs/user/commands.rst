@@ -1,267 +1,212 @@
-RFC2812 Support
-^^^^^^^^^^^^^^^
+Built-in Commands and Events
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _Commands:
 
 Sending IRC Commands
 ====================
 
-.. code-block:: python
+The global default :class:`serializer<bottom.CommandSerializer>` includes 45 commands from
+`rfc2812<https://datatracker.ietf.org/doc/html/rfc2812>`.  You can :ref:`extend this<ex-serialize>` with your own
+commands.  The client's :meth:`@Client.on<bottom.Client.on>` method includes type overloads for the built-in commands.
+Finally, you can use the script ``bin/print-commands.py`` (copied below) to print a client's known commands::
 
-    await client.send('PASS', password='hunter2')
+    from bottom import Client
 
-.. code-block:: python
+    def help_known_commands(client: Client) -> str:
+        out = []
+        all_templates = client._serializer.templates
+        for command in sorted(all_templates.keys()):
+            out.append(command)
+            for tpl in all_templates[command]:
+                out.append(f"  {tpl.original}")
+        return "\n".join(out)
 
-    await client.send('NICK', nick='WiZ')
 
-.. code-block:: python
+    my_client = Client("localhost", 6697)
+    print(help_known_commands(my_client))
 
-    # mode is optional, default is 0
-    await client.send('USER', user='WiZ-user', realname='Ronnie')
-    await client.send('USER', user='WiZ-user', mode='8', realname='Ronnie')
 
-.. code-block:: python
+GLOBAL_SERIALIZER default commands
+----------------------------------
 
-    await client.send('OPER', user='WiZ', password='hunter2')
+*(note: generated with the previous command)*
 
-.. code-block:: python
+.. code-block:: text
 
-    # Renamed from MODE
-    await client.send('USERMODE', nick='WiZ')
-    await client.send('USERMODE', nick='WiZ', modes='+io')
+  ADMIN
+    ADMIN {target}
+    ADMIN
 
-.. code-block:: python
+  AWAY
+    AWAY :{message}
+    AWAY
 
-    await client.send('SERVICE', nick='CHANSERV', distribution='*.en',
-                type='0', info='manages channels')
+  CHANNELMODE
+    MODE {channel} {params:space}
 
-.. code-block:: python
+  CONNECT
+    CONNECT {target} {port} {remote}
+    CONNECT {target} {port}
 
-    await client.send('QUIT')
-    await client.send('QUIT', message='Gone to Lunch')
+  DIE
+    DIE
 
-.. code-block:: python
+  INFO
+    INFO {target}
+    INFO
 
-    await client.send('SQUIT', server='tolsun.oulu.fi')
-    await client.send('SQUIT', server='tolsun.oulu.fi', message='Bad Link')
+  INVITE
+    INVITE {nick} {channel}
 
-.. code-block:: python
+  ISON
+    ISON {nick:space}
 
-    await client.send('JOIN', channel='#foo-chan')
-    await client.send('JOIN', channel='#foo-chan', key='foo-key')
-    await client.send('JOIN', channel=['#foo-chan', '#other'],
-                key='foo-key') # other has no key
-    await client.send('JOIN', channel=['#foo-chan', '#other'],
-                key=['foo-key', 'other-key'])
+  JOIN
+    JOIN {channel:comma} {key:comma}
+    JOIN {channel:comma}
 
-    # this will cause you to LEAVE all currently joined channels
-    await client.send('JOIN', channel='0')
+  KICK
+    KICK {channel:comma} {nick:comma} :{message}
+    KICK {channel:comma} {nick:comma}
 
-.. code-block:: python
+  KILL
+    KILL {nick} :{message}
 
-    await client.send('PART', channel='#foo-chan')
-    await client.send('PART', channel=['#foo-chan', '#other'])
-    await client.send('PART', channel='#foo-chan', message='I lost')
+  LINKS
+    LINKS {remote} {mask}
+    LINKS {mask}
+    LINKS
 
-.. code-block:: python
+  LIST
+    LIST {channel:comma} {target}
+    LIST {channel:comma}
+    LIST
 
-    # Renamed from MODE
-    await client.send('CHANNELMODE', channel='#foo-chan', modes='+b')
-    await client.send('CHANNELMODE', channel='#foo-chan', modes='+l',
-                params='10')
+  LUSERS
+    LUSERS {mask} {target}
+    LUSERS {mask}
+    LUSERS
 
-.. code-block:: python
+  MOTD
+    MOTD {target}
+    MOTD
 
-    await client.send('TOPIC', channel='#foo-chan')
-    await client.send('TOPIC', channel='#foo-chan',  # Clear channel message
-                message='')
-    await client.send('TOPIC', channel='#foo-chan',
-                message='Yes, this is dog')
+  NAMES
+    NAMES {channel:comma} {target}
+    NAMES {channel:comma}
+    NAMES
 
-.. code-block:: python
+  NICK
+    NICK {nick}
 
-    # target requires channel
-    await client.send('NAMES')
-    await client.send('NAMES', channel='#foo-chan')
-    await client.send('NAMES', channel=['#foo-chan', '#other'])
-    await client.send('NAMES', channel=['#foo-chan', '#other'],
-                target='remote.*.edu')
+  NOTICE
+    NOTICE {target} :{message}
 
-.. code-block:: python
+  OPER
+    OPER {nick} {password}
 
-    # target requires channel
-    await client.send('LIST')
-    await client.send('LIST', channel='#foo-chan')
-    await client.send('LIST', channel=['#foo-chan', '#other'])
-    await client.send('LIST', channel=['#foo-chan', '#other'],
-                target='remote.*.edu')
+  PART
+    PART {channel:comma} :{message}
+    PART {channel:comma}
 
-.. code-block:: python
+  PASS
+    PASS {password}
 
-    await client.send('INVITE', nick='WiZ-friend', channel='#bar-chan')
+  PING
+    PING {message:nospace} {target}
+    PING {message:nospace}
 
-.. code-block:: python
+  PONG
+    PONG :{message}
+    PONG
 
-    # nick and channel must have the same number of elements
-    await client.send('KICK', channel='#foo-chan', nick='WiZ')
-    await client.send('KICK', channel='#foo-chan', nick='WiZ',
-                message='Spamming')
-    await client.send('KICK', channel='#foo-chan', nick=['WiZ', 'WiZ-friend'])
-    await client.send('KICK', channel=['#foo', '#bar'],
-                nick=['WiZ', 'WiZ-friend'])
+  PRIVMSG
+    PRIVMSG {target} :{message}
 
-.. code-block:: python
+  QUIT
+    QUIT :{message}
+    QUIT
 
-    await client.send('PRIVMSG', target='WiZ-friend', message='Hello, friend!')
+  REHASH
+    REHASH
 
-.. code-block:: python
+  RESTART
+    RESTART
 
-    await client.send('NOTICE', target='#foo-chan',
-                message='Maintenance in 5 mins')
+  SERVICE
+    SERVICE {nick} * {distribution} {type} 0 :{info}
 
-.. code-block:: python
+  SERVLIST
+    SERVLIST {mask} {type}
+    SERVLIST {mask}
+    SERVLIST
 
-    await client.send('MOTD')
-    await client.send('MOTD', target='remote.*.edu')
+  SQUERY
+    SQUERY {target} :{message}
 
-.. code-block:: python
+  SQUIT
+    SQUIT {server} :{message}
+    SQUIT {server}
 
-    await client.send('LUSERS')
-    await client.send('LUSERS', mask='*.edu')
-    await client.send('LUSERS', mask='*.edu', target='remote.*.edu')
+  STATS
+    STATS {query} {target}
+    STATS {query}
+    STATS
 
-.. code-block:: python
+  SUMMON
+    SUMMON {nick} {target} {channel}
+    SUMMON {nick} {target}
+    SUMMON {nick}
 
-    await client.send('VERSION')
+  TIME
+    TIME {target}
+    TIME
 
-.. code-block:: python
+  TOPIC
+    TOPIC {channel} :{message}
+    TOPIC {channel}
 
-    # target requires query
-    await client.send('STATS')
-    await client.send('STATS', query='m')
-    await client.send('STATS', query='m', target='remote.*.edu')
+  TRACE
+    TRACE {target}
+    TRACE
 
-.. code-block:: python
+  USER
+    USER {nick} {mode} * :{realname}
+    USER {nick} 0 * :{realname}
 
-    # remote requires mask
-    await client.send('LINKS')
-    await client.send('LINKS', mask='*.bu.edu')
-    await client.send('LINKS', mask='*.bu.edu', remote='*.edu')
+  USERHOST
+    USERHOST {nick:space}
 
-.. code-block:: python
+  USERMODE
+    MODE {nick} {modes}
+    MODE {nick}
 
-    await client.send('TIME')
-    await client.send('TIME', target='remote.*.edu')
+  USERS
+    USERS {target}
+    USERS
 
-.. code-block:: python
+  VERSION
+    VERSION {target}
+    VERSION
 
-    await client.send('CONNECT', target='tolsun.oulu.fi', port=6667)
-    await client.send('CONNECT', target='tolsun.oulu.fi', port=6667,
-                remote='*.edu')
+  WALLOPS
+    WALLOPS :{message}
 
-.. code-block:: python
+  WHO
+    WHO {mask} {o:bool}
+    WHO {mask}
+    WHO
 
-    await client.send('TRACE')
-    await client.send('TRACE', target='remote.*.edu')
+  WHOIS
+    WHOIS {target} {mask:comma}
+    WHOIS {mask:comma}
 
-.. code-block:: python
+  WHOWAS
+    WHOWAS {nick:comma} {count} {target}
+    WHOWAS {nick:comma} {count}
+    WHOWAS {nick:comma}
 
-    await client.send('ADMIN')
-    await client.send('ADMIN', target='remote.*.edu')
-
-.. code-block:: python
-
-    await client.send('INFO')
-    await client.send('INFO', target='remote.*.edu')
-
-.. code-block:: python
-
-    # type requires mask
-    await client.send('SERVLIST', mask='*SERV')
-    await client.send('SERVLIST', mask='*SERV', type=3)
-
-.. code-block:: python
-
-    await client.send('SQUERY', target='irchelp', message='HELP privmsg')
-
-.. code-block:: python
-
-    await client.send('WHO')
-    await client.send('WHO', mask='*.fi')
-    await client.send('WHO', mask='*.fi', o=True)
-
-.. code-block:: python
-
-    await client.send('WHOIS', mask='*.fi')
-    await client.send('WHOIS', mask=['*.fi', '*.edu'], target='remote.*.edu')
-
-.. code-block:: python
-
-    # target requires count
-    await client.send('WHOWAS', nick='WiZ')
-    await client.send('WHOWAS', nick='WiZ', count=10)
-    await client.send('WHOWAS', nick=['WiZ', 'WiZ-friend'], count=10)
-    await client.send('WHOWAS', nick='WiZ', count=10, target='remote.*.edu')
-
-.. code-block:: python
-
-    await client.send('KILL', nick='WiZ', message='Spamming Joins')
-
-.. code-block:: python
-
-    # PING the server you are connected to
-    await client.send('PING')
-    await client.send('PING', message='Test..')
-
-.. code-block:: python
-
-    # when replying to a PING, the message should be the same
-    await client.send('PONG')
-    await client.send('PONG', message='Test..')
-
-.. code-block:: python
-
-    await client.send('AWAY')
-    await client.send('AWAY', message='Gone to Lunch')
-
-.. code-block:: python
-
-    await client.send('REHASH')
-
-.. code-block:: python
-
-    await client.send('DIE')
-
-.. code-block:: python
-
-    await client.send('RESTART')
-
-.. code-block:: python
-
-    # target requires channel
-    await client.send('SUMMON', nick='WiZ')
-    await client.send('SUMMON', nick='WiZ', target='remote.*.edu')
-    await client.send('SUMMON', nick='WiZ', target='remote.*.edu',
-                channel='#foo-chan')
-
-.. code-block:: python
-
-    await client.send('USERS')
-    await client.send('USERS', target='remote.*.edu')
-
-.. code-block:: python
-
-    await client.send('WALLOPS', message='Maintenance in 5 minutes')
-
-.. code-block:: python
-
-    await client.send('USERHOST', nick='WiZ')
-    await client.send('USERHOST', nick=['WiZ', 'WiZ-friend'])
-
-.. code-block:: python
-
-    await client.send('ISON', nick='WiZ')
-    await client.send('ISON', nick=['WiZ', 'WiZ-friend'])
 
 
 .. _Events:
