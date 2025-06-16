@@ -2,7 +2,7 @@
 # tests for specific commands
 # serialization primitives tests live in test_serialize.py
 #
-# note: you can generate a new test template with bin/gentests.py
+# note: you can generate a new test template with bin/generate-tests.py
 #   copy the generated test (not the whole file) for your new command into this file
 #   then fill out the argument map and add any permutations.
 # ============================================================================
