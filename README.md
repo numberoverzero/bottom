@@ -11,13 +11,15 @@
     https://img.shields.io/github/issues/numberoverzero/bottom?style=for-the-badge)](
     https://github.com/numberoverzero/bottom/issues)
 
-# asyncio-based rfc2812-compliant IRC Client (3.12+)
+# bottom 3.0.0
 
-bottom is a small no-dependency library for running simple or complex IRC clients.
+bottom is a small no-dependency `async` library for running simple or complex IRC clients
+and requires **python 3.12+**
+
 
 It's easy to get started with built-in support for common commands, and extensible
 enough to support any capabilities, including custom encryption, local events,
-bridging, replication, and more.
+bridging, replication, custom- and multi- syntax compatibility, and more.
 
 # Installation
 
