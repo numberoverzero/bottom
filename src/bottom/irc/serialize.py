@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import collections
 import collections.abc
+import logging
 import string
 import typing as t
 from dataclasses import dataclass, field
 
 __all__ = ["CommandSerializer", "SerializerTemplate", "register_pattern", "serialize"]
+
+logger = logging.getLogger(__name__)
 
 
 def default_formatter(key: str, value: t.Any) -> str:  # noqa: ANN401
@@ -313,13 +316,13 @@ class CommandSerializer:
             # prints A -> B
         """
         command = command.strip().upper()
-        if command not in self.templates:
+        if not (templates := self.templates.get(command)):
             raise ValueError(f"Unknown command {command!r}")
 
         params = {k: v for (k, v) in params.items() if v is not None}
 
         last_err = None
-        for candidate in self.templates[command]:
+        for candidate in templates:
             if candidate.score > len(params):
                 continue
             try:
@@ -333,8 +336,14 @@ class CommandSerializer:
                 last_err = err
 
         # last err was from the command with the least params that didn't match
-        n = len(self.templates[command])
-        summary = ValueError(f"params were invalid for {n} forms of the command {command}")
+        lines = [
+            "failed to match any patterns.",
+            f"provided:\n    {command} {params}",
+            "available:",
+            *[f"  {tpl.original}" for tpl in templates],
+        ]
+        logger.exception("\n  ".join(lines), exc_info=last_err)
+        summary = ValueError(f"params were invalid for {len(templates)} forms of the command {command}")
         raise summary from last_err
 
 
