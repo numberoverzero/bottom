@@ -6,13 +6,15 @@ import typing as t
 
 from bottom.core import BaseClient
 from bottom.irc import rfc2812_handler
-from bottom.pack import pack_command
+from bottom.irc.serialize import GLOBAL_SERIALIZER, CommandSerializer
 from bottom.util import create_task
 
 __all__ = ["Client", "wait_for"]
 
 
 class Client(BaseClient):
+    _serializer: CommandSerializer
+
     def __init__(
         self,
         host: str,
@@ -20,6 +22,7 @@ class Client(BaseClient):
         *,
         encoding: str = "utf-8",
         ssl: bool | ssl.SSLContext = True,
+        serializer: CommandSerializer | None = None,
     ) -> None:
         """
         Create a new client that can interact with an IRC server.
@@ -34,9 +37,13 @@ class Client(BaseClient):
                 over the wire.  This is almost always "utf-8"
             ssl: ``True`` to create an ssl context, ``False`` to not use ssl,
                 or provide your own ssl context.
+            serializer: A command serializer that processes the kwargs from :meth:`Client.send<bottom.Client.send>`
+                into a string that is sent through the client's protocol.  Defaults to a global serializer
+                that knows RFC2812 commands.
         """
         super().__init__(host, port, encoding=encoding, ssl=ssl)
         self.message_handlers.append(rfc2812_handler)
+        self._serializer = serializer or GLOBAL_SERIALIZER
 
     @t.overload
     async def send(self, command: t.Literal["pass"], *, password: str, **kwargs: t.Any) -> None: ...
@@ -222,11 +229,21 @@ class Client(BaseClient):
             await client.send("join", target="#mychan")
             await client.send("part", target="#mychan")
 
-        See :ref:`Commands<Commands>` for the list of supported rfc2812 commands.
+        See :ref:`Commands<Commands>` for the list of commands supported by default.
+
+        To add your own commands to the global default serializer, use::
+
+            from bottom import register_pattern
+            register_pattern("MYCOMMAND", "MYCOMMAND {some} {args} :{here}")
+
+        To add commands to this client's serializer, user::
+            client._serializer.register("MYCOMMAND", "MYCOMMAND {some} {args} :{here}")
+
+        See also: :class:`CommandSerializer<bottom.irc.serialize.CommandSerializer>`
 
         """
-        packed_command = pack_command(command, **kwargs).strip()
-        await self.send_message(packed_command)
+        serialized = self._serializer.serialize(command, kwargs)
+        await self.send_message(serialized)
 
 
 async def wait_for(client: Client, events: list[str], *, mode: t.Literal["first", "all"] = "first") -> list[dict]:

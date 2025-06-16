@@ -2,10 +2,13 @@ import logging
 from dataclasses import dataclass, field
 
 from bottom.core import BaseClient, NextMessageHandler
-from bottom.irc.serialize import register_pattern, serialize
+from bottom.irc.serialize import register_pattern
 from bottom.unpack import unpack_command
 
-__all__ = ["disable_first_run_message", "register_pattern", "rfc2812_handler", "serialize"]
+__all__ = [
+    "disable_first_run_message",
+    "rfc2812_handler",
+]
 
 
 rfc2812_log = logging.getLogger("bottom.rfc2812_handler")
@@ -100,7 +103,10 @@ KNOWN_COMMANDS = [
             "USER guest 8 :Ronnie Reagan",
             "USER guest :Ronnie Reagan",
         ],
-        patterns=["USER {nick} {mode} * :{realname}", "USER {nick} 0 * :{realname}"],
+        patterns=[
+            "USER {nick} {mode} * :{realname}",
+            "USER {nick} 0 * :{realname}",
+        ],
     ),
     Command(
         bottom="OPER",
@@ -157,7 +163,10 @@ KNOWN_COMMANDS = [
             "QUIT :Gone to lunch",
             "QUIT",
         ],
-        patterns=["QUIT :{message}", "QUIT"],
+        patterns=[
+            "QUIT :{message}",
+            "QUIT",
+        ],
     ),
     Command(
         bottom="SQUIT",
@@ -170,7 +179,10 @@ KNOWN_COMMANDS = [
             "SQUIT tolsun.oulu.fi :Bad Link",
             "SQUIT tolsun.oulu.fi",
         ],
-        patterns=["SQUIT {server} :{message}", "SQUIT {server}"],
+        patterns=[
+            "SQUIT {server} :{message}",
+            "SQUIT {server}",
+        ],
     ),
     Command(
         bottom="JOIN",
@@ -184,7 +196,10 @@ KNOWN_COMMANDS = [
             "JOIN #foo",
             "JOIN 0",
         ],
-        patterns=["JOIN {channel:comma} {key:comma}", "JOIN {channel:comma}"],
+        patterns=[
+            "JOIN {channel:comma} {key:comma}",
+            "JOIN {channel:comma}",
+        ],
     ),
     Command(
         bottom="PART",
@@ -197,7 +212,10 @@ KNOWN_COMMANDS = [
             "PART #foo :I lost",
             "PART #foo",
         ],
-        patterns=["PART {channel:comma} :{message}", "PART {channel:comma}"],
+        patterns=[
+            "PART {channel:comma} :{message}",
+            "PART {channel:comma}",
+        ],
     ),
     Command(
         bottom="CHANNELMODE",
