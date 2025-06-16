@@ -144,7 +144,11 @@ from bottom import wait_for
 @client.on("CLIENT_CONNECT")
 async def connect(**kwargs: t.Any) -> None:
     await client.send("nick", nick=NICK)
-    await client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
+    # WARN: argument changed from "user" to "nick"
+    #       |
+    #       +-------------------+
+    #                           V
+    await client.send("user", nick=NICK, realname="https://github.com/numberoverzero/bottom")
 
     first = await wait_for(client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
     names = [x["__event__"] for x in first]

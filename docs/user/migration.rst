@@ -141,6 +141,7 @@ These are approximately ordered by expected impact.
 * minimum supported python version is now ``python3.12``
 * ``Client.send`` is now ``async``
 * ``Client.send_raw`` was renamed to ``Client.send_message`` and is now ``async``
+* ``USER`` and ``OPER`` now take kwarg ``nick=`` instead of kwarg ``user=``
 * ``async Client.wait`` now returns the event dict, not just the event name
 
 * ``Client.loop`` property was removed
