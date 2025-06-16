@@ -50,7 +50,7 @@ build: lint test
 	.venv/bin/twine check dist/*
 
 publish: lint test build docs
-	.venv/bin/twine upload dist/*
+	.venv/bin/twine upload --repository bottom dist/*
 
 pr-check: lint test build docs docs-view
 	@echo "please review the rendered docs before creating a PR"
