@@ -15,42 +15,36 @@ help:
 	@echo "  pr-check: please run before submitting a pr"
 
 dev:
-	rm -rf .venv
-	python${PY_VERSION} -m venv .venv --copies
-	.venv/bin/pip install -U pip
-	.venv/bin/pip install -e . --group dev
+	uv sync --all-extras --group dev
 
 lint:
-	.venv/bin/pip install -q --group lint
-	.venv/bin/ruff check --fix
-	./bin/ty-workaround.py
+	uv run --group lint ruff check --fix
+	uv run --group lint ty check -v
 
 test: lint
 	rm -rf .coverage .pytest_cache
-	.venv/bin/pip install -q --group test
+
 	# https://docs.python.org/3/library/devmode.html#effects-of-the-python-development-mode
 	# show all warnings, enable asyncio debug mode
-	.venv/bin/python -X dev -m coverage run --branch --source=src/bottom -m pytest -vvv -s
-	.venv/bin/coverage report -m
+	uv run --group test python -X dev -m coverage run --branch --source=src/bottom -m pytest -vvv -s
+	uv run --group test coverage report -m
 
 docs:
 	@echo RUNNING DOCS
 	rm -rf docs/_build
-	.venv/bin/pip install -q --group docs
-	.venv/bin/python -m sphinx -W -n --keep-going -b linkcheck -D linkcheck_timeout=1 docs/ docs/_build/linkcheck
-	.venv/bin/python -m sphinx -W -n --keep-going -T -b html -d docs/_build/doctrees -D language=en docs/ docs/_build/html
+	uv run --group docs -m sphinx -W -n --keep-going -b linkcheck -D linkcheck_timeout=1 docs/ docs/_build/linkcheck
+	uv run --group docs -m sphinx -W -n --keep-going -T -b html -d docs/_build/doctrees -D language=en docs/ docs/_build/html
 
 docs-view: docs
 	${BROWSER} docs/_build/html/index.html
 
 build: lint test
 	rm -rf dist/
-	.venv/bin/pip install -q --group dist
-	.venv/bin/python -m build
-	.venv/bin/twine check dist/*
+	uv build
+	uv run --group dist twine check dist/*
 
 publish: lint test build docs
-	.venv/bin/twine upload --repository bottom dist/*
+	uv run --group dist twine upload --repository bottom dist/*
 
 pr-check: lint test build docs docs-view
 	@echo "please review the rendered docs before creating a PR"

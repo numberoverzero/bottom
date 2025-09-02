@@ -236,7 +236,8 @@ class Client(BaseClient):
             from bottom import register_pattern
             register_pattern("MYCOMMAND", "MYCOMMAND {some} {args} :{here}")
 
-        To add commands to this client's serializer, user::
+        To add commands to this client's serializer, use::
+
             client._serializer.register("MYCOMMAND", "MYCOMMAND {some} {args} :{here}")
 
         See also: :class:`CommandSerializer<bottom.irc.serialize.CommandSerializer>`

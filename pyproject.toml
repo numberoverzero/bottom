@@ -28,7 +28,7 @@ test = [
 ]
 lint = [
     "ruff==0.11.13",
-    "ty==0.0.1a8",
+    "ty==0.0.1a19",
 ]
 docs = [
     "sphinx==8.2.3",
@@ -101,3 +101,8 @@ known-third-party = ["bottom"]
 # we take **kwargs: t.Any in a few places because we pass those values through str.format()
 # and don't really care what type they are.  users can pass custom objects that implement a custom __str__
 allow-star-arg-any = true
+
+[tool.ty.src]
+exclude = [
+    "examples"
+]

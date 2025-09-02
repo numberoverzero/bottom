@@ -57,13 +57,11 @@ user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.
 
 nitpick_ignore = [
     ("py:class", "_asyncio.Task"),
-    ("py:class", "P"),
+    ("py:obj", "typing.P"),
     ("py:class", "R"),
-    ("py:class", "t.Callable"),
-    ("py:class", "util.Decorator"),
+    ("py:class", "Decorator"),
     ("py:class", "ClientMessageHandler"),
     ("py:class", "Component"),
-    ("py:class", "ComputedStr"),
 ]
 
 
