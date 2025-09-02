@@ -22,7 +22,7 @@ async def handle(message: str, **kwargs: t.Any) -> None:
 @client.on("client_connect")
 async def on_connect(**kwargs: t.Any) -> None:
     await client.send("nick", nick=NICK)
-    await client.send("user", user=NICK, realname="https://github.com/numberoverzero/bottom")
+    await client.send("user", nick=NICK, realname="https://github.com/numberoverzero/bottom")
 
     # This waits for the 'rpl_endofmotd' and 'err_nomotd' commands,
     # returning when one of them is triggered. 'events' is a list,
